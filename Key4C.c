@@ -97,7 +97,7 @@ static long test_ssa_get_keys (
   char    ssa_msg[SSA_SI_SSA_MSG_SZ];
   long    num;
   char    *p;
-  char    *outfname    = "Tagged_Data_output.txt" ;                        // Output File name                
+  char    *outfname    = "Tagged_Data_output.otx" ;                        // Output File name                
   FILE    *outfile ;                                                       // Object of output file
   outfile = fopen ( outfname , "a" ) ;                                     // Open file and append
   
@@ -262,7 +262,12 @@ int main ()
 */
 
   while(fgets ( line_buffer , sizeof ( line_buffer ), infile )){
-  rc = test_ssa_get_keys (sockh, &session_id, "default", population, field, line_buffer, 23, "TEXT");
+  int len_line=strlen(line_buffer) ;
+  if (len_line > 0 && line_buffer[len_line-1] == '\n') {
+    line_buffer[--len_line] = '\0';
+  }
+  //printf("%d",length);
+  rc = test_ssa_get_keys (sockh, &session_id, "default", population, field, line_buffer, len_line, "TEXT");
   //fputs ( line_buffer ,outfile ) ;
   //printf ("Key level: %s\n",key_level) ;                    //%s for character
   if (0 != rc)
