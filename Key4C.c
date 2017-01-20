@@ -4,11 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ssan3cl.h"
+#include <getopt.h>
+#include <unistd.h>
+#include <time.h>
 
 #define rangeof( arr )( sizeof( arr )/sizeof( ( arr )[0] ) )
 
 
-  FILE    *outfile ,*errorfile;                                        // Object of output file
+  FILE    *infile, *outfile ,*errorfile , *infofile;                  // Object of output file
   int     rec_number = 0 ;
 
 static long test_ssa_open (
@@ -22,11 +25,11 @@ static long test_ssa_open (
   char    rsp_code[ SSA_SI_RSP_SZ ];
   char    ssa_msg[ SSA_SI_SSA_MSG_SZ ];
 
-  printf ( "------ ssan3_open ------\n" );
-  printf ( "Session Id       : %ld\n", *session_id );
-  printf ( "System           : %s\n", sysName );
-  printf ( "Population       : %s\n", population );
-  printf ( "Controls         : %s\n", controls );
+  fprintf ( infofile ,"------ ssan3_open ------\n" );
+  fprintf ( infofile ,"Session Id : %ld\n",*session_id);      // Info
+  fprintf ( infofile ,"System     : %s\n", sysName );         // Info
+  fprintf ( infofile ,"Population : %s\n", population );      // Info
+  fprintf ( infofile ,"Controls   : %s\n", controls );        // Info
 
   rc = ssan3_open ( sockh,
     session_id,
@@ -38,21 +41,20 @@ static long test_ssa_open (
     ssa_msg,
     SSA_SI_SSA_MSG_SZ );
   if ( rc < 0 ) {
-    printf ( "rc               : %ld\n", rc );
+    fprintf ( errorfile,"rc               : %ld\n", rc );
     rc = 1;
     goto ret;
   }
   if ( rsp_code[0] != '0' ) {
-    printf ( "rsp_code         : %s\n", rsp_code );
-    printf ( "ssa_msg          : %s\n", ssa_msg );
+    fprintf ( errorfile,"rsp_code         : %s\n", rsp_code );   // Error ?
+    fprintf ( errorfile,"ssa_msg          : %s\n", ssa_msg );
     rc = 1;
     goto ret;
   }
-  printf ( "\n" );
-  printf ( "Session Id       : %ld\n", *session_id );
-  printf ( "rsp_code         : %s\n", rsp_code );
-  //printf ( "ssa_msg          : %s\n", ssa_msg );
-  fputs ( ssa_msg,errorfile );
+  //printf ( "\n" );
+  fprintf ( infofile,"Session Id       : %ld\n", *session_id );  // Info
+  fprintf ( errorfile, "rsp_code         : %s\n", rsp_code );
+  fprintf ( errorfile, "ssa_msg          : %s\n", ssa_msg );
   rc = 0;
   goto ret;
 
@@ -79,17 +81,18 @@ static long test_ssa_get_keys (
   long    num;
   char    *p;
 
+
   for ( i = 0; i < ( int )rangeof ( keys_array ); ++i )
     keys_array[i] = keys_data + i * SSA_SI_KEY_SZ;
 
-  /* printf ( "------ ssan3_get_keys_encoded ------\n" );
-  printf ( "Session Id       : %ld\n", *session_id );
-  printf ( "System           : %s\n", sysName );
-  printf ( "Population       : %s\n", population );
-  printf ( "Controls         : %s\n", controls );
-  printf ( "Key field data   : %s\n", record );
-  printf ( "Key field size   : %ld\n", recordLength );
-  printf ( "Key field encoding type : %s\n", recordEncType );*/
+  fprintf ( infofile ,"------ ssan3_get_keys_encoded ------\n" );
+  fprintf ( infofile ,"Session Id       : %ld\n", *session_id );
+  fprintf ( infofile ,"System           : %s\n", sysName );
+  fprintf ( infofile ,"Population       : %s\n", population );
+  fprintf ( infofile ,"Controls         : %s\n", controls );
+  fprintf ( infofile ,"Key field data   : %s\n", record );
+  fprintf ( infofile ,"Key field size   : %ld\n", recordLength );
+  fprintf ( infofile ,"Key field encoding type : %s\n", recordEncType );
 
   num = 0;
   rc = ssan3_get_keys_encoded (
@@ -110,32 +113,31 @@ static long test_ssa_get_keys (
                                 SSA_SI_KEY_SZ );
 
   if ( rc < 0 ) {
-    printf ( "rc               : %ld\n", rc );
+    fprintf ( errorfile,"rc               : %ld\n", rc );
     rc = 1;
     goto ret;
   }
   if ( rsp_code[0] != '0' ) {
-    //printf ( "rsp_code         : %s\n", rsp_code );
-    //printf ( "ssa_msg          : %s\n", ssa_msg );
+    fprintf ( errorfile,"rsp_code         : %s\n", rsp_code );
+    fprintf ( errorfile,"ssa_msg          : %s\n", ssa_msg );
     rc = -1;
     goto ret;
   }
 
-  /*printf ( "\n" );
-  printf ( "Session Id       : %ld\n", *session_id );
-  printf ( "rsp_code         : %s\n", rsp_code );
-  printf ( "ssa_msg          : %s\n", ssa_msg );
-  printf ( "Count            : %ld\n", num );
-  printf ( "\n------ keys ------\n" );*/
-
+  //printf ( "\n" );
+  fprintf ( errorfile, "Session Id       : %ld\n", *session_id );
+  fprintf ( errorfile, "rsp_code         : %s\n", rsp_code );
+  fprintf ( errorfile, "ssa_msg          : %s\n", ssa_msg );
+  fprintf ( infofile, "Count            : %ld\n", num );
+  //printf ( "\n------ keys ------\n" );
+  ++rec_number;
+  fprintf(outfile,"\n%d : %s",rec_number,record);
   for ( i = 0; i < num; ++i ) {
     p = keys_array[i];
-    ++rec_number;
-    fprintf ( outfile,"%d : ",rec_number );                 // Write Record no
-    fputs ( strcat( record," : " ) , outfile );             // Write Record
-    fputs ( ( i+1, p ) ,outfile  ) ;                        // Write Key on output file
-    fputs ( "\n",outfile );
+    fprintf ( outfile,"  :(%d) '%.*s'\n",i+1, SSA_SI_KEY_SZ, p);         
+    //printf ("%d '%.*s'\n", i+1, SSA_SI_KEY_SZ, p);
   }
+  fprintf (outfile,"\n");
   rc = 0;
   goto ret;
 
@@ -154,11 +156,11 @@ static long test_ssa_close (
   char    rsp_code[SSA_SI_RSP_SZ];
   char    ssa_msg[SSA_SI_SSA_MSG_SZ];
 
-  printf ( "------ ssan3_close ------\n" );
-  printf ( "Session Id       : %ld\n", *session_id );
-  printf ( "System           : %s\n", sysName );
-  printf ( "Population       : %s\n", population );
-  printf ( "Controls         : %s\n", controls );
+  fprintf ( infofile ,"------ ssan3_close ------\n" );
+  fprintf ( infofile ,"Session Id       : %ld\n", *session_id );
+  fprintf ( infofile ,"System           : %s\n", sysName );
+  fprintf ( infofile ,"Population       : %s\n", population );
+  fprintf ( infofile ,"Controls         : %s\n", controls );
 
   rc = ssan3_close ( sockh,
     session_id,
@@ -170,20 +172,20 @@ static long test_ssa_close (
     ssa_msg,
     SSA_SI_SSA_MSG_SZ );
   if ( rc < 0 ) {
-    printf ( "rc               : %ld\n", rc );
+    fprintf ( errorfile,"rc               : %ld\n", rc );
     rc = 1;
     goto ret;
   }
   if ( rsp_code[0] != '0' ) {
-    printf ( "rsp_code         : %s\n", rsp_code );
-    printf ( "ssa_msg          : %s\n", ssa_msg );
+    fprintf ( errorfile,"rsp_code         : %s\n", rsp_code );
+    fprintf ( errorfile,"ssa_msg          : %s\n", ssa_msg );
     rc = 1;
     goto ret;
   }
-  printf ( "\n" );
-  printf ( "Session Id       : %ld\n", *session_id );
-  printf ( "rsp_code         : %s\n", rsp_code );
-  printf ( "ssa_msg          : %s\n", ssa_msg );
+  fprintf ( errorfile,"\n" );
+  fprintf ( errorfile,"Session Id       : %ld\n", *session_id );
+  fprintf ( errorfile,"rsp_code         : %s\n", rsp_code );
+  fprintf ( errorfile,"ssa_msg          : %s\n", ssa_msg );
   rc = 0;
   goto ret;
 
@@ -197,8 +199,13 @@ static void doExit ( char *func )
   exit ( EXIT_FAILURE );
 }
 
-int main ( )
+void print_usage() {
+    printf("Key4C -i Tagged_Data.txt -o output.txt -l log.txt -e error.txt");
+}
+
+int main ( int argc, char *argv[] )
 {
+	
   long    rc;
   long    sockh;
   long    session_id;
@@ -207,22 +214,53 @@ int main ( )
   char    *field       = "FIELD=" ;
   char    *key         = "Person_Name" ;                     // key
   char    *key_level   = "Standard" ;                        // Key level
-  char    *infname     = "Tagged_Data.txt" ;                 // Input file name
-  char    *outfname    = "Tagged_Data_output.txt" ;          // Output File name
-  char    *errorfname  = "Error_File.txt" ;                  // Error File name
 
-  FILE    *infile ;
+  //char    *infname     = "Tagged_Data.txt" ;
+  //char    *outfname    = "Tagged_Data_output.txt" ;
+  //char    *errorfname  = "Error_File.txt" ;
+  //char    *infofname   = "Info_File.txt" ;
   char line_buffer [ BUFSIZ ] ;
+  int   option = 0;
+  char *infname ;                                           // Input file name
+  char *outfname ;                                          // Output File name
+  char *logfname ;                                          // Info File name
+  char *errorfname ;                                        // Error File name
+  
+  clock_t t;                                            // Clock object
+  double time_taken;
+  
+  t = clock();                                          // Start time
+
+  while ((option = getopt(argc, argv,"i:o:l:e:")) != -1) {
+        switch (option) {
+             case 'i' :
+                        infname = optarg ;
+                        break;
+             case 'o' :
+                        outfname = optarg ;
+                        break;
+             case 'l' :
+                        logfname = optarg ;
+                        break;
+             case 'e' :
+                        errorfname = optarg ;
+                        break;
+             default:
+                        print_usage();
+                        exit(EXIT_FAILURE);
+        }
+    }
 
   infile               = fopen ( infname , "r" ) ;
   outfile              = fopen ( outfname , "w" ) ;         // Open file and write
   errorfile            = fopen ( errorfname , "w" );
+  infofile             = fopen ( logfname , "w" );
 
   sockh                = -1 ;
   session_id           = -1 ;
 
   if ( ! infile ) {
-    printf ( "Could not open file %s for input.\n" , infname  ) ;
+    printf ( "Could not open file %s for input.\n" , infile ) ;      // Error message while opening file
     exit(1) ;
   }
 
@@ -233,6 +271,11 @@ int main ( )
 
   if ( ! errorfile ) {
     printf ( "Could not open file %s for error\n" ,errorfile  ) ;      // Error message while opening file
+    exit(1) ;
+  }
+
+  if ( ! infofile ) {
+    printf ( "Could not open file %s for error\n" ,infofile  ) ;      // Error message while opening file
     exit(1) ;
   }
 
@@ -247,13 +290,13 @@ int main ( )
 
   // Call ssan3_get_keys
 
-  while( fgets (  line_buffer , sizeof (  line_buffer  ), infile  ) ){
-    int len_line=strlen( line_buffer ) ;
+  while( fgets (  line_buffer , sizeof (line_buffer), infile  ) ){
+    /*int len_line=strlen( line_buffer ) ;
     if ( len_line > 0 && line_buffer[len_line-1] == '\n' ) {
       line_buffer[--len_line] = '\0';
-    }
+    }*/
 
-  rc = test_ssa_get_keys ( sockh, &session_id, "default", population, field, line_buffer, len_line, "TEXT" );
+  rc = test_ssa_get_keys ( sockh, &session_id, "default", population, field, line_buffer, 23, "TEXT" );
   //printf ( "Key level: %s\n",key_level ) ;                    //%s for character
   if ( 0 != rc )
     doExit ( "test_ssa_get_keys" );
@@ -263,6 +306,9 @@ int main ( )
   rc = test_ssa_close ( sockh,&session_id,"default",population,"" );
   if ( 0 != rc )
     doExit ( "test_ssa_close" );
+  t = clock() - t;                                        // End time
+  time_taken = ((double)t)/CLOCKS_PER_SEC;                // In seconds
+  printf("\nTook %f seconds to execute \n", time_taken);  // Print time
 
   exit ( 0 );
 }
