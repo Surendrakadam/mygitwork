@@ -134,8 +134,8 @@ static long test_ssa_get_keys (
   fprintf(outfile,"\n%d : %s",rec_number,record);
   for ( i = 0; i < num; ++i ) {
     p = keys_array[i];
-    fprintf ( outfile,"  :(%d) '%.*s'\n",i+1, SSA_SI_KEY_SZ, p);         
-    //printf ("%d '%.*s'\n", i+1, SSA_SI_KEY_SZ, p);
+    fprintf ( outfile,"\n  :(%d) '%.*s'\n",i+1, SSA_SI_KEY_SZ, p);         
+    printf ("%d '%.*s'\n", i+1, SSA_SI_KEY_SZ, p);
   }
   fprintf (outfile,"\n");
   rc = 0;
@@ -291,12 +291,12 @@ int main ( int argc, char *argv[] )
   // Call ssan3_get_keys
 
   while( fgets (  line_buffer , sizeof (line_buffer), infile  ) ){
-    /*int len_line=strlen( line_buffer ) ;
+    int len_line=strlen( line_buffer ) ;
     if ( len_line > 0 && line_buffer[len_line-1] == '\n' ) {
       line_buffer[--len_line] = '\0';
-    }*/
+    }
 
-  rc = test_ssa_get_keys ( sockh, &session_id, "default", population, field, line_buffer, 23, "TEXT" );
+  rc = test_ssa_get_keys ( sockh, &session_id, "default", population, field, line_buffer, len_line, "TEXT" );
   //printf ( "Key level: %s\n",key_level ) ;                    //%s for character
   if ( 0 != rc )
     doExit ( "test_ssa_get_keys" );
