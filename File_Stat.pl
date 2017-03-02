@@ -21,8 +21,9 @@ use strict ;
 use warnings ;
 use Getopt::Simple ;
 
-# Control variables
+# Run variables
 my $p_fld_spr  = '' ;                                           # Field separator character
+my $p_enc_spr  = '' ;                                           # Enclose separator characte
 my $p_in_file  = '' ;                                           # Input file
 my $p_f_dt_1   = '' ;                                           # Flag if data starting from the the first record itself, or, first record has column headers (default)
 my $p_out_file = '' ;                                           # Output file
@@ -61,6 +62,8 @@ my %h_fld_min_len        = () ;                                 # Minimum length
 my %h_rec_no_fld_min_len = () ;                                 # Record no of minimum length of field
 my %h_fld_max_len        = () ;                                 # Maximum length of field
 my %h_rec_no_fld_max_len = () ;                                 # Record no of maxnimum length of field
+my %h_encl_knt           = () ;                                 # Field wise count where optional enclosures used
+my %h_bad_encl_knt       = () ;                                 # Field wise count where optional enclosure used only in begining or at end of field
 
 # Maximum and minimum field count related variables
 
@@ -116,18 +119,20 @@ if ( $v_max_arr_len > 0 ) {
    for ( $idx = 0 ; $idx < $v_max_arr_len ; $idx ++ ) {
       if ( ! exists ( $h_fld_typ{ $idx } ) ) {
          $h_fld_typ{ $idx }            = "" ;
-         $h_nll_knt{ $idx }            = 0 ;                    # Count of null values per field number
+         $h_nll_knt{ $idx }            = '' ;                    # Count of null values per field number
          $h_fld_min{ $idx }            = '' ;                   # Minimum of not null field as per field number
-         $h_rec_no_fld_min{ $idx }     = 0 ;                    # Record no of minimum of not null field
+         $h_rec_no_fld_min{ $idx }     = '' ;                    # Record no of minimum of not null field
          $h_fld_max{ $idx }            = '' ;                   # Maximum of not null field as per field number
-         $h_rec_no_fld_max{ $idx }     = 0 ;                    # Record no of maximum of not null field
-         $h_fld_inval_chr_knt{ $idx }  = 0 ;                    # Count of occurences of invalid character in field
-         $h_cln_nll_knt{ $idx }        = 0 ;                    # After cleaning count of null values per field number
-         $h_no_of_occ{ $idx }          = 0 ;                    # No of Occcurence of fields
-         $h_fld_min_len{ $idx }        = 0 ;                    # Minimum length of field
-         $h_rec_no_fld_min_len{ $idx } = 0 ;                    # Record no of minimum length of field
-         $h_fld_max_len{ $idx }        = 0 ;                    # Maximum length of field
-         $h_rec_no_fld_max_len{ $idx } = 0 ;                    # Record no of maxnimum length of field
+         $h_rec_no_fld_max{ $idx }     = '' ;                    # Record no of maximum of not null field
+         $h_fld_inval_chr_knt{ $idx }  = '' ;                    # Count of occurences of invalid character in field
+         $h_cln_nll_knt{ $idx }        = '' ;                    # After cleaning count of null values per field number
+         $h_no_of_occ{ $idx }          = '' ;                    # No of Occcurence of fields
+         $h_fld_min_len{ $idx }        = '' ;                    # Minimum length of field
+         $h_rec_no_fld_min_len{ $idx } = '' ;                    # Record no of minimum length of field
+         $h_fld_max_len{ $idx }        = '' ;                    # Maximum length of field
+         $h_rec_no_fld_max_len{ $idx } = '' ;                    # Record no of maxnimum length of field
+         $h_encl_knt{$idx}             = '' ;                    # Field wise count where optional enclosures used
+         $h_bad_encl_knt{$idx}         = '' ;                    # Field wise count where optional enclosure used only in begining or at end of field
       } ## end if ( ! exists ( $h_fld_typ...))
    } ## end for ( $idx = 0 ; $idx <...)
 } ## end if ( $v_max_arr_len > ...)
@@ -333,6 +338,32 @@ while ( $v_rec = <$IN_FILE> ) {
          $h_no_of_occ{ $idx }++ ;
       }
 
+      # Check if field is enclosed with apostrophe
+      if ( $a_fld[ $idx ] =~ /^\".*\"$/ ) {
+        if ( ! exists $h_encl_knt{$idx} ) { $h_encl_knt{$idx} = 1 ; }
+        else                              { $h_encl_knt{$idx}++ ; }
+      }
+      else {
+        if ( ! exists $h_encl_knt{$idx} ) { $h_encl_knt{$idx} = "" ; }
+      }
+
+      # Bad enclosure count
+      if ( $a_fld[ $idx ] =~ /^\"/ and  $a_fld[ $idx ] !~ /\"$/ ) {
+         $a_fld[ $idx ] = $a_fld[ $idx ] . $p_enc_spr ;
+         if ( ! exists $h_bad_encl_knt{$idx} ) { $h_bad_encl_knt{$idx} = 1 ; }
+         else                                  { $h_bad_encl_knt{$idx}++ ; }
+
+      }
+      else { if ( ! exists $h_bad_encl_knt{$idx} ) { $h_bad_encl_knt{$idx} = "" ; } }
+
+      if ( $a_fld[ $idx ] !~ /^\"/ and  $a_fld[ $idx ] =~ /\"$/ ) {
+        $a_fld[ $idx ] = $p_enc_spr . $a_fld[ $idx ] ;
+        if ( ! exists $h_bad_encl_knt{$idx} ) { $h_bad_encl_knt{$idx} = 1 ; }
+        else                                  { $h_bad_encl_knt{$idx}++ ; }
+
+      }
+      else { if ( ! exists $h_bad_encl_knt{$idx} ) { $h_bad_encl_knt{$idx} = "" ; } }
+
    } ## end for ( $idx = 0 ; $idx <...)
 
    $v_rec_with_invalid_char_no = $v_rec_with_invalid_char_no + $v_1_0_rec_inval_chr ;    # Records with invalid characters
@@ -352,25 +383,27 @@ print $Out_FILE                                                 # Print report h
   "Serial No\t" .                                               # 1
   "Description\t" .                                             # 2
   "Occurences\t" .                                              # 3
-  "Type\t" .                                                    # 4
-  "Empty\t" .                                                   #  5
+  "Type( After removing unprintable )\t" .                      # 4
+  "Empty\t" .                                                   # 5
   "Contains unprintable\t" .                                    # 6
   "Minimum not null length first record\t" .                    # 7
   "Minimum not null length\t" .                                 # 8
   "Maximum length first record \t" .                            # 9
   "Maximum length\t" .                                          # 10
-  "Minimum not null value first record \t" .                    #11
-  "Minimum not null value\t" .                                  #12
-  "Maximum not null value first record \t" .                    #13
-  "Maximum not null value\t" .                                  #14
-  "Minimum Fields\t" .                                          #15
-  "Maximum Fields\n" ;                                          #16
+  "Minimum not null value first record \t" .                    # 11
+  "Minimum not null value\t" .                                  # 12
+  "Maximum not null value first record \t" .                    # 13
+  "Maximum not null value\t" .                                  # 14
+  "Minimum Fields\t" .                                          # 15
+  "Maximum Fields\t" .#16
+  "Enclosed separator counter {" . ord($p_enc_spr) . "}\t" .#17
+  "Bad Enclosed counter\n" ;                                       # 18
 
 print $Out_FILE                                                 # Print file information
   "\t" .                                                        #1
   "File\t" .                                                    #2
   ( $p_f_dt_1 eq "n" ? ( $v_rec_knt - $v_rec_empty_knt - 1 ) : ( $v_rec_knt - $v_rec_empty_knt ) ) . "\t" .    # If flag is zero record counter is decremented by 1 else as it is
-  "\t" .                                                        #4
+  "ASCII - Field separator: {" . ord($p_fld_spr) . "}\t" .                                                        #4
   "$v_rec_empty_knt\t" .                                        #5
   "\t" .                                                        #6
   "Record no $v_rec_no_min_len\t" .                             #7
@@ -386,7 +419,7 @@ print $Out_FILE                                                 # Print file inf
 
 for ( $idx = 0 ; $idx < $v_max_arr_len ; $idx ++ ) {            # Print field wis information
 
-   print $Out_FILE $idx + 1 . "\t" .                            #1
+   print $Out_FILE ($idx + 1) . "\t" .                            #1
      ( $p_f_dt_1 eq "n" ? $a_fld_nm[ $idx ] : "Field " . ( $idx + 1 ) ) . "\t" .                               #2
      "$h_no_of_occ{$idx}\t" .                                   #3
      "$h_fld_typ{$idx}\t" .                                     #4
@@ -401,7 +434,9 @@ for ( $idx = 0 ; $idx < $v_max_arr_len ; $idx ++ ) {            # Print field wi
      "$h_rec_no_fld_max{ $idx }\t" .                            #13
      "$h_fld_max{ $idx }\t" .                                   #14
      "\t" .                                                     #15
-     "\n" ;                                                     #16
+     "\t" .#16
+     "$h_encl_knt{$idx}\t" .#17
+     "$h_bad_encl_knt{$idx}\n" ;                                                     #18
 
 } ## end for ( $idx = 0 ; $idx <...)
 
@@ -459,7 +494,7 @@ sub sGetFieldTypes {
          and $vft_prv_fld_typ ne "Unknown"
          and $vft_prv_fld_typ ne "Unicode" ) {
          $h_fld_typ{ $idx } = $vft_fld_typ ;
-      } 
+      }
       elsif ($vft_fld_typ eq "Decimal"
          and $vft_prv_fld_typ ne "Signed Decimal"
          and $vft_prv_fld_typ ne "ASCII"
@@ -517,19 +552,26 @@ sub sGetParameter {                                             # Subroutine to 
          verbose => "Field Separator" ,
          order   => 3 ,
         } ,
+      encloser_separator => {                                      # Pass field separator
+         type    => "=s" ,
+         env     => "-" ,
+         default => '' ,
+         verbose => "enclosed Separator" ,
+         order   => 4 ,
+        } ,
       data_from_1_record_flag => {                              # Data starting from the first record instead of field labels in the first record
          type    => "!" ,
          env     => "-" ,
          default => "0" ,                                       # Default (parameter not mentioned) means field names in first record
          verbose => "Data starting from the first record" ,
-         order   => 4 ,
+         order   => 5 ,
         } ,
       output_file => {                                          # Input file
          type    => "=s" ,
          env     => "-" ,
          default => '' ,
          verbose => "Output file name with extension" ,
-         order   => 5 ,
+         order   => 6 ,
       } ,
    } ;
 
@@ -541,17 +583,19 @@ sub sGetParameter {                                             # Subroutine to 
 
    $p_in_file  = $$parameters{ 'switch' }{ 'input_file' } ;
    $p_fld_spr  = $$parameters{ 'switch' }{ 'field_separator' } ;
+   $p_enc_spr  = $$parameters{ 'switch' }{ 'encloser_separator' } ;
    $p_f_dt_1   = $$parameters{ 'switch' }{ 'data_from_1_record_flag' } ;
    $p_out_file = $$parameters{ 'switch' }{ 'output_file' } ;
+   
 
    if   ( $p_f_dt_1 eq 1 ) { $p_f_dt_1 = "Y" ; }
    else                    { $p_f_dt_1 = "n" ; }
 
    if ( $p_in_file eq "" ) { die "Please give input file" ; }
    if ( $p_fld_spr eq "" ) { die "Please give separtor( At least one character )" ; }
+   
+   
 
-   # If file with path name remove path name
-   # if( $p_in_file =~ )
 
    # Name of input file without extension
    my $v_index = index ( $p_in_file , '.' ) ;
@@ -564,13 +608,16 @@ sub sGetParameter {                                             # Subroutine to 
       $o_file_ext = substr ( $p_in_file , $v_index + 1 ) ;
    }
 
+   #Field separator contain only one character
+   if ( length $p_fld_spr > 1 ) { die "Field separator contain only one character" ; }
+   
    # If Output file is null set default output file
    if ( $p_out_file eq "" ) {
       $p_out_file = $o_file_nm_1st . "_" . $o_file_ext . "_statistics.csv" ;
    }
-
-   #Field separator contain only one character
-   if ( length $p_fld_spr > 1 ) { die "Field separator contain only one character" ; }
+   
+   #Enclosed separator contain only one character
+   
 
 } ## end sub sGetParameter
 #######################################################################
@@ -585,41 +632,54 @@ sub sGetParameter {                                             # Subroutine to 
 
 =head1 File Statistics
 
- File Statistics  about the file
+ File Statistics about the file
 
 =head2 Copyright
 
  Copyright (c) 2017 IdentLogic Systems Private Limited
 
 =head2 Description
- File Statistics procedure will give you over all statistic report of a file 
- like first it will determine the datatype of all the fields. Base on that 
- it will show you count of null values per field number, Minimum of not null 
- field as per field number, record no of minimum of not null field as per field 
- number, maximum of not null field as per field number, record no of maximum of 
+
+ File Statistics procedure will give you over all statistic report of a file
+ like first it will determine the datatype of all the fields. Base on that
+ it will show you count of null values per field number, Minimum of not null
+ field as per field number, record no of minimum of not null field as per field
+ number, maximum of not null field as per field number, record no of maximum of
  not null field as per field number, count of occurences of invalid character in
  field as per field number, after cleaning count of null values per field number,
- no of Occcurence of fields as per field number,minimum length of field as per 
+ no of Occcurence of fields as per field number,minimum length of field as per
  field number, record no of minimum length of field as per field number,
- maximum length of field as per field number, record no of maxnimum length of 
+ maximum length of field as per field number, record no of maxnimum length of
  field as per field number, field wise count where optional enclosures used
- field wise count where optional enclosure used only in begining or at end of 
- field, field wise count where optional enclosure within string not escaped 
- (doubled) properly
- If the first record in the file contain header fields this procedure read the 
- file from second record otherwise it will start from the first record. and 
+ field wise count where optional enclosure used only in begining or at end of
+ field, field wise count where optional enclosure within string not escaped
+ (doubled) properly.
+
+ If the first record in the file contain header fields this procedure read the
+ file from second record otherwise it will start from the first record. and
  If no header fields in file it will increment the fields using index.
  If the header fields are empty in somewhere it will fullfill that empty space
- using *** Field "field index" ***.
+ using *** Field field index ***.
 
 =head2 Output file
+
  Give the output file extension: .csv( comma separator values ) file
  If you do not put output file name with extension it will create Output file by
  default.
  for example ( inputFile_extension_statistics.csv )
 
 
+=head2 CSV format
+
+ Outfile file extension is csv.
+ when you open it one dialog box prompt it out .
+ There are one Separator options under that there are many checkboxs choose as
+ per your convenient otherwise your output will get wrong.
+ 
+ Text delimeter choose to single quotes because here we are using double quotes
+
 =head2 Warning
+
  Alway give the input file name otherwise it will give an error.
  Field separtor should not be null
  Field separator contain only one character
@@ -635,12 +695,14 @@ sub sGetParameter {                                             # Subroutine to 
  PARAMETER                DESCRIPTION                         ABV VARIABLE
  input_file               Input file name with extension      i   $p_in_file
  field_separator          Field Separator                     f   $p_fld_spr
+ encloser                 Enclosed separator                  e   $p_enc_spr
  data_from_1_record_flag  Data starting from the first record d   $p_f_dt_1
  output_file              Output file name with extension     o   p_out_file
 
  ABV - Abbreviation for calling run parameter
 
- Field separator is mandatory
+ Field separator is mandatory 
+ Field separator value display in ascii value.
 
 =head4 Help and defaults
 
@@ -656,8 +718,8 @@ sub sGetParameter {                                             # Subroutine to 
  --------------  -----------------------------
  sGetFieldTypes  Gets field datatype.
  sGetParameter   Gets run parameters.
- 
- 
+
+
 =head4 Called by
 
  Subroutine     Called by
