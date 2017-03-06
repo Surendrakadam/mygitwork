@@ -442,15 +442,7 @@ if ( $v_rec_no_min_no_flds == 0 and $v_rec_no_min_len == 0 ) {
 print $OUTFILE                                                  # Print file information
   ( $p_f_dt_1 eq "n" ? "With header" : "Without header" ) . "\t" .                                                        # 1
   "File" . "\t" .                                               # 2
-  (
-   $p_f_dt_1 eq "n"
-   ?                                                            # 3 If flag is zero record counter is decremented by 1 else as it is
-     ( $v_rec_knt - $v_rec_empty_knt - 1 )
-   :                                                            # 3
-     ( $v_rec_knt - $v_rec_empty_knt )
-  )
-  . "\t"
-  .                                                             # 3
+  $v_rec_knt . "\t" .                                                             # 3
   "Field separator: " .                                         # 4
   (
    $p_fld_spr =~ /[[:cntrl:]]/ ?                                # 4
