@@ -91,7 +91,7 @@ my $v_fld_max_len        = 0 ;                                  # Maximum field 
 my $v_rec_no_fld_max_len = 0 ;                                  # Record no with maximum field length
 
 my $v_max_no_of_fld_rec = 0 ;                                   # Maximum no of fields in record
-my $vgft_fld            = 0 ;                                   # variable get field type
+my $vgft_fld            = '' ;                                  # variable get field type
 
 my $o_file_nm_1st = '' ;                                        # Output file name without extension
 my $o_file_ext    = '' ;                                        # Output file extension
@@ -114,8 +114,10 @@ open ( my $IN_FILE1 , "<" , $p_in_file ) or                     #
 while ( $v_rec = <$IN_FILE1> ) {                                # Get field types of all fields
    $v_rec_fld_typ_knt ++ ;                                      # Increment record read counter
    chomp $v_rec ;
+   $v_rec = $v_rec . "\n" ;                                     # Add newline to record of all fields are empty.
    @a_fld = split $p_fld_spr , $v_rec ;                         # Split record into fields
-
+   
+   
    # Maximum no of fields in record
    my $v_arr_len = $#a_fld + 1 ;
    if ( $v_arr_len > $v_max_no_of_fld_rec ) { $v_max_no_of_fld_rec = $v_arr_len ; }
@@ -125,7 +127,9 @@ while ( $v_rec = <$IN_FILE1> ) {                                # Get field type
       $v_rec_fld_typ_knt == 1 and                               #
       $p_f_dt_1 eq "n"
      ) {
+      
       for ( my $idx = 0 ; $idx < $v_max_no_of_fld_rec ; $idx ++ ) {
+         $a_fld[ $idx ]    =~ s/\n// ;                          # Remove new line from first record
          $a_fld_nm[ $idx ] = $a_fld[ $idx ] || "" ;
          $a_fld_nm[ $idx ] =~ s/[[:cntrl:]]+/ /g ;              # Replace control characters by space
          $a_fld_nm[ $idx ] =~ s/\s+/ /g ;                       # Replace multiple white space by space
@@ -169,13 +173,12 @@ open ( my $IN_FILE , "<" , $p_in_file ) or die "Could not open input file $p_in_
 while ( $v_rec = <$IN_FILE> ) {
    chomp $v_rec ;
    $v_rec_knt ++ ;                                              # Record counter
-
    if ( $v_rec_knt == 1 and $p_f_dt_1 eq "n" ) { next ; }       # if first record contain Field label skip first record
 
    # Empty record or record with spaces
    if ( $v_rec eq '' or $v_rec =~ /^\s*$/ ) { 
-    $v_rec_knt -- ;
-    $v_rec_empty_knt ++ ;
+    $v_rec_knt -- ;                                             # If record is empty record counter decremented by 1
+    $v_rec_empty_knt ++ ;                                       # If record is empty record counter incremented by 1
     next ;
    }
 
@@ -420,24 +423,50 @@ print $OUTFILE                                                 # Print report he
   "Minimum not null value" . "\t" .                             # 12
   "Maximum value first record no." . "\t" .                     # 13
   "Maximum value" . "\t" .                                      # 14
-  ( $p_enc_chr eq "" ? "" : "Count optional enclosing character { " .                     # 17
+  ( $p_enc_chr eq "" ? "" : "Count optional enclosing character { " .                     # 15
   (
    $p_enc_chr =~ /[[:cntrl:]]/
-   ?                                                            # 17
+   ?                                                            # 15
      ord ( $p_enc_chr )
-   :                                                            # 17
+   :                                                            # 15
      $p_enc_chr
   ) . " }"  . "\t" )
-  .                                                             # 17
-  ( $p_enc_chr eq "" ? "" : "Unbalanced enclosure count"  . "\t" )  .                      # 18
-  "Minimum Fields" . "\t" .                                     # 15
-  "Maximum Fields" . "\n" ;                                    # 16
+  .                                                             # 15
+  ( $p_enc_chr eq "" ? "" : "Unbalanced enclosure count"  . "\t" )  .                      # 16
+  "Minimum Fields" . "\t" .                                     # 17
+  "Maximum Fields" . "\n" ;                                     # 18
 
-#If file is empty set constant value to zero
-if ( $v_rec_no_min_no_flds == 0 and $v_rec_no_min_len == 0 ) {
-   $v_min_no_flds = 0 ;
-   $v_rec_min_len = 0 ;
-}
+  # If file is empty set constant value to zero
+  if ( $v_rec_no_min_no_flds == 0 and $v_rec_no_min_len == 0 ) {
+     $v_rec_no_min_len = '' ;
+     $v_min_no_flds = '' ;
+     $v_rec_min_len = '' ;
+  }
+  
+  # If minimum no fields are constant value set to null
+  if ( $v_rec_no_min_no_flds == 0 ) {
+    $v_min_no_flds = '' ;
+  }
+  
+  # If record no of maximum length is zero then set null to maximum length and itself is zero
+  if ( $v_rec_no_max_len == 0 ) {
+     $v_rec_no_max_len = '' ;
+     $v_rec_max_len = '' ;
+  }
+  
+  # If record no of maximum no of fields are zero then set maximum no of fields to zero
+  if ( $v_rec_no_max_no_flds == 0 ) {
+    $v_max_no_flds = '' ;
+  }
+  
+  # If empty record count is zero set to null
+  if ( $v_rec_empty_knt == 0 ) {
+    $v_rec_empty_knt = '' ;
+  }
+  # If record with a invalid character count is zero set to null
+  if ( $v_rec_with_invalid_char_no == 0 ) {
+    $v_rec_with_invalid_char_no = '' ;
+  }
 
 print $OUTFILE                                                  # Print file information
   ( $p_f_dt_1 eq "n" ? "With header" : "Without header" ) . "\t" .                                                        # 1
@@ -469,8 +498,8 @@ print $OUTFILE                                                  # Print file inf
   "\t" .                                                        # 14
   ( $p_enc_chr eq "" ? "" : "\t" ) .                                                        # 13
   ( $p_enc_chr eq "" ? "" : "\t" ) .                                                        # 14
-  "Record no $v_rec_no_min_no_flds: $v_min_no_flds" . "\t" .    # 15
-  "Record no $v_rec_no_max_no_flds: $v_max_no_flds" . "\n" ;    # 16
+  ( $v_rec_no_min_no_flds == 0 ? "$v_min_no_flds" : "Record no $v_rec_no_min_no_flds: $v_min_no_flds" ) . "\t" .    # 15
+  ( $v_rec_no_max_no_flds == 0 ? "$v_max_no_flds" : "Record no $v_rec_no_max_no_flds: $v_max_no_flds" ) . "\n" ;    # 16
 
 for ( $idx = 0 ; $idx < $v_max_no_of_fld_rec ; $idx ++ ) {      # Print field wis information
 
@@ -488,10 +517,10 @@ for ( $idx = 0 ; $idx < $v_max_no_of_fld_rec ; $idx ++ ) {      # Print field wi
      $h_fld_min{ $idx } . "\t" .                                # 12
      $h_rec_no_fld_max{ $idx } . "\t" .                         # 13
      $h_fld_max{ $idx } . "\t" .                                # 14
-     ( $p_enc_chr eq "" ? "" : $h_encl_knt{ $idx }  . "\t" ) .                            # 17
-     ( $p_enc_chr eq "" ? "" : $h_bad_encl_knt{ $idx }  . "\t" ) .                          # 18
-     "\t" .                                                     # 15
-     "\n" ;                                                     # 16
+     ( $p_enc_chr eq "" ? "" : $h_encl_knt{ $idx }  . "\t" ) .                            # 15
+     ( $p_enc_chr eq "" ? "" : $h_bad_encl_knt{ $idx }  . "\t" ) .                          # 16
+     "\t" .                                                     # 17
+     "\n" ;                                                     # 18
 
 } ## end for ( $idx = 0 ; $idx <...)
 
@@ -526,7 +555,7 @@ sub sGetFieldTypes {                                            # Subroutine to 
       elsif ( $vgft_fld =~ /^[+-]\d+$/ ) { $vft_fld_typ = "Signed integer" ; }
       elsif ( $vgft_fld =~ /^\d*\.\d*$/     and $vgft_fld =~ /\d/ ) { $vft_fld_typ = "Decimal" ; }
       elsif ( $vgft_fld =~ /^[+-]\d*\.\d*$/ and $vgft_fld =~ /\d/ ) { $vft_fld_typ = "Signed decimal" ; }
-      elsif ( $vgft_fld =~ /[ -~]+/ ) { $vft_fld_typ = "ASCII" ; }                       # Space to tilde -- ASCII Regex
+      elsif ( $vgft_fld =~ /[\x20-\x7E]+/ ) { $vft_fld_typ = "ASCII" ; }                       # Space to tilde -- ASCII Regex
       elsif ( $vgft_fld =~ /\p{C}/ )  { $vft_fld_typ = "Unicode" ; }
       else                            { $vft_fld_typ = "Unknown" ; }
 
@@ -667,12 +696,11 @@ sub sGetParameter {                                             # Subroutine to 
 
    # If Output file is null set default output file name as input file name with . as _ and _statistics.tsv at end
    if ( $p_out_file eq "" ) {
-      #$p_out_file = $o_file_nm_1st . "_" . $o_file_ext . "_statistics.tsv" ;
      $p_out_file = $p_in_file ;
-     $p_out_file =~ s/^.*[\\|\/]//g ;                       # Remove path
-     $p_out_file =~ s/\./\_/g ;
-     $p_out_file =~ s/\__/\_/g ;
-     $p_out_file = $p_out_file . "_statistics.tsv" ;
+     $p_out_file =~ s/^.*[\\|\/]//g ;                           # Remove path
+     $p_out_file =~ s/\./\_/g ;                                 # Replace dot to underscore
+     $p_out_file =~ s/\__/\_/g ;                                # Replace double underscore to single underscore
+     $p_out_file = $p_out_file . "_statistics.tsv" ;            # Concatinate _statistics.tsv to output file
    }
 
   return 1 ;
@@ -743,6 +771,7 @@ sub sGetParameter {                                             # Subroutine to 
     a) Replace control characters by space
     b) Replace multiple white space by space
     c) Remove leading and trailing blanks
+ 3. Assume that there is only one record in our file and that is a header file
 
 =head3 Minimum and Maximum value as per field type
 
@@ -848,5 +877,5 @@ sub sGetParameter {                                             # Subroutine to 
 =cut
 
 #######################################################################
-# End of File_Stat.pl                                                  #
+# End of File_Stat.pl                                                 #
 #######################################################################
