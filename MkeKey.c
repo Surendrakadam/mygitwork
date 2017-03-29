@@ -1,10 +1,14 @@
 /*
- Application   :
- Client        :
+ Procedure     : MkeKey.c
+ Application   : De-Dupe
+ Client        : Internal
  Copyright (c) : IdentLogic Systems Private Limited
  Author        : Surendra Kadam
  Creation Date : 20 March 2017
- Description   :
+ Description   : Generates (Search) Keys from Tagged data for Key Levels
+                  Limited (M), Standard (S) and Extended (X) for
+                  Person_Name (P), Organisation_Name (O) and
+                  Address_Part1 (1) as found in the Tagged data.
 
  WARNINGS      :
 
@@ -15,30 +19,31 @@
  Modifications
  Date       Change Req# Author       Description
  ---------- ----------- ------------ ---------------------------
+
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "ssan3cl.h"                                            // Dedupe header
-#include <getopt.h>
-#include <unistd.h>
+#include <getopt.h>                                             // Getoptions header
+#include <unistd.h>                                             // Code's entry point have various constant, type and function declarations
 #include <time.h>                                               // Timer header
 
-#define rangeof(arr)  (sizeof(arr)/sizeof((arr)[0]))
+#define rangeof( arr )  ( sizeof( arr ) / sizeof( ( arr )[ 0 ] ) )
 
 // Global variables
 
-  // SSA NAME3 comman variables rc, sockh, session_id
+  // dds NAME3 common variables rc, sockh, session_id
 
-  long  l_rc ;                                                   // Indicate success or failure
+  long  l_rc ;                                                  // Indicate success or failure of open / close sesions
 
-  // Only use if your application is calling the SSA-NAME3 server, Otherwise it should be set to -1
-  long  l_sockh      = -1 ;
+  long  l_sockh      = -1 ;                                     // Set to -1 as not calling the dds-NAME3 server
 
-  // Should be -1 on the ssan3_open call, if opening  a new session, a valid Session ID or any other call
+  // Should be -1 on the ddsn3_open call, if opening  a new session, a valid Session ID or any other call
   long  l_session_id = -1 ;
 
+<<<<<<< HEAD
   // Procedure run parameter
 <<<<<<< HEAD
   char *p_data_set = "" ;                                       // Parameter data set number
@@ -47,46 +52,37 @@
   char *p_outfdir  = "" ;                                       // Parameter output file directory
   char *p_logfdir  = "" ;                                       // Parameter log file directory
 =======
+=======
+  int i_idx          = 0 ;                                      // i_idx for loop variable
+
+  // Time variables
+  int i_YYYY = 0 ;                                              // Year
+  int i_MM   = 0 ;                                              // Month
+  int i_DD   = 0 ;                                              // Date
+  int i_HH24 = 0 ;                                              // Hour-24
+  int i_MI   = 0 ;                                              // Minute
+  int i_SS   = 0 ;                                              // Seconds
+
+  // Procedure run parameters
+>>>>>>> local
   char *p_data_set   = "" ;                                     // Parameter data set number
   char *p_run_time   = "" ;                                     // Parameter run time data
   char *p_population = "" ;                                     // Population name
   char *p_infdir     = "" ;                                     // Parameter input file name
   char *p_outfdir    = "" ;                                     // Parameter output file directory
   char *p_logfdir    = "" ;                                     // Parameter log file directory
+<<<<<<< HEAD
+>>>>>>> local
+=======
+  int   p_verbose    = 0 ;                                      // Parameter verbose
 >>>>>>> local
 
-  // File Open Status
-  FILE  *f_input_fopen_status ;                                 // Input file name
-  FILE  *f_output_fopen_status ;                                // Output file name
-  FILE  *f_log_fopen_status ;                                   // Log file name
-
-  // File names
-  char *c_infname  = "" ;                                       // Input file name
-  char *c_ofname   = "" ;                                       // Output file name
-  char *c_logfname = "" ;                                       // Log file name
-
-  char  c_data_set[500] ;                                       // Copy data set
-  char  c_run_time[500] ;                                       // Copy run time
-  
-  // File Directories
-  char a_input_file_directory[500] ;                            // Input file directory
-  char a_output_file_directory[500] ;                           // Output file directory
-  char a_log_file_direcory[500] ;                               // Log file directory
-
-  int i_cur_rec_len    = 0 ;                                    // Current record length
-  int i_idx            = 0 ;                                    // s_mkeKey_getKey for loop variable
-
-  char c_current_rec [ BUFSIZ ] ;                               // Current record of a file
-
-  char *c_forward_slash = "/";                                  // Forward Slash
-  char *c_back_slash    = "\\";                                 // Back Slash
-  int  i_len_of_dir     = 0;                                    // Length of the directory
+  int  i_len_of_dir       = 0 ;                                 // Length of the directory
   char c_flg_slash ;                                            // check backslash or forward slash
 
-  clock_t t ;                                                   // Clock object
-  clock_t end_time ;
-  double d_time_taken ;                                         // Time taken
+  int  i_option = 0 ;                                           // Switch case variable
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   int  option = 0 ;
   char cpy_infname[400] ;                                       // Copy of Input file name
@@ -98,20 +94,25 @@
   char a_cpy_ofname[400 ] ;                                     // Copy of output file name
   char a_cpy_logfname[400] ;                                    // Copy of log file name
 >>>>>>> local
+=======
+  char str_current_rec [ BUFSIZ ]  = {0} ;                      // Current record of a file
+  int i_cur_rec_len    = 0 ;                                    // Current record length
+>>>>>>> local
 
-  char *c_sss_rrrr = "" ;                                       // data set number and run time number
-  char a_sss_rrrr_in_file[100] ;                                // Copy of sssrrrr for making input file
-  char a_sss_rrrr_out_file[100] ;                               // Copy of sssrrrr for making output file
-  char a_sss_rrrr_log_file[100] ;                               // Copy of sssrrrr for making log file
+  // File Open Statuses
+  FILE  *f_input_fopen_status ;                                 // Input file name
+  FILE  *f_output_fopen_status ;                                // Output file name
+  FILE  *f_log_fopen_status ;                                   // Log file name
 
-  char *c_dir_in_fl_ext  = "" ;                                 // Directory with input file
-  char *c_dir_out_fl_ext = "" ;                                 // Directory with output file
-  char *c_dir_log_fl_ext = "" ;                                 // Directory with log file
+  char *str_ID        = "" ;                                    // Substring ID from the current record
+  char *str_ptr_id    = "" ;                                    // Point to the string *ID* in current record till end of the current record
 
-  char a_cpy_dir_in_fl_ext[500] ;                               // copy of Directory with input file
-  char a_cpy_dir_out_fl_ext[500] ;                              // copy of Directory with output file
-  char a_cpy_dir_log_fl_ext[500] ;                              // copy of Directory with log file
+  // File Directories
+  char a_str_input_file [500]  = {0} ;                          // Input file name
+  char a_str_output_file [500] = {0} ;                          // Output file name
+  char a_str_log_file [500]    = {0} ;                          // Log file name
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   char *ID        = "" ;                                        // Substring ID from the current record
 =======
@@ -149,18 +150,25 @@
   int   i_asterisk_start_pos = 0 ;                              // After *Id* first * position
   int   i_id_len             = 0 ;                              // Length of the *ID* i.e 4
   int   i_frt_ast_pos        = 0 ;                              // First asterisk position after *Id*
+=======
+  char a_str_dirinput_file [500]  = {0} ;                       // Input file directory with file name
+  char a_str_diroutput_file [500] = {0} ;                       // Output file directory with file name
+  char a_str_dirlog_file [500]    = {0} ;                       // Log file directory with file name
 
-  // Time variables
-  int i_YYYY = 0 ;                                              // Year
-  int i_MM   = 0 ;                                              // Month
-  int i_DD   = 0 ;                                              // Date
-  int i_HH24 = 0 ;                                              // Hour-24
-  int i_MI   = 0 ;                                              // Minute
-  int i_SS   = 0 ;                                              // Seconds
-  char a_sss_rrrr_timestamp[500] ;                              // log_file name with timestamp
+  int i_id_start_pos       = 0 ;                                // Starting position of *Id*
+  int i_pos_afr_id         = 0 ;                                // Position after *ID*
+  int i_asterisk_start_pos = 0 ;                                // After *Id* first * position
+  int i_frt_ast_pos        = 0 ;                                // First asterisk position after *Id*
+>>>>>>> local
+
+  clock_t t           = 0 ;                                     // Clock object
+  clock_t end_time    = 0 ;                                     // End time
+  double d_time_taken = 0.0 ;                                   // Time taken
 
   int i_record_read       = 0 ;                                 // No of read records counts
   int i_error_record_read = 0 ;                                 // No of error records counts
+  int i_error_record_id   = 0 ;                                 // Missing id error record count
+  int i_error_record_flds = 0 ;                                 // Error records where Person_Name Organization_Name AddressPart1 fields are missing
   int i_pn_records        = 0 ;                                 // No of Person_Name records counts
   int i_on_records        = 0 ;                                 // No of Organization records counts
   int i_addp1_records     = 0 ;                                 // No of Address Part1 records counts
@@ -180,27 +188,28 @@
   int i_addition_key      = 0 ;                                 // Addition of all keys
   int i_rec_number        = 0 ;                                 // Record counter
 
+<<<<<<< HEAD
 // To open a session to the SSA-NAME3 services
 >>>>>>> local
+=======
+  char *S_K_forward_slash = "/" ;                               // Forward Slash
+  char *S_K_back_slash    = "\\" ;                              // Back Slash
+>>>>>>> local
 
-static long s_test_ssa_open (
+  char a_str_MM[100]        = {0} ;                             // Month
+  char a_str_DD[100]        = {0} ;                             // Date
+  char a_str_HH24[100]      = {0} ;                             // Hours
+  char a_str_MI[100]        = {0} ;                             // Minutes
+  char a_str_SS[100]        = {0} ;                             // Seconds
 
-  long    l_sockh ,
-  long    *l_session_id ,
-  char    *c_sysName ,
-  char    *c_population ,
-  char    *c_controls
+  int i_multiplier          = 0 ;
 
- ) {
-
-  long    l_rc ;
-  char    c_rsp_code[SSA_SI_RSP_SZ] ;
-  char    c_ssa_msg[SSA_SI_SSA_MSG_SZ] ;
+static void s_date_time ( ) {                                   // Compute current date and time elements YYYY, MM, DD, HH24, MI and SS
 
   time_t my_time ;                                              // Time to get current time
   struct tm * timeinfo ;                                        // struct tm pointer
-  time ( &my_time ) ;                                           // call time() to get current date/time
-  timeinfo = localtime ( &my_time ) ;                           // Localtime
+  time ( &my_time) ;                                            // call time() to get current date/time
+  timeinfo = localtime ( &my_time);                             // Localtime
 
   i_YYYY = timeinfo->tm_year+1900 ;                             // Year
   i_MM   = timeinfo->tm_mon+1 ;                                 // Month
@@ -209,40 +218,91 @@ static long s_test_ssa_open (
   i_MI   = timeinfo->tm_min ;                                   // Minutes
   i_SS   = timeinfo->tm_sec ;                                   // Seconds
 
-  fprintf ( f_log_fopen_status, "\n------ EXECUTION START DATE AND TIME ------\n" ) ;
-  fprintf ( f_log_fopen_status, "%d/%d/%d %d-%d-%d \n\n", i_YYYY, i_MM, i_DD, i_HH24, i_MI, i_SS ) ;
-  fprintf ( f_log_fopen_status, "------ ssan3_open ------\n" ) ;
+  if ( i_MM < 10 ) {                                            // Ensure month is a 2 digit string
+    sprintf( a_str_MM , "0%d" , i_MM ) ;                        // Add prefix 0 if month less than 10
+  }
+  else {
+    sprintf( a_str_MM , "%d" , i_MM ) ;                         // Keep it as it is
+  }
+
+  if( i_DD < 10 ) {                                             // Ensure date is a 2 digit string
+    sprintf( a_str_DD , "0%d" , i_DD ) ;                        // Add prefix 0 if date less than 10
+  }
+  else {
+    sprintf( a_str_DD , "%d" , i_DD ) ;                         // Keep it as it is
+  }
+
+  if( i_HH24 < 10 ) {                                           // Ensure hours is a 2 digit string
+    sprintf( a_str_HH24 , "0%d" ,i_HH24 ) ;                     // Add prefix 0 if hours less than 10
+  }
+  else {
+    sprintf( a_str_HH24 , "%d" ,i_HH24 ) ;                      // Keep it as it is
+  }
+
+  if( i_MI < 10 ) {                                             // Ensure minutes is a 2 digit string
+    sprintf( a_str_MI , "0%d" ,i_MI ) ;                         // Add prefix 0 if minutes less than 10
+  }
+  else {
+    sprintf( a_str_MI , "%d" ,i_MI ) ;                          // Keep it as it is
+  }
+
+  if( i_SS < 10 ) {                                             // Ensure seconds is a 2 digit string
+    sprintf( a_str_SS , "0%d" ,i_SS ) ;                         // Add prefix 0 if seconds less than 10
+  }
+  else {
+    sprintf( a_str_SS , "%d" ,i_SS ) ;                          // Keep it as it is
+  }
+
+}
+/**********************************************************************
+ End of subroutine s_date_time                                        *
+**********************************************************************/
+
+static long s_test_dds_open (                                   // To open a session to the dds-NAME3 services
+
+  long    l_sockh ,                                             // Set to -1
+  long    *l_session_id ,                                       // Set to -1
+  char    *str_sysName ,                                        // Default
+  char    *str_population ,                                     // Country name
+  char    *str_controls                                         // Default
+
+ ) {
+
+  long    l_rc ;                                                // Indicate success or failure of open / close sesions
+  char    a_str_rsp_code[SSA_SI_RSP_SZ] ;                       // Indicates the success or failure of a call to ssa-name3
+  char    a_str_dds_msg[SSA_SI_SSA_MSG_SZ] ;                    // Error Message
+
   fprintf ( f_log_fopen_status, "Session Id       : %ld\n" , *l_session_id ) ;
-  fprintf ( f_log_fopen_status, "System           : %s\n" , c_sysName ) ;
-  fprintf ( f_log_fopen_status, "Population       : %s\n" , c_population ) ;
-  fprintf ( f_log_fopen_status, "Controls         : %s\n" , c_controls ) ;
+  fprintf ( f_log_fopen_status, "System           : %s\n" , str_sysName ) ;
+  fprintf ( f_log_fopen_status, "Population       : %s\n" , str_population ) ;
 
   l_rc =
     ssan3_open (
-      l_sockh ,
-      l_session_id ,
-      c_sysName ,
-      c_population ,
-      c_controls ,
-      c_rsp_code ,
-      SSA_SI_RSP_SZ ,
-      c_ssa_msg ,
-      SSA_SI_SSA_MSG_SZ
+      l_sockh ,                                                 // Set to -1 as not calling the dds-NAME3 server
+      l_session_id ,                                            // Set to -1
+      str_sysName ,                                             // Defines location of the population rules
+      str_population ,                                          // Country name
+      str_controls ,                                            // Default
+      a_str_rsp_code ,                                          // Indicates the success or failure of a call to ssa-name3
+      SSA_SI_RSP_SZ ,                                           // Size of respose code
+      a_str_dds_msg ,                                           // Error Message
+      SSA_SI_SSA_MSG_SZ                                         // Size of error message
     ) ;
 
   if ( l_rc < 0 ) {
     fprintf ( f_log_fopen_status, "rc               : %ld\n" , l_rc ) ;
     l_rc = 1 ;
-    goto ret ;
+    goto SUB_RETURN ;
   }
 
-  if ( c_rsp_code[0] != '0' && *l_session_id == -1 ) {
-    fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , c_rsp_code ) ;
-    fprintf ( f_log_fopen_status, "ssa_msg          : %s\n" , c_ssa_msg ) ;
+  if ( a_str_rsp_code[0] != '0' && *l_session_id == -1 ) {
+    fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , a_str_rsp_code ) ;
+    fprintf ( f_log_fopen_status, "dds_msg          : %s\n" , a_str_dds_msg ) ;
     l_rc = 1 ;
-    goto ret ;
+    goto SUB_RETURN ;
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   fprintf ( log_fopen_status, "\n") ;
   fprintf ( log_fopen_status, "Session Id       : %ld\n" , *session_id) ;
@@ -263,17 +323,22 @@ static long s_test_ssa_open (
   l_rc = 0 ;
 >>>>>>> local
   goto ret ;
+=======
+  l_rc = 0 ;
+  goto SUB_RETURN ;
+>>>>>>> local
 
-ret:
+SUB_RETURN:
   return ( l_rc ) ;
-}
 
+}
 /**********************************************************************
- End of subroutine s_test_ssa_open                                    *
+ End of subroutine s_test_dds_open                                    *
 **********************************************************************/
 
 // To build keys on names or addresses
 
+<<<<<<< HEAD
 static long s_test_ssa_get_keys (
 
 <<<<<<< HEAD
@@ -327,40 +392,68 @@ static long s_test_ssa_get_keys (
   fprintf ( f_log_fopen_status, "Key field data   : %s\n" , c_record) ;
   fprintf ( f_log_fopen_status, "Key field size   : %ld\n" , l_recordLength) ;
   fprintf ( f_log_fopen_status, "Key field encoding type : %s\n" , c_recordEncType) ;
+=======
+static long s_test_dds_get_keys (
+
+  long    l_sockh ,                                             // Set to -1 as not calling the dds-NAME3 server
+  long    *l_session_id ,                                       // Set to -1
+  char    *str_sysName ,                                        // Defines location of the population rules
+  char    *str_population ,                                     // Country name
+  char    *str_controls ,                                       // Default
+  char    *str_record ,                                         // Current record of a file
+  long    l_recordLength ,                                      // Length of the current record in a file
+  char    *str_recordEncType,                                   // Encrypted type by default is Text
+  char    *str_ky_fld_ky_lvl,                                   // Format of a key field and key level
+  char    *str_ID                                               // ID
+ ) {
+
+  int     i ;                                                   // i variable
+  long    l_rc ;                                                // Indicate success or failure of open / close sesions
+  char    *a_str_keys_array[SSA_SI_MAX_KEYS] ;                  // Key array with size
+  char    a_str_keys_data[SSA_SI_MAX_KEYS*SSA_SI_KEY_SZ] ;      // Key field data
+  char    a_str_rsp_code[SSA_SI_RSP_SZ] ;                       // Indicates the success or failure of a call to ssa-name3
+  char    a_str_dds_msg[SSA_SI_SSA_MSG_SZ] ;                    // Error Message
+  long    l_num ;                                               // Keys count
+  char    *str_KEY ;                                            // Generate Keys
+
+  for (i = 0 ; i < (int)rangeof (a_str_keys_array) ; ++i)
+    a_str_keys_array[i] = a_str_keys_data + i * SSA_SI_KEY_SZ ;
+>>>>>>> local
 
   l_num = 0 ;
   l_rc  =
     ssan3_get_keys_encoded (
-      l_sockh ,
-      l_session_id ,
-      c_sysName ,
-      c_population ,
-      c_controls ,
-      c_rsp_code ,
-      SSA_SI_RSP_SZ ,
-      c_ssa_msg ,
-      SSA_SI_SSA_MSG_SZ ,
-      c_record ,
-      l_recordLength ,
-      c_recordEncType ,
-      &l_num ,
-      a_keys_array ,
-      SSA_SI_KEY_SZ
+      l_sockh ,                                                 // Set to -1 as not calling the SSA-NAME3 server
+      l_session_id ,                                            // Set to -1
+      str_sysName ,                                             // Defines location of the population rules
+      str_population ,                                          // Country name
+      str_controls ,                                            // Default
+      a_str_rsp_code ,                                          // Indicates the success or failure of a call to ssa-name3
+      SSA_SI_RSP_SZ ,                                           // Size of respose code
+      a_str_dds_msg ,                                           // Error Message
+      SSA_SI_SSA_MSG_SZ ,                                       // Size of error message
+      str_record ,                                              // Current record of a file
+      l_recordLength ,                                          // Length of the current record in a file
+      str_recordEncType ,                                       // Encrypted type by default is Text
+      &l_num ,                                                  // Keys count
+      a_str_keys_array ,                                        // Key Array
+      SSA_SI_KEY_SZ                                             // Size of the key
     ) ;
 
   if ( l_rc < 0 ) {
-    fprintf ( f_log_fopen_status, "rc               : %ld\n" , l_rc ) ;
+    fprintf ( f_log_fopen_status, "ERROR: Return Code : %ld\n" , l_rc ) ;
     l_rc = 1 ;
-    goto ret ;
+    goto SUB_RETURN ;
   }
 
-  if ( c_rsp_code[0] != '0' ) {
-    fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , c_rsp_code ) ;
-    fprintf ( f_log_fopen_status, "ssa_msg          : %s\n" , c_ssa_msg ) ;
+  if ( a_str_rsp_code[0] != '0' ) {
+    fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , a_str_rsp_code ) ;
+    fprintf ( f_log_fopen_status, "dds_msg          : %s\n" , a_str_dds_msg ) ;
     l_rc = -1 ;
-    goto ret ;
+    goto SUB_RETURN ;
   }
 
+<<<<<<< HEAD
   fprintf ( f_log_fopen_status, "\n" ) ;
 <<<<<<< HEAD
   fprintf ( f_log_fopen_status, "Session Id       : %ld\n" , *session_id ) ;
@@ -387,94 +480,80 @@ static long s_test_ssa_get_keys (
     c_p = a_keys_array[i] ;
     fprintf ( f_output_fopen_status ,"%.*s%s%s\n" , SSA_SI_KEY_SZ , c_p ,c_ky_fld_ky_lvl,c_ID) ;
 >>>>>>> local
+=======
+  i_total_kys_written++ ;                                       // Total keys written
+  for ( i = 0 ; i < l_num ; ++i ) {
+    str_KEY = a_str_keys_array[i] ;
+    fprintf ( f_output_fopen_status ,"%.*s%s%s\n" , SSA_SI_KEY_SZ , str_KEY ,str_ky_fld_ky_lvl,str_ID) ;
+>>>>>>> local
   }
 
   l_rc = 0 ;
-  goto ret ;
+  goto SUB_RETURN ;
 
-ret:
+SUB_RETURN:
   return ( l_rc ) ;
-}
 
+}
 /**********************************************************************
- End of subroutine s_test_ssa_get_keys                                *
+ End of subroutine s_test_dds_get_keys                                *
 **********************************************************************/
 
-// To terminate an open session to SSA-NAME3
+// To terminate an open session to dds-NAME3
 
-static long s_test_ssa_close (
+static long s_test_dds_close (
 
-  long    l_sockh ,
-  long    *l_session_id ,
-  char    *c_sysName ,
-  char    *c_population ,
-  char    *c_controls
+  long    l_sockh ,                                             // Set to -1 as not calling the SSA-NAME3 server
+  long    *l_session_id ,                                       // Set to -1
+  char    *str_sysName ,                                        // Defines location of the population rules
+  char    *str_population ,                                     // Country name
+  char    *str_controls                                         // Default
  ) {
 
-  long    l_rc ;
-  char    c_rsp_code[SSA_SI_RSP_SZ] ;
-  char    c_ssa_msg[SSA_SI_SSA_MSG_SZ] ;
+  long    l_rc ;                                                // Indicate success or failure of open / close sesions
+  char    a_str_rsp_code[SSA_SI_RSP_SZ] ;                       // Indicates the success or failure of a call to ssa-name3
+  char    a_str_dds_msg[SSA_SI_SSA_MSG_SZ] ;                    // Error Message
 
-  time_t my_time ;                                              // Time to get current time
-  struct tm * timeinfo ;                                        // struct tm pointer
-  time ( &my_time ) ;                                           // call time() to get current date/time
-  timeinfo = localtime ( &my_time ) ;                           // Localtime
-
-  i_YYYY = timeinfo->tm_year+1900 ;                             // Year
-  i_MM   = timeinfo->tm_mon+1 ;                                 // Month
-  i_DD   = timeinfo->tm_mday ;                                  // Date
-  i_HH24 = timeinfo->tm_hour ;                                  // Hours
-  i_MI   = timeinfo->tm_min ;                                   // Minutes
-  i_SS   = timeinfo->tm_sec ;                                   // Seconds
-
-  fprintf ( f_log_fopen_status, "------ ssan3_close ------\n" ) ;
-  fprintf ( f_log_fopen_status, "Session Id       : %ld\n" , *l_session_id ) ;
-  fprintf ( f_log_fopen_status, "System           : %s\n" , c_sysName ) ;
-  fprintf ( f_log_fopen_status, "Population       : %s\n" , c_population ) ;
-  fprintf ( f_log_fopen_status, "Controls         : %s\n" , c_controls ) ;
+  s_date_time();
 
   l_rc = ssan3_close (
-    l_sockh ,
-    l_session_id ,
-    c_sysName ,
-    c_population ,
-    c_controls ,
-    c_rsp_code ,
-    SSA_SI_RSP_SZ ,
-    c_ssa_msg ,
-    SSA_SI_SSA_MSG_SZ
+    l_sockh ,                                                   // Set to -1 as not calling the SSA-NAME3 server
+    l_session_id ,                                              // Set to -1
+    str_sysName ,                                               // Defines location of the population rules
+    str_population ,                                            // Country name
+    str_controls ,                                              // Default
+    a_str_rsp_code ,                                            // Indicates the success or failure of a call to ssa-name3
+    SSA_SI_RSP_SZ ,                                             // Size of respose code
+    a_str_dds_msg ,                                             // Error Message
+    SSA_SI_SSA_MSG_SZ                                           // Size of error message
   ) ;
 
   if (l_rc < 0) {
     fprintf ( f_log_fopen_status, "rc               : %ld\n" , l_rc) ;
     l_rc = 1 ;
-    goto ret ;
+    goto SUB_RETURN ;
   }
 
-  if ( c_rsp_code[0] != '0' ) {
-    fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , c_rsp_code ) ;
-    fprintf ( f_log_fopen_status, "ssa_msg          : %s\n" , c_ssa_msg ) ;
+  if ( a_str_rsp_code[0] != '0' ) {
+    fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , a_str_rsp_code ) ;
+    fprintf ( f_log_fopen_status, "dds_msg          : %s\n" , a_str_dds_msg ) ;
     l_rc = 1 ;
-    goto ret ;
+    goto SUB_RETURN ;
   }
 
-  fprintf ( f_log_fopen_status, "\n" ) ;
-  fprintf ( f_log_fopen_status, "Session Id       : %ld\n" , *l_session_id ) ;
-  fprintf ( f_log_fopen_status, "rsp_code         : %s\n" , c_rsp_code ) ;
-  fprintf ( f_log_fopen_status, "ssa_msg          : %s\n" , c_ssa_msg ) ;
-  fprintf ( f_log_fopen_status, "\n------ Execution END DATE AND TIME ------\n" ) ;
-  fprintf ( f_log_fopen_status, "%d/%d/%d %d-%d-%d \n", i_YYYY, i_MM, i_DD, i_HH24, i_MI, i_SS ) ;
+  fprintf ( f_log_fopen_status, "Ended %d-%s-%s %s:%s:%s ", i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS ) ;
   l_rc = 0 ;
-  goto ret ;
+  goto SUB_RETURN ;
 
-ret:
+SUB_RETURN:
   return ( l_rc ) ;
-}
 
+}
 /**********************************************************************
- End of subroutine s_test_ssa_close                                   *
+ End of subroutine s_test_dds_close                                   *
 **********************************************************************/
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 static void s_doExit ( char *func) {
   printf ("Error occurred in '%s'\n" , func) ;
@@ -487,7 +566,15 @@ static void s_doExit ( char *func ) {
   exit ( EXIT_FAILURE ) ;
 >>>>>>> local
 }
+=======
+// Error occurred in subroutines s_test_dds_open, s_test_dds_get_keys, s_test_dds_close
 
+static void s_doExit ( char *func ) {
+  printf ( "Error occurred in '%s'\n" , func ) ;
+  exit ( 1 ) ;
+>>>>>>> local
+
+}
 /**********************************************************************
  End of subroutine s_doExit                                           *
 **********************************************************************/
@@ -497,11 +584,12 @@ static void s_mkeKey_open () {
 =======
 >>>>>>> local
 
-// s_test_ssa_open subroutine called in s_mkeKey_open subroutine
+// s_test_dds_open subroutine called in s_mkeKey_open subroutine
 
 static void s_mkeKey_open ( ) {
     // Establish a session.
     l_rc =
+<<<<<<< HEAD
     s_test_ssa_open (
       l_sockh ,
       &l_session_id ,
@@ -516,40 +604,51 @@ static void s_mkeKey_open ( ) {
 =======
       "" 
 =======
+=======
+    s_test_dds_open (
+      l_sockh ,                                                 // Set to -1 as not calling the SSA-NAME3 server
+      &l_session_id ,                                           // Set to -1
+      "default" ,                                               // Defines location of the population rules
+      p_population ,                                            // Country Name
+>>>>>>> local
       ""
 >>>>>>> local
     ) ;
 
     if ( 0 != l_rc )
+<<<<<<< HEAD
       s_doExit ( "s_test_ssa_open" ) ;
+>>>>>>> local
+=======
+      s_doExit ( "s_test_dds_open" ) ;
 >>>>>>> local
 
 }
-
 /**********************************************************************
  End of subroutine s_mkeKey_open                                      *
 **********************************************************************/
 
-// s_test_ssa_get_keys subroutine called in s_mkeKey_getKey subroutine
+// s_test_dds_get_keys subroutine called in s_mkeKey_getKey subroutine
 
 static void s_mkeKey_getKey (
-  char *Limited ,
-  char *Standard ,
-  char *Extended ,
-  char *ky_fld_ky_lvl1 ,
-  char *ky_fld_ky_lvl2 ,
-  char *ky_fld_ky_lvl3 ,
-  char *c_ID
+  char *Limited ,                                               // Limited KEY LEVEL
+  char *Standard ,                                              // Standard KEY LEVEL
+  char *Extended ,                                              // Extended KEY LEVEL
+  char *ky_fld_ky_lvl1 ,                                        // Format of KEY FIELD AND KEY LEVEL
+  char *ky_fld_ky_lvl2 ,                                        // Format of KEY FIELD AND KEY LEVEL
+  char *ky_fld_ky_lvl3 ,                                        // Format of KEY FIELD AND KEY LEVEL
+  char *str_ID                                                  // ID
  ) {
 
   // Key levels : Limited , Standard , Extended
   char *key_level [ 3 ]     = { Limited , Standard , Extended } ;
 
-  // c_controls
+  // Controls
   char *ky_fld_ky_lvl [ 3 ] = { ky_fld_ky_lvl1 , ky_fld_ky_lvl2 , ky_fld_ky_lvl3 } ;
 
   for( i_idx = 0 ; i_idx <= 2 ; i_idx++ ) {
     l_rc =
+<<<<<<< HEAD
       s_test_ssa_get_keys (
         l_sockh ,
         &l_session_id ,
@@ -573,6 +672,19 @@ static void s_mkeKey_getKey (
         "TEXT",
         ky_fld_ky_lvl [ i_idx ] ,
         c_ID
+=======
+      s_test_dds_get_keys (
+        l_sockh ,                                               // Set to -1 as not calling the SSA-NAME3 server
+        &l_session_id ,                                         // Set to -1
+        "default" ,                                             // System name
+        p_population ,                                          // Country Name
+        key_level[i_idx] ,                                      // Key level
+        str_current_rec ,                                       // Current record
+        i_cur_rec_len ,                                         // Length of a current record
+        "TEXT",                                                 // Encrypted type by default is Text
+        ky_fld_ky_lvl [ i_idx ] ,                               // Format of KEY FIELD and KEY LEVEL
+        str_ID                                                  // ID
+>>>>>>> local
     ) ;
 <<<<<<< HEAD
     
@@ -581,25 +693,28 @@ static void s_mkeKey_getKey (
 =======
 
     if ( 0 != l_rc )
+<<<<<<< HEAD
 >>>>>>> local
       s_doExit ( "s_test_ssa_get_keys" ) ;
+=======
+      s_doExit ( "s_test_dds_get_keys" ) ;
+>>>>>>> local
   }
 
 }
-
 /**********************************************************************
  End of subroutine s_mkeKey_getKey                                    *
 **********************************************************************/
 
-// s_test_ssa_close subroutine called in s_mkeKey_close subroutine
+// s_test_dds_close subroutine called in s_mkeKey_close subroutine
 
 static void s_mkeKey_close ( ) {
   l_rc =
-    s_test_ssa_close (
-      l_sockh ,
-      &l_session_id ,
-      "default" ,
-      p_population ,
+    s_test_dds_close (
+      l_sockh ,                                                 // Set to -1 as not calling the SSA-NAME3 server
+      &l_session_id ,                                           // Set to -1
+      "default" ,                                               // System name
+      p_population ,                                            // Country name
       ""
   ) ;
 
@@ -611,11 +726,16 @@ static void s_mkeKey_close ( ) {
   if ( 0 != rc )
 =======
   if ( 0 != l_rc )
+<<<<<<< HEAD
 >>>>>>> local
     s_doExit ( "s_test_ssa_close" ) ;
 >>>>>>> local
 }
+=======
+    s_doExit ( "s_test_dds_close" ) ;
+>>>>>>> local
 
+}
 /**********************************************************************
  End of subroutine s_mkeKey_close                                     *
 **********************************************************************/
@@ -627,10 +747,18 @@ void s_print_usage() {
 // This subroutine is default parameter of getopt in s_getParameter
 
 void s_print_usage( ) {
+<<<<<<< HEAD
     printf( "MkeKey -d 101 -r 1001 -p india -i E:/SurendraK/Work/SSAProcs/Input/ -o E:/SurendraK/Work/SSAProcs/Output/ -l E:/SurendraK/Work/SSAProcs/Log/" ) ;
 >>>>>>> local
 }
+=======
+  printf(
+    "MkeKey -d <data_set> -r <run> -p <population> -i <input_file_directory> -o <output_file_directory> -l <log_file_directory> -v <Verbose>\n\nExample:\n\n" ) ;
+  printf(
+    "MkeKey -d 101 -r 1001 -p india -i E:/SurendraK/Work/DeDupeProcs/Input/ -o E:/SurendraK/Work/DeDupeProcs/Output/ -l E:/SurendraK/Work/SSAProcs/Log/ -v 10000\n" ) ;
+>>>>>>> local
 
+}
 /**********************************************************************
  End of subroutine s_print_usage                                      *
 **********************************************************************/
@@ -638,6 +766,7 @@ void s_print_usage( ) {
 // This subroutine takes run parameters.
 
 static void s_getParameter( int argc , char *argv[] ) {
+<<<<<<< HEAD
 
   time_t my_time ;                                              // Time to get current time
   struct tm * timeinfo ;                                        // struct tm pointer
@@ -675,46 +804,56 @@ static void s_getParameter( int argc , char *argv[] ) {
     switch (i_option) {
 >>>>>>> local
       case 'd' :
+=======
+  s_date_time();
+  while ( ( i_option = getopt ( argc , argv , "d:r:p:i:o:l:v:" ) ) != -1 ) {
+    switch (i_option) {
+      case 'd' :                                                // Data set parameter
+>>>>>>> local
         p_data_set   = optarg ;
         break ;
-      case 'r' :
+      case 'r' :                                                // Run time parameter
         p_run_time   = optarg ;
         break ;
-      case 'p' :
+      case 'p' :                                                // Population parameter
         p_population = optarg ;
         break ;
-      case 'i' :
+      case 'i' :                                                // Input file directory parameter
         p_infdir     = optarg ;
         break ;
-      case 'o' :
+      case 'o' :                                                // Output file directory parameter
         p_outfdir    = optarg ;
         break ;
-      case 'l' :
+      case 'l' :                                                // Log file directory parameter
         p_logfdir    = optarg ;
         break ;
+      case 'v' :                                                // Verbose
+        p_verbose    = atoi( optarg ) ;
+        break ;
       default:
-        s_print_usage ( ) ;
-        exit ( EXIT_FAILURE ) ;
+        s_print_usage ( ) ;                                     // Default parameter
+        exit ( 1 ) ;
     }
-
   }
 
+  i_multiplier = p_verbose ;                                    // Default records no
 // Check Input file directory ends with backslash or forward , if not add it
   if(strchr(p_infdir,'/')) {
       i_len_of_dir = strlen(p_infdir) ;                         // Length of input file directory
       c_flg_slash = p_infdir[i_len_of_dir-1] ;                  // Last character of a String is / forward slash
 
-      if(c_flg_slash != c_forward_slash[0]) {
-        p_infdir = strcat(p_infdir,c_forward_slash) ;
+
+      if(c_flg_slash != S_K_forward_slash[0]) {
+        p_infdir = strcat(p_infdir,S_K_forward_slash) ;
       }
   }
 
   if(strchr(p_infdir,'\\')) {
       i_len_of_dir = strlen(p_infdir) ;                         // Length of output file directory
-      c_flg_slash = p_infdir[i_len_of_dir-1] ;                  // Last character of a String is / backslash
+      c_flg_slash  = p_infdir[i_len_of_dir-1] ;                 // Last character of a String is / backslash
 
-      if(c_flg_slash != c_back_slash[0]) {
-        p_infdir = strcat(p_infdir,c_back_slash);
+      if(c_flg_slash != S_K_back_slash[0]) {
+        p_infdir = strcat(p_infdir,S_K_back_slash);
       }
   }
 
@@ -722,9 +861,8 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_outfdir,'/')) {
       i_len_of_dir = strlen(p_outfdir) ;                        // Length of log file directory
       c_flg_slash = p_outfdir[i_len_of_dir-1] ;                 // Last character of a String is / forward slash
-
-      if(c_flg_slash != c_forward_slash[0]) {
-        p_outfdir = strcat(p_outfdir,c_forward_slash) ;
+      if( c_flg_slash != S_K_forward_slash[0]) {
+        p_outfdir = strcat(p_outfdir,S_K_forward_slash) ;
       }
   }
 
@@ -732,8 +870,8 @@ static void s_getParameter( int argc , char *argv[] ) {
       i_len_of_dir = strlen(p_outfdir) ;                        // Length of input file directory
       c_flg_slash = p_outfdir[i_len_of_dir-1] ;                 // Last character of a String is / back slash
 
-      if(c_flg_slash != c_back_slash[0]) {
-        p_outfdir = strcat(p_outfdir,c_back_slash);
+      if(c_flg_slash != S_K_back_slash[0]) {
+        p_outfdir = strcat(p_outfdir,S_K_back_slash);
       }
   }
 
@@ -742,8 +880,8 @@ static void s_getParameter( int argc , char *argv[] ) {
       i_len_of_dir = strlen(p_logfdir) ;                        // Length of input file directory
       c_flg_slash = p_logfdir[i_len_of_dir-1] ;                 // Last character of a String is / forward slash
 
-      if(c_flg_slash != c_forward_slash[0]) {
-        p_logfdir = strcat(p_logfdir,c_forward_slash) ;
+      if(c_flg_slash != S_K_forward_slash[0]) {
+        p_logfdir = strcat(p_logfdir,S_K_forward_slash) ;
       }
   }
 
@@ -751,11 +889,12 @@ static void s_getParameter( int argc , char *argv[] ) {
       i_len_of_dir = strlen(p_logfdir) ;                        // Length of input file directory
       c_flg_slash = p_logfdir[i_len_of_dir-1] ;                 // Last character of a String is / back slash
 
-      if(c_flg_slash != c_back_slash[0]) {
-        p_logfdir = strcat(p_logfdir,c_back_slash) ;
+      if(c_flg_slash != S_K_back_slash[0]) {
+        p_logfdir = strcat(p_logfdir,S_K_back_slash) ;
       }
   }
 
+<<<<<<< HEAD
   // Copy all directory name into different variables
   strcpy( a_input_file_directory ,p_infdir ) ;
   strcpy( a_output_file_directory ,p_outfdir ) ;
@@ -794,9 +933,17 @@ static void s_getParameter( int argc , char *argv[] ) {
   // Concatenate Directory path with log file name
   c_dir_log_fl_ext = strcat( a_log_file_direcory , a_cpy_logfname );
   strcpy( a_cpy_dir_log_fl_ext , c_dir_log_fl_ext ) ;
+=======
+  sprintf( a_str_input_file , "%s%s.tag" , p_data_set , p_run_time );
+  sprintf( a_str_output_file , "%s%s.oke" , p_data_set , p_run_time );
+  sprintf( a_str_log_file , "%s%s_MkeTag_%d-%s-%s-%s-%s-%s.log", p_data_set, p_run_time, i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS );
+>>>>>>> local
 
+  sprintf( a_str_dirinput_file , "%s%s" , p_infdir , a_str_input_file );
+  sprintf( a_str_diroutput_file , "%s%s" , p_outfdir , a_str_output_file );
+  sprintf( a_str_dirlog_file , "%s%s" , p_logfdir , a_str_log_file );
 
-  f_input_fopen_status   = fopen ( a_cpy_dir_in_fl_ext , "r" ) ; // Open and read input file
+  f_input_fopen_status   = fopen ( a_str_dirinput_file , "r" ) ; // Open and read input file
 
 <<<<<<< HEAD
   
@@ -820,83 +967,90 @@ static void s_getParameter( int argc , char *argv[] ) {
 >>>>>>> local
   // If Input file contains error output and log file will not create.
   if ( ! f_input_fopen_status ) {
+<<<<<<< HEAD
     printf ( "Could not open file %s for input.\n" , f_input_fopen_status ) ;   // Error message while opening file
+>>>>>>> local
+=======
+    printf ( "Could not open file %s for input.\n" , f_input_fopen_status ) ;    // Error message while opening file
 >>>>>>> local
     exit(1) ;
   }
   else {
-    f_output_fopen_status  = fopen ( a_cpy_dir_out_fl_ext , "w" ) ;              // Open and write output file
-    f_log_fopen_status     = fopen ( a_cpy_dir_log_fl_ext , "w" ) ;             // Open and write log file
+    f_output_fopen_status  = fopen ( a_str_diroutput_file , "w" ) ;              // Open and write output file
+    f_log_fopen_status     = fopen ( a_str_dirlog_file , "w" ) ;                 // Open and write log file
   }
 
   if ( ! f_output_fopen_status ) {
-    printf ( "Could not open file %s for output\n" ,f_output_fopen_status ) ;   // Error message while opening file
+    printf ( "Could not open file %s for output\n" ,f_output_fopen_status ) ;    // Error message while opening file
     exit(1) ;
   }
 
   if ( ! f_log_fopen_status ) {
-    printf ( "Could not open file %s for error\n" ,f_log_fopen_status  ) ;      // Error message while opening file
+    printf ( "Could not open file %s for error\n" ,f_log_fopen_status  ) ;       // Error message while opening file
     exit(1) ;
   }
-}
 
+  fprintf ( f_log_fopen_status, "------ MkeKey EXECUTION START DATE AND TIME ------\n" ) ;
+  fprintf ( f_log_fopen_status, "%d-%s-%s %s:%s:%s \n\n", i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS ) ;
+
+}
 /**********************************************************************
  End of subroutine s_getParameter                                     *
 **********************************************************************/
 
 int main ( int argc , char *argv[] ) {
-  int i_records = 100000 ;                                      // Default records no
-  i_id_len = strlen( c_search ) ;                               // Length of search string
-  s_getParameter ( argc , argv ) ;                              // Subroutine to get parameter
+
   t = clock( ) ;                                                // Start time
+  s_getParameter ( argc , argv ) ;                              // Subroutine to get parameter
 
   fprintf ( f_log_fopen_status, "------ Run Parameters ------" ) ;
-  fprintf ( f_log_fopen_status, "\nData set no           : %s", c_data_set ) ;
-  fprintf ( f_log_fopen_status, "\nRun time number       : %s", c_run_time ) ;
+  fprintf ( f_log_fopen_status, "\nData set no           : %s", p_data_set ) ;
+  fprintf ( f_log_fopen_status, "\nRun time number       : %s", p_run_time ) ;
   fprintf ( f_log_fopen_status, "\nPopulation            : %s", p_population) ;
   fprintf ( f_log_fopen_status, "\nInput File Directory  : %s", p_infdir ) ;
   fprintf ( f_log_fopen_status, "\nOutput File Directory : %s", p_outfdir ) ;
-  fprintf ( f_log_fopen_status, "\nLog File Directory    : %s\n", p_logfdir ) ;
+  fprintf ( f_log_fopen_status, "\nLog File Directory    : %s", p_logfdir ) ;
+  fprintf ( f_log_fopen_status, "\nVerbose               : %s\n",( p_verbose == 0 ? "NO" : "YES" ) ) ;
 
   fprintf ( f_log_fopen_status, "\n------ File Names ------" ) ;
-  fprintf ( f_log_fopen_status, "\nInput file name       : %s",a_cpy_infname ) ;
-  fprintf ( f_log_fopen_status, "\nOutput file name      : %s",a_cpy_ofname ) ;
-  fprintf ( f_log_fopen_status, "\nLog file name         : %s\n",a_cpy_logfname ) ;
+  fprintf ( f_log_fopen_status, "\nInput file name       : %s", a_str_input_file ) ;
+  fprintf ( f_log_fopen_status, "\nOutput file name      : %s", a_str_output_file ) ;
+  fprintf ( f_log_fopen_status, "\nLog file name         : %s\n", a_str_log_file ) ;
 
   s_mkeKey_open( ) ;                                            // subroutine to open ssa connection
 
   // Call ssan3_get_keys
 
   // Read a input file line by line
-  while( fgets ( c_current_rec , sizeof ( c_current_rec ) , f_input_fopen_status ) ) {
+  while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
     ++i_rec_number ;
 
     // Calculate the length of the current record
-    i_cur_rec_len = strlen( c_current_rec ) ;
-    if ( i_cur_rec_len > 0 && c_current_rec[i_cur_rec_len-1] == '\n' ) {
-      c_current_rec[--i_cur_rec_len] = '\0' ;
+    i_cur_rec_len = strlen( str_current_rec ) ;
+    if ( i_cur_rec_len > 0 && str_current_rec[i_cur_rec_len-1] == '\n' ) {
+      str_current_rec[--i_cur_rec_len] = '\0' ;
     }
 
-    if ( strstr ( c_current_rec , c_search ) != NULL ) {
+    if ( strstr ( str_current_rec ,"*Id*" ) != NULL ) {
 
       i_record_read++ ;                                         // No of records read
 
       // Display so many records in so many seconds to execute
-      if ( i_rec_number == i_records ) {
+      if ( i_rec_number == i_multiplier ) {
        end_time = clock( ) - t ;                                // End time
        d_time_taken = ( ( double )end_time )/CLOCKS_PER_SEC ;   // In seconds
-       printf( "\nDisplay %d records in %f seconds to execute \n", i_records , d_time_taken ) ;      // Print time
+       printf( "\nDisplay %d records in %f seconds to execute \n", i_multiplier , d_time_taken ) ;      // Print time
 
-       i_records = i_records * 2 ;                              // 10 lakh records multiply by 2
+       i_multiplier = i_multiplier * 2 ;                        // 10 lakh records multiply by 2
       }
 
       // To find Id
-      c_ptr_id       = strstr ( c_current_rec , c_search ) ;    // Search *Id* in current record capture string from *Id* to till end of the string
-      i_id_start_pos = (c_ptr_id - c_current_rec) ;             // Starting position of *Id*
-      i_pos_afr_id   = ( i_id_start_pos + i_id_len ) ;          // Position after *Id*
+      str_ptr_id       = strstr ( str_current_rec , "*Id*" ) ;  // Search *Id* in current record capture string from *Id* to till end of the string
+      i_id_start_pos = ( strlen(str_ptr_id) - i_cur_rec_len ) ; // Starting position of *Id*
+      i_pos_afr_id   = ( i_id_start_pos + 4 ) ;                 // Position after *Id*
 
       for( i_idx = i_pos_afr_id ; i_idx < i_cur_rec_len; i_idx++ ) {
-        if( c_current_rec[i_idx] == c_character ) {
+        if( str_current_rec[i_idx] == '*' ) {
             i_asterisk_start_pos = i_idx ;                      // After *Id* first * position
             break ;
         }
@@ -904,28 +1058,23 @@ int main ( int argc , char *argv[] ) {
 
       i_frt_ast_pos = ( i_asterisk_start_pos - i_pos_afr_id ) ; // First asterisk position after *Id*
 
-      strncpy( c_ID ,c_current_rec + i_pos_afr_id, i_frt_ast_pos ) ;   // Substring Id
+      strncpy( str_ID ,str_current_rec + i_pos_afr_id, i_frt_ast_pos ) ;        // Substring Id
+      str_ID[i_frt_ast_pos] = '\0';
+
+
 
       // IF Person Name , Organization Name and Address_Part1 are empty throw an error message
-      if ( strstr ( c_current_rec , "Person_Name" ) == NULL &&
-           strstr ( c_current_rec , "Organization_Name" ) == NULL &&
-           strstr ( c_current_rec , "Address_Part1" ) == NULL ) {
-         i_record_read-- ;                                      // Deduct 1 from record read
-         i_error_record_read++ ;                                // Error record count
-         fprintf ( f_log_fopen_status, "\n\n------ Error records ------\n") ;
+      if ( strstr ( str_current_rec , "Person_Name" ) == NULL &&
+           strstr ( str_current_rec , "Organization_Name" ) == NULL &&
+           strstr ( str_current_rec , "Address_Part1" ) == NULL ) {
+         i_error_record_read ++ ;                               // Error record count
+         i_error_record_flds ++ ;                               // Missing Person Name, Organization name, Address Part 1 fields records count
          fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Person Name, Organization name, Address Part 1 fields" ) ;
-         fprintf ( f_log_fopen_status, "\nRecord    : %s\n", c_current_rec ) ;
-         fprintf ( f_log_fopen_status, "---------------------------\n\n") ;
-
-         printf ( "\n\n------ Error records ------\n") ;
-         printf ( "\nRecord no :%d Error Message :%s", i_rec_number ,"Missing Person Name, Organization name, Address Part 1 fields" ) ;
-         printf ( "\nRecord    :%s\n", c_current_rec ) ;
-         printf ( "---------------------------\n\n") ;
-
+         fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
       }
 
       // Check Person_Name is inside the current record
-      if ( strstr ( c_current_rec , "Person_Name" ) != NULL ) {
+      if ( strstr ( str_current_rec , "Person_Name" ) != NULL ) {
         char *PL = "FIELD=Person_Name KEY_LEVEL=Limited" ;
         char *PS = "FIELD=Person_Name KEY_LEVEL=Standard" ;
         char *PE = "FIELD=Person_Name KEY_LEVEL=Extended" ;
@@ -938,14 +1087,13 @@ int main ( int argc , char *argv[] ) {
         i_PM_ky++ ;                                             // No of records count that contains Person_Name key Limited
         i_PS_ky++ ;                                             // No of records count that contains Person_Name key Standard
         i_PX_ky++ ;                                             // No of records count that contains Person_Name key Extended
-        i_total_kys_written = i_total_kys_written + 3 ;
 
         // Call s_mkeKey_getKey
-        s_mkeKey_getKey( PL , PS , PE , abv_PLim , abv_PStand , abv_PExt ,c_ID ) ;
+        s_mkeKey_getKey( PL , PS , PE , abv_PLim , abv_PStand , abv_PExt ,str_ID ) ;
       }
 
       // Check Organization_Name is inside the current record
-      if ( strstr ( c_current_rec , "Organization_Name" ) != NULL ) {
+      if ( strstr ( str_current_rec , "Organization_Name" ) != NULL ) {
         char *OL = "FIELD=Organization_Name KEY_LEVEL=Limited" ;
         char *OS = "FIELD=Organization_Name KEY_LEVEL=Standard" ;
         char *OE = "FIELD=Organization_Name KEY_LEVEL=Extended" ;
@@ -958,14 +1106,13 @@ int main ( int argc , char *argv[] ) {
         i_OM_ky++ ;                                             // No of records count that contains Organization_Name key Limited
         i_OS_ky++ ;                                             // No of records count that contains Organization_Name key Standard
         i_OX_ky++ ;                                             // No of records count that contains Organization_Name key Extended
-        i_total_kys_written = i_total_kys_written + 3 ;
 
         // Call s_mkeKey_getKey
-        s_mkeKey_getKey( OL , OS , OE , abv_OLim , abv_OStand , abv_OExt, c_ID ) ;
+        s_mkeKey_getKey( OL , OS , OE , abv_OLim , abv_OStand , abv_OExt, str_ID ) ;
       }
 
       // Check Address_Part1 is inside the current record
-      if ( strstr ( c_current_rec , "Address_Part1" ) != NULL ) {
+      if ( strstr ( str_current_rec , "Address_Part1" ) != NULL ) {
         char *AL = "FIELD=Address_Part1 KEY_LEVEL=Limited" ;
         char *AS = "FIELD=Address_Part1 KEY_LEVEL=Standard" ;
         char *AE = "FIELD=Address_Part1 KEY_LEVEL=Extended" ;
@@ -978,25 +1125,18 @@ int main ( int argc , char *argv[] ) {
         i_AM_ky++ ;                                             // No of records count that contains Address_Part1 key Limited
         i_AS_ky++ ;                                             // No of records count that contains Address_Part1 key Standard
         i_AX_ky++ ;                                             // No of records count that contains Address_Part1 key Extended
-        i_total_kys_written = i_total_kys_written + 3 ;         // Total keys written
 
         // Call s_mkeKey_getKey
-        s_mkeKey_getKey( AL , AS , AE , abv_ALim , abv_AStand , abv_AExt ,c_ID ) ;
+        s_mkeKey_getKey( AL , AS , AE , abv_ALim , abv_AStand , abv_AExt ,str_ID ) ;
       }
     }
     else {
-
         // If Id field is missing display error message
-        i_error_record_read++ ;                                 // Error record count
-        fprintf ( f_log_fopen_status, "\n\n------ Error records ------\n") ;
-        fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
-        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", c_current_rec ) ;
-        fprintf ( f_log_fopen_status, "---------------------------\n") ;
+      i_error_record_read ++ ;                                 // Error record count
+      i_error_record_id ++ ;                                   // Missing id
 
-        printf ( "\n\n------ Error record ------\n") ;
-        printf ( "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
-        printf ( "\nRecord    : %s\n", c_current_rec ) ;
-        printf ( "---------------------------\n") ;
+      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
+      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
     }
   }
 
@@ -1004,29 +1144,30 @@ int main ( int argc , char *argv[] ) {
  End of While loop                                                    *
 **********************************************************************/
 
-  s_mkeKey_close( ) ;                                           // subroutine to close ssa connection
-
-  fprintf ( f_log_fopen_status, "\n-----------------------------------------\n" ) ;
+  fprintf ( f_log_fopen_status, "\n--------------Run summary--------------\n" ) ;
   printf ( "\nNo of records in a file :%d\n", i_rec_number ) ;
-  fprintf ( f_log_fopen_status, "\nRecords read                      : %d", i_record_read ) ;
-  fprintf ( f_log_fopen_status, "\nError records                     : %d", i_error_record_read ) ;
-  fprintf ( f_log_fopen_status, "\nPerson_Name records               : %d", i_pn_records ) ;
-  fprintf ( f_log_fopen_status, "\nOrganization_Name records         : %d", i_on_records ) ;
-  fprintf ( f_log_fopen_status, "\nAddress_Part1 records             : %d\n", i_addp1_records ) ;
+  fprintf ( f_log_fopen_status, "Tagged Records read              : %d", i_record_read ) ;
+  fprintf ( f_log_fopen_status, "\nError records                 : %d", i_error_record_read ) ;
+  fprintf ( f_log_fopen_status, "\n  - Missing Id                : %d", i_error_record_read ) ;
+  fprintf ( f_log_fopen_status, "\n  - Missing all 3 key fields  : %d\n", i_error_record_read ) ;
 
-  fprintf ( f_log_fopen_status, "\nPerson_Name Limited keys          : %d", i_PM_ky ) ;
-  fprintf ( f_log_fopen_status, "\nPerson_Name Standard keys         : %d",  i_PS_ky ) ;
-  fprintf ( f_log_fopen_status, "\nPerson_Name Extended keys         : %d\n",  i_PX_ky ) ;
+  fprintf ( f_log_fopen_status, "\nRecords with Person_Name       : %d", i_pn_records ) ;
+  fprintf ( f_log_fopen_status, "\nRecords with Organization_Name : %d", i_on_records ) ;
+  fprintf ( f_log_fopen_status, "\nRecords with Address_Part1     : %d\n", i_addp1_records ) ;
 
-  fprintf ( f_log_fopen_status, "\nOrganization_Name Limited keys    : %d", i_OM_ky ) ;
-  fprintf ( f_log_fopen_status, "\nOrganization_Name Standard keys   : %d", i_OS_ky ) ;
-  fprintf ( f_log_fopen_status, "\nOrganization_Name Extended keys   : %d\n", i_OX_ky ) ;
+  fprintf ( f_log_fopen_status, "\nPerson_Name Limited keys  : %d", i_PM_ky ) ;
+  fprintf ( f_log_fopen_status, "\nPerson_Name Standard keys : %d",  i_PS_ky ) ;
+  fprintf ( f_log_fopen_status, "\nPerson_Name Extended keys : %d\n",  i_PX_ky ) ;
 
-  fprintf ( f_log_fopen_status, "\nAddress_Part1 Limited keys        : %d", i_AM_ky ) ;
-  fprintf ( f_log_fopen_status, "\nAddress_Part1 Standard keys       : %d", i_AS_ky ) ;
-  fprintf ( f_log_fopen_status, "\nAddress_Part1 Extended keys       : %d\n", i_AX_ky ) ;
+  fprintf ( f_log_fopen_status, "\nOrganization_Name Limited keys  : %d", i_OM_ky ) ;
+  fprintf ( f_log_fopen_status, "\nOrganization_Name Standard keys : %d", i_OS_ky ) ;
+  fprintf ( f_log_fopen_status, "\nOrganization_Name Extended keys : %d\n", i_OX_ky ) ;
 
-  fprintf ( f_log_fopen_status, "\nTotal keys written                : %d\n", i_total_kys_written ) ;
+  fprintf ( f_log_fopen_status, "\nAddress_Part1 Limited keys  : %d", i_AM_ky ) ;
+  fprintf ( f_log_fopen_status, "\nAddress_Part1 Standard keys : %d", i_AS_ky ) ;
+  fprintf ( f_log_fopen_status, "\nAddress_Part1 Extended keys : %d\n", i_AX_ky ) ;
+
+  fprintf ( f_log_fopen_status, "\nTotal keys written          : %d\n", i_total_kys_written ) ;
 
   // Addition of all the keys and check it is match with total keys
   i_addition_key = i_PM_ky + i_PS_ky + i_PX_ky + i_OM_ky + i_OS_ky + i_OX_ky + i_AM_ky + i_AS_ky + i_AX_ky ;
@@ -1035,14 +1176,19 @@ int main ( int argc , char *argv[] ) {
     fprintf ( f_log_fopen_status, "\nMissmatch in counts\n") ;
   }
 
+  s_mkeKey_close( ) ;                                           // subroutine to close ssa connection
+
   end_time = clock( ) - t ;                                     // End time
   d_time_taken = ( ( double )end_time )/CLOCKS_PER_SEC ;        // In seconds
+
   printf( "\nProcessed %d tagged data records in %f seconds to execute \n" , i_rec_number , d_time_taken ) ;    // Print time
-  fprintf( f_log_fopen_status , "\nProcessed %d tagged data records in %f seconds to execute \n", i_rec_number ,d_time_taken ) ;    // Print time
+
+  fprintf( f_log_fopen_status , "- %f seconds to execute \n", d_time_taken ) ;    // Print time
 
   fclose ( f_input_fopen_status ) ;                             // input_fopen_status
   fclose ( f_output_fopen_status ) ;                            // Close output_fopen_status
   fclose ( f_log_fopen_status ) ;                               // Close log_fopen_status
+
 
   return (0) ;
 }
@@ -1060,38 +1206,46 @@ int main ( int argc , char *argv[] ) {
 
     3 Warnings
 
-    4 Technical
+    4 Format of Output file
 
+    5 Format of log files
+
+<<<<<<< HEAD
 <<<<<<< HEAD
           s_mkeKey_getKey( OL , OS , OE , abv_OLim , abv_OStand , abv_OExt,ID ) ;
         }
 =======
       4.1 Run Parameters
 >>>>>>> local
+=======
+    6 Technical
+      6.1 Variables used
+>>>>>>> local
 
-      4.2 Compile Procedure
+      6.2 Run Parameters
 
-      4.3 Execute procedure in different way
+      6.3 Compile Procedure
 
-      4.4 Execution Start and End date and time
+      6.4 Execute procedure in different way
 
-      4.5 Subroutines
+      6.5 Execution Start and End date and time
 
-          4.5.1 Called by
+      6.6 Subroutines
 
-          4.5.2 Calling
+          6.6.1 Called by
 
-          4.5.3 Subroutine Structure
+          6.6.2 Calling
 
-    5 Include Header
+          6.6.3 Subroutine Structure
+
+    7 Include Header
 
   Make Key
 
-    It creates Key file sssrrrr.oke from tagged file sssrrrr.tag
-    This procedure will create keys from tagged data.
-    Tagged data contains Id, Person_Name, Organization_Name,
-    Address_Part1, Postal_Area and others.
-    Key will generate based on the KEY_LEVEL and KEY_FIELDS.
+    Generates (Search) Keys from Tagged data for Key Levels
+    Limited (M), Standard (S) and Extended (X) for
+    Person_Name, Organisation_Name and Address_Part1 as
+    found in the Tagged data.
 
       KEY_LEVEL                     KEY_Field
       ---------                     ---------
@@ -1110,96 +1264,13 @@ int main ( int argc , char *argv[] ) {
     If Address_Part1 key field is present in the tagged data record
     it will generate three keys using KEY_LEVEL Limited, Standard and Extended.
 
-    Format of Output file:
-      Column  1 to 8   : Key
-      Column  9        : Key type  - P (Person_name), O (Organisation), 1 (Address_Part1)
-      Column 10        : Key level - M (Limited), S (Standard), X (Extended)
-      Column 11 onward : Id
-
-    Format of log file:
-      Log file will be created with date and time
-      for eg. sssrrrr_MkeTag_YYYY_MM_DD_HH24_MI_SS.log
-
-      Log file name contains below information.
-
-      ------ EXECUTION START DATE AND TIME ------
-      YYYY/MM/DD HH24 MI SS
-
-      Displayed all run parameters which are used:
-      Data set no           : data set number starting from 100 to 999
-      Run time number       : Run time number starting from 1000 to 9999
-      Population            : india
-      Input File Directory  : Input File Directory
-      Output File Directory : Output File Directory
-      Log File Directory    : Log File Directory
-
-      Displayed all file names:
-      Input file name
-      Output file name
-      Log file name
-
-      ------ EXECUTION END DATE AND TIME ------
-      YYYY/MM/DD HH24 MI SS
-
-      Display no of records in a file
-      Display no of records read
-      Display no of error records
-      Display no of person_Name records
-      Display no of organization_Name records
-      Display no of address_Part1 records
-
-      Display Person_Name Limited keys counts
-      Display Person_Name Standard keys counts
-      Display Person_Name Extended keys counts
-
-      Display Organization_Name Limited keys counts
-      Display Organization_Name Standard keys counts
-      Display Organization_Name Extended keys counts
-
-      Display Address_Part1 Limited keys counts
-      Display Address_Part1 Standard keys counts
-      Display Address_Part1 Extended keys counts
-
-      Total keys written
-
-      Addition of all the keys and check it is match with total keys
-      Processed so many tagged data records in so many seconds to execute
-
-      Displayed processed so many tagged data records in so many seconds.
-
-     Error message:Missing Person Name, Organization name, Address Part 1 fields
-     If Person Name, Organization name and Address Part 1 fields is
-     missing in the record then error will be display with
-     record no with error message and record.
-
-     Error message: Missing Id field
-
-     If Id field is missing in the record then error will be display with
-     record no with error message and record.
-
-
-     Terminal output:
-
-       Display if there are error records in a file with record no,
-       error message and record.
-
-       Verbose:
-         Assume that there are millions of records in a file.
-         This procedure will read first 10 lakhs records and display
-         on terminal( command window ): 10 lakhs records read in so many
-         seconds again it will read 2000000 records and display time. it will
-         multiplier by 2 every time
-
-         Displayed no of records in a file
-       Displayed processed so many tagged data records in so many seconds.
-
   Procedure Name : MkeKey.c
 
     Creates Key file sssrrrr.oke from tagged file sssrrrr.tag.
 
   Copyright
 
-    Copyright (c) 2017 IdentLogic Systems Private Limited
+    Copyright ( c ) 2017 IdentLogic Systems Private Limited
 
   Warnings
     If set data number and run number are empty it will throw an error
@@ -1207,11 +1278,104 @@ int main ( int argc , char *argv[] ) {
     If any one of the parameter is missing it will not create output
     or log file.
 
+  Format of Output file
+    Column  1 to 8   : Key
+    Column  9        : Key type  - P ( Person_name ), O ( Organisation ), 1 ( Address_Part1 )
+    Column 10        : Key level - M ( Limited ), S ( Standard ), X ( Extended )
+    Column 11 onward : Id
+
+  Format of log file
+    Log file will be created with date and time
+    for eg. sssrrrr_MkeTag_YYYY_MM_DD_HH24_MI_SS.log
+
+    Log file name contains below information.
+
+    ------ EXECUTION START DATE AND TIME ------
+    YYYY-MM-DD HH24:MI:SS
+
+    Displayed all run parameters which are used:
+    Data set no           : data set number starting from 100 to 999
+    Run time number       : Run time number starting from 1000 to 9999
+    Population            : india
+    Input File Directory  : Input File Directory
+    Output File Directory : Output File Directory
+    Log File Directory    : Log File Directory
+    Verbose               : YES/NO
+
+    Displayed all file names:
+    Input file name
+    Output file name
+    Log file name
+
+    Error message:Missing Person Name, Organization name, Address Part 1 fields
+
+    If Person Name, Organization name and Address Part 1 fields is
+    missing in the record then error will be display with
+    record no with error message and record.
+
+    Error message: Missing Id field
+
+    If Id field is missing in the record then error will be display with
+    record no with error message and record.
+
+    Display no of records in a file
+    Display no of records read
+    Display no of error records
+    Display no of person_Name records
+    Display no of organization_Name records
+    Display no of address_Part1 records
+
+    Display Person_Name Limited keys counts
+    Display Person_Name Standard keys counts
+    Display Person_Name Extended keys counts
+
+    Display Organization_Name Limited keys counts
+    Display Organization_Name Standard keys counts
+    Display Organization_Name Extended keys counts
+
+    Display Address_Part1 Limited keys counts
+    Display Address_Part1 Standard keys counts
+    Display Address_Part1 Extended keys counts
+
+    Total keys written
+
+    Addition of all the keys and check it is match with total keys
+    Processed so many tagged data records in so many seconds to execute
+
+    Ended YYYY-MM-DD HH24:MI:SS - so many seconds to execute
+
+    Terminal output:
+
+     Verbose:
+       Assume that there are millions of records in a file.
+       This procedure will read first 10 lakhs records and display
+       on terminal( command window ): 10 lakhs records read in so many
+       seconds again it will read 2000000 records and display time. it will
+       multiplier by 2 every time
+
+       Displayed no of records in a file
+     Displayed processed so many tagged data records in so many seconds.
+
   Technical
 
    Script name      - MkeKey.c
    Package Number   -
    Procedure Number -
+
+   Variables used
+
+   prefix of a variables       Meaning
+   ---------------------       --------
+   a_str                       Array string
+   c_                          Character
+   d_                          double
+   f_                          File
+   i_                          Integer
+   l_                          long
+   p_                          parameter
+   str_                        String
+   C_K                         character constant
+   S_K                         String contant
 
    Run Parameters
 
@@ -1223,6 +1387,7 @@ int main ( int argc , char *argv[] ) {
    Input File Directory     Input File Directory            i   p_infdir
    Output File Directory    Output File Directory           o   p_outfdir
    Log File Directory       Log File Directory              l   p_logfdir
+   Verbose                  Verbose                         v   p_verbose
 
    TimeStamp Variables   Description
    -------------------   -----------
@@ -1236,6 +1401,8 @@ int main ( int argc , char *argv[] ) {
    The extension of Input file name is .tag
    The extension of Output file name is .oke
    The extension of Log file name is .log
+   
+   If Month, Date, Hours, Minutes, Seconds are less than 9 prefix 0 will be added to it.
 
    Compile procedure
 
@@ -1257,9 +1424,11 @@ int main ( int argc , char *argv[] ) {
        -o E:/ABC/EFG/HIJ/Output -l E:/ABC/EFG/HIJ/Log
 
      5. MkeKey -d 101 -r 1001 -p india -i E:\ABC\EFG\HIJ\Input
-       -o E:\ABC\EFG\HIJ\Output -l E:\ABC\EFG\HIJ\Log
+       -o E:\ABC\EFG\HIJ\Output -l E:\ABC\EFG\HIJ\Log -v 100000
 
      6. MkeKey -d 101 -r 1001 -p india -i E:/ABC/EFG/HIJ/Input/
+
+     7. MkeKey -d 101 -r 1001 -p india -v 100000
 
    Note :
 
@@ -1283,14 +1452,15 @@ int main ( int argc , char *argv[] ) {
    Subroutine            Description
    ----------            -----------
    s_getParameter        This subroutine takes run parameters.
-   s_test_ssa_open       To open a session to the SSA-NAME3 services
-   s_test_ssa_get_keys   To build keys on names or addresses
-   s_test_ssa_close      To terminate an open session to SSA-NAME3
-   s_doExit              Error occurred in subroutines s_test_ssa_open, s_test_ssa_get_keys, s_test_ssa_close
-   s_mkeKey_open         s_test_ssa_open subroutine called in s_mkeKey_open subroutine
-   s_mkeKey_getKey       s_test_ssa_get_keys subroutine called in s_mkeKey_getKey subroutine
-   s_mkeKey_close        s_test_ssa_close subroutine called in s_mkeKey_close subroutine
+   s_test_dds_open       To open a session to the dds-NAME3 services
+   s_test_dds_get_keys   To build keys on names or addresses
+   s_test_dds_close      To terminate an open session to dds-NAME3
+   s_doExit              Error occurred in subroutines s_test_dds_open, s_test_dds_get_keys, s_test_dds_close
+   s_mkeKey_open         s_test_dds_open subroutine called in s_mkeKey_open subroutine
+   s_mkeKey_getKey       s_test_dds_get_keys subroutine called in s_mkeKey_getKey subroutine
+   s_mkeKey_close        s_test_dds_close subroutine called in s_mkeKey_close subroutine
    s_print_usage         This subroutine is default parameter of getopt in s_getParameter
+   s_date_time           Compute current date and time elements YYYY, MM, DD, HH24, MI and SS
 
 
    Called by
@@ -1299,20 +1469,22 @@ int main ( int argc , char *argv[] ) {
 
    Subroutine           Called by
    ----------           ---------
-   s_test_ssa_open      s_mkeKey_open
-   s_test_ssa_get_keys  s_mkeKey_getKey
-   s_test_ssa_close     s_mkeKey_close
+   s_test_dds_open      s_mkeKey_open
+   s_test_dds_get_keys  s_mkeKey_getKey
+   s_test_dds_close     s_mkeKey_close
    s_doExit             s_mkeKey_open, s_mkeKey_getKey, s_mkeKey_close
    s_print_usage        s_getParameter
+   s_date_time          s_getParameter, s_mkeKey_close
 
    Calling
 
    Subroutine           Calling Subroutine
    ----------           ------------------
-   s_mkeKey_open        s_test_ssa_open, s_doExit
-   s_mkeKey_getKey      s_test_ssa_get_keys, s_doExit
-   s_mkeKey_close       s_test_ssa_close, s_doExit
-   s_getParameter       s_print_usage
+   s_mkeKey_open        s_test_dds_open, s_doExit
+   s_mkeKey_getKey      s_test_dds_get_keys, s_doExit
+   s_mkeKey_close       s_test_dds_close , s_doExit , s_date_time
+   s_getParameter       s_print_usage , s_date_time
+
 
    Subroutine Structure
 
@@ -1320,30 +1492,27 @@ int main ( int argc , char *argv[] ) {
     |
     |----- s_getParameter
     |           |
-    |           |----- s_print_usage
-    |
-    |
+    |           |----- s_date_time
+    |           |
+    |           \----- s_print_usage
     |
     |----- s_mkeKey_open
     |           |
-    |           |----- s_test_ssa_open
+    |           |----- s_test_dds_open
     |           |
     |           \----- s_doExit
-    |
-    |
     |
     |----- s_mkeKey_getKey
     |           |
-    |           |----- s_test_ssa_get_keys
+    |           |----- s_test_dds_get_keys
     |           |
     |           \----- s_doExit
     |
-    |
-    |
-    |
-    |----- s_mkeKey_close
+    \----- s_mkeKey_close
                 |
-                |----- s_test_ssa_close
+                |----- s_date_time
+                |
+                |----- s_test_dds_close
                 |
                 \----- s_doExit
 
