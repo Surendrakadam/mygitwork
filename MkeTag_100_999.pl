@@ -23,13 +23,13 @@ use warnings ;
 use Getopt::Simple ;
 
 # Run variables
-my $pp_set_data  = '' ;                                          # Set data no customer
-my $pp_run_data  = '' ;                                          # Run parameter
-my $pp_in_file   = '' ;                                          # Input file
-my $pp_fld_spr   = '' ;                                          # Field separator character
-my $pp_enc_chr   = '' ;                                          # Optional field encloser character
-my $pp_f_dt_1    = '' ;                                          # Flag if data starting from the the first record itself, or, first record has column headers (default)
-my $pp_f_ct_c_dp = '' ;                                          # Flag if display control character equivalences and stop
+my $pp_set_data  = '' ;                                         # Set data no customer
+my $pp_run_data  = '' ;                                         # Run parameter
+my $pp_in_file   = '' ;                                         # Input file
+my $pp_fld_spr   = '' ;                                         # Field separator character
+my $pp_enc_chr   = '' ;                                         # Optional field encloser character
+my $pp_f_dt_1    = '' ;                                         # Flag if data starting from the the first record itself, or, first record has column headers (default)
+my $pp_f_ct_c_dp = '' ;                                         # Flag if display control character equivalences and stop
 
 # Run statistics
 my $v_rec_knt       = 0 ;                                       # Records read count
@@ -44,28 +44,29 @@ my $v_rec             = '' ;                                    # Stores record 
 my @a_fld    = () ;                                             # Contains individual fields of current record
 
 
-my %h_ctrl_chr = (            # Hash containing description of control characters < 128
-    0 => 'NUL' ,
-    1 => 'SOH' ,  2 => 'STX' ,  3 => 'ETX' ,  4 => 'EOT' ,  5 => 'ENQ' ,
-    6 => 'ACK' ,  7 => 'BEL' ,  8 => 'BS' ,   9 => 'TAB' , 10 => 'LF' ,
-   11 => 'VT' ,  12 => 'FF' ,  13 => 'CR' ,  14 => 'SO' ,  15 => 'SI' ,
-   16 => 'DLE' , 17 => 'DC1' , 18 => 'DC2' , 19 => 'DC3' , 20 => 'DC4' ,
-   21 => 'NAK' , 22 => 'SYN' , 23 => 'ETB' , 24 => 'CAN' , 25 => 'EM' ,
-   26 => 'SUB' , 27 => 'ESC' , 28 => 'FS' ,  29 => 'GS' ,  30 => 'RS' ,
-   31 => 'US' ,
-  127 => 'DEL'
-) ;
+#my %h_ctrl_chr = (            # Hash containing description of control characters < 128
+#    0 => 'NUL' ,
+#    1 => 'SOH' ,  2 => 'STX' ,  3 => 'ETX' ,  4 => 'EOT' ,  5 => 'ENQ' ,
+#    6 => 'ACK' ,  7 => 'BEL' ,  8 => 'BS' ,   9 => 'TAB' , 10 => 'LF' ,
+#   11 => 'VT' ,  12 => 'FF' ,  13 => 'CR' ,  14 => 'SO' ,  15 => 'SI' ,
+#   16 => 'DLE' , 17 => 'DC1' , 18 => 'DC2' , 19 => 'DC3' , 20 => 'DC4' ,
+#   21 => 'NAK' , 22 => 'SYN' , 23 => 'ETB' , 24 => 'CAN' , 25 => 'EM' ,
+#   26 => 'SUB' , 27 => 'ESC' , 28 => 'FS' ,  29 => 'GS' ,  30 => 'RS' ,
+#   31 => 'US' ,
+#  127 => 'DEL'
+#) ;
+#
 
 my %h_dec_ctrl_chr = (                                           # Hash containing the decimal ASCII value of the description of control characters < 128
-  '\a'  =>   7 ,
-  '\b'  =>   8 ,
-  '\t'  =>   9 ,
-  '\n'  =>  10 ,
-  '\v'  =>  11 ,
-  '\f'  =>  12 ,
-  '\r'  =>  13 ,
-  '\e'  =>  27 ,
-  'NUL' =>   0 ,
+  '\a'  =>   7 ,  '\A'  =>   7 ,  
+  '\b'  =>   8 ,  '\B'  =>   8 ,
+  '\t'  =>   9 ,  '\T'  =>   9 ,
+  '\n'  =>  10 ,  '\N'  =>  10 ,
+  '\v'  =>  11 ,  '\V'  =>  11 ,
+  '\f'  =>  12 ,  '\F'  =>  12 ,
+  '\r'  =>  13 ,  '\R'  =>  13 ,
+  '\e'  =>  27 ,  '\E'  =>  27 ,
+  'NUL' =>   0 ,  'NUL' =>   0 ,
   'SOH' =>   1 , 'STX' =>  2 , 'ETX' =>  3 , 'EOT' =>  4 , 'ENQ' =>  5 ,
   'ACK' =>   6 , 'BEL' =>  7 , 'BS'  =>  8 , 'TAB' =>  9 , 'LF'  => 10 ,
   'VT'  =>  11 , 'FF'  => 12 , 'CR'  => 13 , 'SO'  => 14 , 'SI'  => 15 ,
@@ -73,12 +74,11 @@ my %h_dec_ctrl_chr = (                                           # Hash containi
   'NAK' =>  21 , 'SYN' => 22 , 'ETB' => 23 , 'CAN' => 24 , 'EM'  => 25 ,
   'SUB' =>  26 , 'ESC' => 27 , 'FS'  => 28 , 'GS'  => 29 , 'RS'  => 30 ,
   'US'  =>  31 ,
-  'DEL' => 127
+  'DEL' => 127 
 ) ;
 
- # \OOO Octal ASCII (all O from 0 to 7) \xhh Hexadecimal ASCII (all h from 0 to f)
 
-my $v_fld_spr_len = '' ;
+my $v_fld_spr_len = 0 ;
 
 &sGetParameter () ;                                             # Subroutine to get parameters
 
@@ -135,14 +135,19 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
    }
 
    print $OUTFILE                                               #
-        '*Id*' , $a_fld[ 0 ]  ,
-        ( $a_fld[ 1 ] eq '' ? '' : '*Person_Name*' . $a_fld[ 1 ] ) ,  # Only write field if not empty
-        ( $a_fld[ 2 ] eq '' ? '' : '*Organization_Name*' . $a_fld[ 2 ] ) ,
-        ( $a_fld[ 3 ] eq '' ? '' : '*Address_Part1*' . $a_fld[ 3 ] ) ,
-        ( ( $a_fld[ 4 ] eq '' and $a_fld[ 5 ] eq '' ) ? '' : '*Address_Part2*' . $v_addp2 ) , # Address_Part2 is join of City and Country
-        ( $a_fld[ 6 ] eq '' ? '' : '*Postal_Area*' . $a_fld[ 6 ] ) , #
-         '***' , "\n" ;
+        "*Id*" . $a_fld[ 0 ]  .
+        ( $a_fld[ 1 ] eq '' ? '' : "*Person_Name*" . $a_fld[ 1 ] ) . # Only write field if not empty
+        ( $a_fld[ 2 ] eq '' ? '' : "*Organization_Name*" . $a_fld[ 2 ] ) .
+        ( $a_fld[ 3 ] eq '' ? '' : "*Address_Part1*" . $a_fld[ 3 ] ) .
+        ( ( $a_fld[ 4 ] eq '' and $a_fld[ 5 ] eq '' ) ? '' : '*Address_Part2*' . $v_addp2 ) . # Address_Part2 is join of City and Country
+        ( $a_fld[ 6 ] eq '' ? '' : "*Postal_Area*" . $a_fld[ 6 ] ) . #
+         '***' . "\n" ;
 }
+   
+   print "No of records in a file " . ( $pp_f_dt_1 eq 'n' ? "with header :" : "without header :" ) . $v_rec_knt ;
+   print "\nNo of records which does not contain Id field   : " . $v_err_no_id ;
+   print "\nNo of records which does not contain key fields : " . $v_err_no_ky_fld ;
+   print "\nNo of error records                             : " . $v_err ;
 
 close $IN_FILE1 or                                              #
   die                                                           #
@@ -208,12 +213,12 @@ sub sGetParameter {                                             # Subroutine to 
          verbose => 'Data starting from the first record' ,
          order   => 7 ,
         } ,
-      control_character_display => {                            # Display control character equivalences for field separator or optional enclosing character and stop
-         type    => '!' ,
-         env     => '-' ,
-         default => '0' ,                                       # Default (parameter not mentioned) means script nuns normally
-         verbose => 'Display control character equivalences for field separator or optional enclosing character and stop' ,
-         order   => 8 ,
+     control_character_display => {                            # Display control character equivalences for field separator or optional enclosing character and stop
+        type    => '!' ,
+        env     => '-' ,
+        default => '0' ,                                       # Default (parameter not mentioned) means script nuns normally
+        verbose => 'Display control character equivalences for field separator or optional enclosing character and stop' ,
+        order   => 8 ,
         } ,
    } ;
 
@@ -231,7 +236,8 @@ sub sGetParameter {                                             # Subroutine to 
    $pp_f_dt_1    = $$parameters{ 'switch' }{ 'data_from_1_record_flag' } ;
    $pp_f_ct_c_dp = $$parameters{ 'switch' }{ 'control_character_display' } ;   # Flag if display control character equivalences and stop
 
-   if ( $pp_f_ct_c_dp eq 1 ) {        # Display control character equivalences and stop option chosen
+  # Display control character equivalences and stop option chosen
+   if ( $pp_f_ct_c_dp eq 1 ) {
       &sDpCtCStp ;
       exit 1 ;
    }
@@ -245,13 +251,19 @@ sub sGetParameter {                                             # Subroutine to 
    if ( $pp_fld_spr  eq '' ) { die "JOB ABANDONDED - No field separator character\n" ; }
 
    $pp_fld_spr = &sHdlFdSiOptEncl ( $pp_fld_spr , 'Field Separator' ) ;  # Handle field separator aliases
+   
    $pp_enc_chr = &sHdlFdSiOptEncl ( $pp_enc_chr , 'Optional Field Enclosure' ) ;  # Handle optional field enclosure aliases
 
    # Field separator must contain only one character
-   if ( $v_fld_spr_len != 1 ) {
+   if ( length ($pp_fld_spr) > 1 ) {
      die "JOB ABANDONDED - Field separator >$pp_fld_spr< must contain one character\n" ;
    }
-
+   
+   # Optional enclosing separator contain only one character
+   if ( length $pp_enc_chr > 1 ) {
+     die "JOB ABANDONDED - Optional enclosing character >$pp_enc_chr< may contain only one character" ;
+   }
+   
    if ( $pp_set_data =~ /\D/ or $pp_set_data < 100  or $pp_set_data > 999 ) {
      die "JOB ABANDONDED - Data set number must be a number in the range of 100 to 999 instead of $pp_set_data\n" ;
    }
@@ -267,49 +279,61 @@ sub sGetParameter {                                             # Subroutine to 
 # End of sub sGetParameter                                            #
 #######################################################################
 
-sub sHdlFdSiOptEncl ;
+sub sHdlFdSiOptEncl ( ) {
 
-# Handle field separator and option enclosing character
+ #Handle field separator and option enclosing character
 
-  my $vhfsoe_c    = shift || '' ;    # Capture input string
-  my $vhfsoe_what = shift || '' ;    # Capture input type
+ my $vhfsoe_c    = shift || '' ;    # Capture input string
+ my $vhfsoe_what = shift || '' ;    # Capture input type
 
-   if ( $vhfsoe_what ne 'Field Separator' and
-        $vhfsoe_what ne 'Optional Field Enclosure' ) {
-     die "$0: INTERNAL SCRIPT ERROR: Parameter not 'Field Separator' or 'Optional Field Enclosure'\n" ;
-   }
+ if ( $vhfsoe_what ne 'Field Separator' and
+      $vhfsoe_what ne 'Optional Field Enclosure' ) {
+   die "$0: INTERNAL SCRIPT ERROR: Parameter not 'Field Separator' or 'Optional Field Enclosure'\n" ;
+ }
 
-  $vhfsoe_c = uc ( $vhfsoe_c ) ;     # Convert to upper case
-
-  if ( exists ( $h_dec_ctrl_chr { $vhfsoe_c } ) {  # Process usual definition or escape of control characters
-    return ( chr ( $h_dec_ctrl_chr { $vhfsoe_c } ) ) ;
+  # If length of the character is more than one convert into upper case
+  # and check if its alias control character is present in the hash value
+  # If it is not there throw an error
+  
+  if ( length ( $vhfsoe_c ) > 1 ) {
+    $vhfsoe_c = uc ( $vhfsoe_c ) ;
+    if ( exists ( $h_dec_ctrl_chr { $vhfsoe_c } ) ) {  # Process usual definition or escape of control characters
+      
+      return ( chr ( $h_dec_ctrl_chr { $vhfsoe_c } ) ) ;
+    }
+  }
+  else {
+    return $vhfsoe_c ;
   }
 
-  if ( $vhfsoe_c =~ /^\\[0-7]{3,3}$/ ) {   # Process octal value of seprator character in format \OOO - O from 0 to 7
-
+  # Field separator to contain only one character
+  if ( length ( $vhfsoe_c ) > 1 ) {
+    die "$0: JOB ABANDONDED - $vhfsoe_what >$vhfsoe_c< must not be more than one character long\n" ;
   }
-
-  if ( $vhfsoe_c =~ /^\\x[0-9,A-F]{2,2}$/ ) {   # Process hexadcimal value of seprator character in format \xhh - h from 0 to f - Converted to upper case
-
-  }
-
-   # Field separator to contain only one character
-   if ( length ( $vhfsoe_c ) > 1 ) {
-     die "$0: JOB ABANDONDED - $vhfsoe_what >$vhfsoe_c< must not be more than one character long\n" ;
-   }
 
 }
 #######################################################################
-# End of sub sDpCtCStp                                                #
+# End of sub sHdlFdSiOptEncl                                          #
 #######################################################################
 
-sub sDpCtCStp ;
+sub sDpCtCStp ( ) {
 
-# Display control character equivalences for field separator or
-#  optional enclosing character and stop
+ #Display control character equivalences for field separator or
+ # optional enclosing character and stop
+  print "\nControl characters :\n" ;
+  print (" \\a   =>   7    \\b =>   8   \\t =>   9   \\n =>  10 \n" ) ;
+  print (" \\v   =>  11    \\f =>  12   \\r =>  13   \\e =>  27 \n" ) ;
+  print (" NUL  =>   0 \n" ) ;
+  print (" SOH  =>   1   STX =>  2   ETX =>  3   EOT =>  4   ENQ =>  5 \n" ) ;
+  print (" ACK  =>   6   BEL =>  7   BS  =>  8   TAB =>  9   LF  => 10 \n" ) ;
+  print (" VT   =>  11   FF  => 12   CR  => 13   SO  => 14   SI  => 15 \n" ) ;
+  print (" DLE  =>  16   DC1 => 17   DC2 => 18   DC3 => 19   DC4 => 20 \n" ) ;
+  print (" NAK  =>  21   SYN => 22   ETB => 23   CAN => 24   EM  => 25 \n" ) ;
+  print (" SUB  =>  26   ESC => 27   FS  => 28   GS  => 29   RS  => 30 \n" ) ;
+  print (" US'  =>  31 \n" ) ;
+  print (" DEL  => 127 \n" );
 
-
-  exit 1 ;
+ exit 1 ;
 
 }
 #######################################################################
