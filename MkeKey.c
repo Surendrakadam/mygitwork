@@ -221,9 +221,9 @@ void s_print_usage( ) {
 
   printf
    (
-    "MkeKey -d <data_set> -r <run> -p <population> -i <input_file_directory>"
+    "MkeKey -d <data_set> -r <run> -s<system-name> -p <population> -i <input_file_directory>"
     " -o <output_file_directory> -l <log_file_directory> -m <Multiplier> -v<verbose>\n\nExample:\n\n"
-    "MkeKey -d 101 -r 1001 -p india -i E:/SurendraK/Work/DeDupeProcs/Input/"
+    "MkeKey -d 101 -r 1001 -s default -p india -i E:/SurendraK/Work/DeDupeProcs/Input/"
     " -o E:/SurendraK/Work/DeDupeProcs/Output/ -l E:/SurendraK/Work/SSAProcs/Log/ -m 10000 -v\n"
    ) ;
 
@@ -276,30 +276,29 @@ static void s_getParameter( int argc , char *argv[] ) {
   // Data set number should be in a range of 100 to 999
   if ( p_data_set > 999 || p_data_set < 100 ) {
     printf ("%s","JOB ABANDONDED - Data set number should be integer and in a range of 100 to 999" ) ;
-    exit(1);
+    exit(1) ;
   }
 
   // Run time number should be in a range of 1000 to 9999
   if ( p_run_time > 9999 || p_run_time < 1000 ) {
     printf ("%s","JOB ABANDONDED - Run time number should be integer and in a range of 1000 to 9999" ) ;
-    exit(1);
+    exit(1) ;
   }
 
-  if ( !*p_system_nm ) {                                        // Check if System name is empty
+  if ( !*p_system_nm ) {                                        // Abort if System name is empty
     printf ("%s","JOB ABANDONDED - Missing system name\n" ) ;
   }
 
-  if ( !*p_population ) {                                       // Check if Population is mepty
+  if ( !*p_population ) {                                       // Abort if Population is mepty
     printf ("%s","JOB ABANDONDED - Missing population\n" ) ;
   }
 
   i_multiplier = p_multiplier ;                                 // Multiplier value
 
-  // Check Input file directory ends with backslash or forward , if not add it
+  // Check Input file directory ends with backslash or forward slash , if not add it
   if(strchr(p_infdir,'/')) {
     i_len_of_dir = strlen(p_infdir) ;                           // Length of input file directory
     c_flg_slash = p_infdir[i_len_of_dir-1] ;                    // Last character of a String is / forward slash
-
     if(c_flg_slash != S_K_forward_slash[0]) {
       p_infdir = strcat(p_infdir,S_K_forward_slash) ;           // Concatenate forward slash to the input file directory
     }
@@ -308,13 +307,12 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_infdir,'\\')) {
     i_len_of_dir = strlen(p_infdir) ;                           // Length of output file directory
     c_flg_slash  = p_infdir[i_len_of_dir-1] ;                   // Last character of a String is / backslash
-
     if(c_flg_slash != S_K_back_slash[0]) {
       p_infdir = strcat(p_infdir,S_K_back_slash);               // Concatenate back slash to the input file directory
     }
   }
 
-  // Check Output file directory ends with backslash or forward , if not add it
+  // Check Output file directory ends with backslash or forward slash , if not add it
   if(strchr(p_outfdir,'/')) {
     i_len_of_dir = strlen(p_outfdir) ;                          // Length of log file directory
     c_flg_slash = p_outfdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
@@ -326,17 +324,15 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_outfdir,'\\')) {
     i_len_of_dir = strlen(p_outfdir) ;                          // Length of input file directory
     c_flg_slash = p_outfdir[i_len_of_dir-1] ;                   // Last character of a String is / back slash
-
     if(c_flg_slash != S_K_back_slash[0]) {
       p_outfdir = strcat(p_outfdir,S_K_back_slash);             // Concatenate back slash to the output file directory
     }
   }
 
-  // Check log file directory ends with backslash or forward , if not add it
+  // Check log file directory ends with backslash or forward slash , if not add it
   if(strchr(p_logfdir,'/')) {
     i_len_of_dir = strlen(p_logfdir) ;                          // Length of input file directory
     c_flg_slash = p_logfdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
-
     if(c_flg_slash != S_K_forward_slash[0]) {
       p_logfdir = strcat(p_logfdir,S_K_forward_slash) ;         // Concatenate forward slash to the log file directory
     }
@@ -345,7 +341,6 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_logfdir,'\\')) {
     i_len_of_dir = strlen(p_logfdir) ;                          // Length of input file directory
     c_flg_slash = p_logfdir[i_len_of_dir-1] ;                   // Last character of a String is / back slash
-
     if(c_flg_slash != S_K_back_slash[0]) {
       p_logfdir = strcat(p_logfdir,S_K_back_slash) ;            // Concatenate back slash to the log file directory
     }
@@ -354,7 +349,7 @@ static void s_getParameter( int argc , char *argv[] ) {
   // Files Names
   sprintf( a_str_input_file , "%d%d.tag" , p_data_set , p_run_time );
   sprintf( a_str_output_file , "%d%d.oke" , p_data_set , p_run_time );
-  sprintf( a_str_log_file , "%d%d_MkeTag_%d-%s-%s-%s-%s-%s.log", p_data_set, p_run_time, i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS );
+  sprintf( a_str_log_file , "%d%d_MkeKey_%d-%s-%s-%s-%s-%s.log", p_data_set, p_run_time, i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS );
 
   // Directories
   sprintf( a_str_file_path_input_file , "%s%s" , p_infdir , a_str_input_file );
@@ -392,10 +387,10 @@ static void s_getParameter( int argc , char *argv[] ) {
 **********************************************************************/
 
 static long s_test_dds_open (
-// To open a session to the SSA-NAME3 service
+// To open a session to the dds-name3 service
 
   long    l_sockh ,                                             // Set to -1
-  long    *l_session_id ,                                       // Should be -1 on the ssan3 open call ,or opening a new session
+  long    *l_session_id ,                                       // Should be -1 on the ddsn3 open call ,or opening a new session
   char    *str_sysName ,                                        // Defines location of the population rules
   char    *str_population ,                                     // Country name
   char    *str_controls                                         // Controls
@@ -403,13 +398,13 @@ static long s_test_dds_open (
  ) {
 
   long    l_rc ;                                                // Indicate success or failure of open / close sesions
-  char    a_str_rsp_code[SSA_SI_RSP_SZ] ;                       // Indicates the success or failure of a call to ssa-name3
+  char    a_str_rsp_code[SSA_SI_RSP_SZ] ;                       // Indicates the success or failure of a call to dds-name3
   char    a_str_dds_msg[SSA_SI_SSA_MSG_SZ] ;                    // Error Message
 
   fprintf ( f_log_fopen_status, "Session Id       : %ld\n" , *l_session_id ) ;
 
   /* ssan3_open
-     This function open and initiates an SSA-NAME3 session in preparation for using further API functions.
+     This function open and initiates an dds-name3 session in preparation for using further API functions.
      It can also be used to set or override the SSAPR and TIMEOUT environment variables
   */
   l_rc =
@@ -419,7 +414,7 @@ static long s_test_dds_open (
       str_sysName ,                                             // Defines location of the population rules
       str_population ,                                          // Country name
       str_controls ,                                            // Controls
-      a_str_rsp_code ,                                          // Indicates the success or failure of a call to ssa-name3
+      a_str_rsp_code ,                                          // Indicates the success or failure of a call to dds-name3
       SSA_SI_RSP_SZ ,                                           // Size of respose code
       a_str_dds_msg ,                                           // Error Message
       SSA_SI_SSA_MSG_SZ                                         // Size of error message
@@ -481,7 +476,7 @@ static long s_test_dds_get_keys (
   l_rc  =
     ssan3_get_keys_encoded
     (
-      l_sockh ,                                                 // Set to -1 as not calling the SSA-NAME3 server
+      l_sockh ,                                                 // Set to -1 as not calling the dds-name3 server
       l_session_id ,                                            // Should be -1 on the ssan3 open call ,or opening a new session
       str_sysName ,                                             // Defines location of the population rules
       str_population ,                                          // Country name
@@ -575,9 +570,9 @@ SUB_RETURN:
 **********************************************************************/
 
 static long s_test_dds_close (
-// To close an open session to SSA-NAME3
+// To close an open session to dds-name3
 
-  long    l_sockh ,                                             // Set to -1 as not calling the SSA-NAME3 server
+  long    l_sockh ,                                             // Set to -1 as not calling the dds-name3 server
   long    *l_session_id ,                                       // Should be -1 on the ssan3 open call ,or opening a new session
   char    *str_sysName ,                                        // Defines location of the population rules
   char    *str_population ,                                     // Country name
@@ -591,11 +586,11 @@ static long s_test_dds_close (
   s_date_time();                                                // Call date and time subroutine
 
   /* ssan3_close
-     Close the SSA-NAME3 session and releases memory.
+     Close the dds-name3 session and releases memory.
      This session is then available for reuse.
   */
   l_rc = ssan3_close (
-    l_sockh ,                                                   // Set to -1 as not calling the SSA-NAME3 server
+    l_sockh ,                                                   // Set to -1 as not calling the dds-name3 server
     l_session_id ,                                              // Should be -1 on the ssan3 open call ,or opening a new session
     str_sysName ,                                               // Defines location of the population rules
     str_population ,                                            // Country name
@@ -636,6 +631,7 @@ static void s_doExit ( char *func ) {
   s_test_dds_close
 */
 
+  fprintf ( f_log_fopen_status , "Error occurred in '%s'\n" , func ) ;
   printf ( "Error occurred in '%s'\n" , func ) ;
   exit ( 1 ) ;
 
@@ -651,8 +647,8 @@ static void s_mkeKey_open ( ) {
 
   l_rc =
   s_test_dds_open (
-    l_sockh ,                                                 // Set to -1 as not calling the SSA-NAME3 server
-    &l_session_id ,                                           // Should be -1 on the ssan3 open call ,or opening a new session
+    l_sockh ,                                                 // Set to -1 as not calling the dds-name3 server
+    &l_session_id ,                                           // Should be -1 on the ddsn3 open call ,or opening a new session
     p_system_nm ,                                             // Defines location of the population rules
     p_population ,                                            // Population name of country
     ""                                                        // Controls
@@ -692,7 +688,7 @@ static void s_mkeKey_getKey (
       s_test_dds_get_keys (
         l_sockh ,                                               // Set to -1 as not calling the dds-NAME3 server
         &l_session_id ,                                         // Should be -1 on the ddsn3 open call ,or opening a new session
-        p_system_nm ,                                           // Default
+        p_system_nm ,                                           // System name
         p_population ,                                          // Country Name
         key_level[i_idx] ,                                      // Key level
         str_current_rec ,                                       // Current record
@@ -718,8 +714,8 @@ static void s_mkeKey_close ( ) {
 
   l_rc =
     s_test_dds_close (
-      l_sockh ,                                                 // Set to -1 as not calling the SSA-NAME3 server
-      &l_session_id ,                                           // Set to -1
+      l_sockh ,                                                 // Set to -1 as not calling the dds-name3 server
+      &l_session_id ,                                           // Should be -1 on the ddsn3 open call ,or opening a new session
       p_system_nm ,                                             // System name
       p_population ,                                            // Country name
       ""                                                        // Controls
@@ -752,7 +748,7 @@ int main ( int argc , char *argv[] ) {
     fprintf ( f_log_fopen_status, "\nPopulation            : %s", p_population ) ;
   }
 
-  if ( *p_system_nm ) {                                        // If Population is non empty
+  if ( *p_system_nm ) {                                        // If System name is non empty
     fprintf ( f_log_fopen_status, "\nSystem name           : %s", p_system_nm ) ;
   }
 
@@ -775,7 +771,7 @@ int main ( int argc , char *argv[] ) {
   fprintf ( f_log_fopen_status, "\nOutput file name      : %s", a_str_output_file ) ;
   fprintf ( f_log_fopen_status, "\nLog file name         : %s\n\n", a_str_log_file ) ;
 
-  s_mkeKey_open( ) ;                                            // subroutine to open ssa connection
+  s_mkeKey_open( ) ;                                            // subroutine to open dds connection
 
   // Read a input file line by line
   while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
@@ -974,14 +970,14 @@ int main ( int argc , char *argv[] ) {
     fprintf ( f_log_fopen_status, "\nTotal keys written     : %d\n", i_total_kys_written ) ;
   }
 
-  // Addition of all the keys and check it is match with total keys
+  // Addition of all the keys
   i_addition_key = i_PM_ky + i_PS_ky + i_PX_ky + i_OM_ky + i_OS_ky + i_OX_ky + i_AM_ky + i_AS_ky + i_AX_ky ;
 
-  if ( i_addition_key != i_total_kys_written ) {
+  if ( i_addition_key != i_total_kys_written ) {                // Addition of all the keys and check it is match with total keys
     fprintf ( f_log_fopen_status, "\nMissmatch in counts\n") ;
   }
 
-  s_mkeKey_close( ) ;                                           // subroutine to close ssa connection
+  s_mkeKey_close( ) ;                                           // subroutine to close dds connection
 
   t_end_time = clock( ) - t_start_time ;                        // End time
   t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;      // In seconds
@@ -1044,6 +1040,7 @@ int main ( int argc , char *argv[] ) {
 5 Format of log files
 
 6 Technical
+
   6.1 Variables used
 
   6.2 Run Parameters
@@ -1071,22 +1068,11 @@ Make Key
   Person_Name, Organisation_Name and Address_Part1 as
   found in the Tagged data.
 
-  KEY_LEVEL                     KEY_Field
+  KEY_LEVEL                     KEY_FIELD
   ---------                     ---------
   M|Limited                     P|Person_Name
   S|Standard                    O|Organization_Name
   X|Extended                    1|Address_Part1
-
-  If Person_Name key field is present in the tagged data record it
-  will generate three keys using KEY_LEVEL Limited, Standard and
-  Extended.
-
-  If Organization_Name key field is present in the tagged data
-  record it will generate three keys using KEY_LEVEL Limited,
-  Standard and Extended.
-
-  If Address_Part1 key field is present in the tagged data record
-  it will generate three keys using KEY_LEVEL Limited, Standard and Extended.
 
 Procedure Name : MkeKey.c
 
@@ -1097,6 +1083,7 @@ Copyright
   Copyright ( c ) 2017 IdentLogic Systems Private Limited
 
 Warnings
+
   Length of the Input file directory, Output file directory and
   Log file directory should not exceed 1,000 bytes, with total
   filepath not exceeding 1011 , 1011 ,1038 resp.  This is due
@@ -1104,49 +1091,55 @@ Warnings
   Log file name are 11, 11 and 38 resp.
 
   Increase the array size as per your convenience.
+
   Data set number , Run time number ,System name and population parameters
   are mandatory.
   Data set number should be in a range of 100 to 999
   Run time number should be in a range of 1000 to 9999
-  System name must not be empty
-  Population name must not be empty
-  If set data number and run number are empty it will throw an error
-  like could not open file for input.
+  Means Input file name should be integer and in range.
+  System name should not be empty
+  Population name should not be empty
+  If data set number and run number are empty it will throw an error
   If data set number and run number are missing or not found it will not create output
   or log file.
+  System name is the location( default folder) where india.ysp file is located.
+  Population means country name
 
 Format of Output file
+
   Column  1 to 8   : Key
-  Column  9        : Key type  - P ( Person_name ), O ( Organisation ),
+  Column  9        : KEY_FIELDS  - P ( Person_name ), O ( Organisation ),
                       1 ( Address_Part1 )
-  Column 10        : Key level - M ( Limited ), S ( Standard ), X ( Extended )
+  Column 10        : KEY_LEVEL   - M ( Limited ), S ( Standard ), X ( Extended )
   Column 11 onward : Id
 
 Format of log file
-  Log file will be created with date and time
-  for eg. sssrrrr_MkeTag_YYYY_MM_DD_HH24_MI_SS.log
+
+  Log file will be created with data set number, run number ,procedure name
+   and date time
+  for eg. sssrrrr_MkeRng_YYYY_MM_DD_HH24_MI_SS.log
 
   Log file display only not null or non empty information.
   Those fields values are empty or not null it will not display in log file
 
   Log file name contain below information.
 
-  ------ EXECUTION START DATE AND TIME ------
+  ------ MkeRng EXECUTION START DATE AND TIME ------
   YYYY-MM-DD HH24:MI:SS
 
-  Displayed all run parameters which are used:
+  ------ Run Parameters ------
   Data set no           : data set number starting from 100 to 999
   Run time number       : Run time number starting from 1000 to 9999
   Population            : india
-  Input File Directory  : Input File Directory
-  Output File Directory : Output File Directory
-  Log File Directory    : Log File Directory
+  Input File Directory  : Input File path
+  Output File Directory : Output File path
+  Log File Directory    : Log File path
   Verbose               : Yes/No
 
-  Displayed all file names:
-  Input file name
-  Output file name
-  Log file name
+  ------ File Names ------
+  Input file name       : <Input file name>
+  Output file name      : <Output file name>
+  Log file name         : <Log file name>
 
   Error message:Missing Person Name, Organization name, Address Part 1 fields
 
@@ -1159,42 +1152,50 @@ Format of log file
   If Id field is missing in the record then error will be display with
   record no with error message and record.
 
-  Display no of records in a file
-  Display no of records read
-  Display no of error records
-  Display no of person_Name records
-  Display no of organization_Name records
-  Display no of address_Part1 records
+  ------Run summary------
+  Tagged Records read            : <Count>
+  Error records                  : <Count>
+   - Missing Id                  : <Count>
+   - Missing all 3 key fields    : <Count>
+  Records with Person_Name       : <Count>
+  Records with Organization_Name : <Count>
+  Records with Address_Part1     : <Count>
 
-  Display Person_Name Limited keys counts
-  Display Person_Name Standard keys counts
-  Display Person_Name Extended keys counts
+  Person_Name keys       : <Count>
+   -Limited  : <Count>
+   -Standard : <Count>
+   -Extended : <Count>
 
-  Display Organization_Name Limited keys counts
-  Display Organization_Name Standard keys counts
-  Display Organization_Name Extended keys counts
+  Organization_Name keys : <Count>
+   -Limited  : <Count>
+   -Standard : <Count>
+   -Extended : <Count>
 
-  Display Address_Part1 Limited keys counts
-  Display Address_Part1 Standard keys counts
-  Display Address_Part1 Extended keys counts
+  Address_Part1 keys     : <Count>
+   -Limited  : <Count>
+   -Standard : <Count>
+   -Extended : <Count>
 
-  Total keys written
-
-  Addition of all the keys and check it is match with total keys
-  Processed so many tagged data records in so many seconds to execute
+  Total keys written     : <Count>
 
   Ended YYYY-MM-DD HH24:MI:SS - HH:MM:SS to execute
 
-  If Hours , Minutes and seconds are less than 10 prefix 0 will be added.
-
   =======================================================================
 
+  Note: 
+   Addition of all the keys and check it is match with total keys
+   If Hours , Minutes and seconds are less than 10 prefix 0 will be added.
+
   Terminal output:
+  
   No of error record will e display if it is not zero.
+  
   Verbose :
+
     Assume that there are millions of records in a file.
     Multiplier parameter show you so many records taken to execute
     so many seconds after a particular Multiplier number.
+   
    Multiplier:
      If Multiplier parameter is null it will take default multiplier value
      i.e 1 lakh
@@ -1203,11 +1204,19 @@ Format of log file
      for eg : ... -v -m 100000
               ... -m 100000 -v
 
-     On terminal( command window ): 1 lakh records read in so many
-     seconds again it will read 2 lakh records and display time. it will
-     multiplier by 2 every time until the end of the file.
+     On terminal( command window ) output : 
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     .
+     .
+     .
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     
+     multiply by 2 to muliplier number every time until the end of the file.
 
-   Displayed processed so many tagged data records in YYYY:MM:SS to execute.
+     Processed so many tagged data records in YYYY:MM:SS to execute.
 
 Technical
 
@@ -1244,7 +1253,7 @@ Technical
  Output File Directory    Output File Directory                      o   p_outfdir
  Log File Directory       Log File Directory                         l   p_logfdir
  Multiplier               Multiplier                                 m   p_multiplier
- Verbose                  Verbose                                    v   i_verbose_flg
+ Verbose                  Display indformation about multiplier      v   i_verbose_flg
 
  TimeStamp Variables   Description
  -------------------   -----------
@@ -1267,7 +1276,7 @@ Technical
 
  Execute procedure
 
-   d -r -s -p paramter are mandatory
+   -d -r -s -p paramter are mandatory
 
    1. MkeKey -d 101 -r 1001 -s default -p india
 
@@ -1281,17 +1290,17 @@ Technical
      -o E:/ABC/EFG/HIJ/Output -l E:/ABC/EFG/HIJ/Log
 
    5. MkeKey -d 101 -r 1001 -s default -p india -i E:\ABC\EFG\HIJ\Input
-     -o E:\ABC\EFG\HIJ\Output -l E:\ABC\EFG\HIJ\Log -v 100000
+     -o E:\ABC\EFG\HIJ\Output -l E:\ABC\EFG\HIJ\Log -m 100000 -v
 
    6. MkeKey -d 101 -r 1001 -s default -p india -i E:/ABC/EFG/HIJ/Input/
 
-   7. MkeKey -d 101 -r 1001 -s default -p india -v 100000
+   7. MkeKey -d 101 -r 1001 -s default -p india -m 100000 -v
 
  Note :
 
-   If you forget to give backslash(\)or forward slash(/) at the end of the
-   Input, Output, and Log file directory. The procedure will be append
-   backslash or forward slash at the end of the.
+   If you forget to give backslash(\) or forward slash(/) at the end of the
+   Input, Output, and Log file directory path . The procedure will be append
+   backslash or forward slash at the end of path as per your directory path.
    If you do not give Input File Directory then procedure will read
    the file from the current directory.
    If you do not give Output File Directory and Log File Directory
@@ -1320,7 +1329,6 @@ Technical
  s_print_usage         This subroutine is default parameter of getopt in s_getParameter
  s_date_time           Compute current date and time elements YYYY, MM, DD, HH24, MI and SS
 
-
  Called by
 
  Not indicated if only called by Main.
@@ -1342,7 +1350,6 @@ Technical
  s_mkeKey_getKey      s_test_dds_get_keys, s_doExit
  s_mkeKey_close       s_test_dds_close , s_doExit , s_date_time
  s_getParameter       s_print_usage , s_date_time
-
 
  Subroutine Structure
 
@@ -1373,8 +1380,6 @@ Technical
               |----- s_test_dds_close
               |
               \----- s_doExit
-
-
 
  Include Header
  --------------
