@@ -35,10 +35,10 @@
 
 #define rangeof( arr )  ( sizeof( arr ) / sizeof( ( arr )[ 0 ] ) )              // Size of an array
 
-/* Should be -1 on the ddsn3_open call,if opening  a new session, a valid Session ID or any other call*/
-long    l_session_id  = -1 ;
-long    l_rc          = 0 ;                                     // Indicate success or failure of open / close sesions
-long    l_sockh       = -1 ;                                    // Set to -1 as not calling the dds-name3 server
+//Should be -1 on the ddsn3_open call,if opening  a new session, a valid Session ID or any other call
+long l_session_id  = -1 ;
+long l_rc          = 0 ;                                        // Indicate success or failure of open / close sesions
+long l_sockh       = -1 ;                                       // Set to -1 as not calling the dds-name3 server
 
 int  i_option         = 0 ;                                     // Switch case variable
 int  i_idx            = 0 ;                                     // i_idx for loop variable
@@ -113,34 +113,36 @@ int i_error_record_flds = 0 ;                                   // Error records
 int i_pn_records        = 0 ;                                   // No of Person_Name records counts
 int i_on_records        = 0 ;                                   // No of Organization records counts
 int i_addp1_records     = 0 ;                                   // No of Address Part1 records counts
-int i_sex_code_records  = 0 ;                                   // No of Sex_Code records counts
+//int i_sex_code_records  = 0 ;                                 // No of Sex_Code records counts
 
-int i_PN_ky = 0 ;                                               // Person_Name Narrow keys count
-int i_PY_ky = 0 ;                                               // Person_Name Typical keys count
-int i_PH_ky = 0 ;                                               // Person_Name Exhaustive keys count
-int i_PR_ky = 0 ;                                               // Person_Name Extreme keys count
+int i_PN_ky_rng = 0 ;                                           // Person_Name Narrow key ranges count
+int i_PY_ky_rng = 0 ;                                           // Person_Name Typical key ranges count
+int i_PH_ky_rng = 0 ;                                           // Person_Name Exhaustive key ranges count
+int i_PR_ky_rng = 0 ;                                           // Person_Name Extreme key ranges count
 
-int i_ON_ky = 0 ;                                               // Organization_Name Narrow keys count
-int i_OY_ky = 0 ;                                               // Organization_Name Typical keys count
-int i_OH_ky = 0 ;                                               // Organization_Name Exhaustive keys count
-int i_OR_ky = 0 ;                                               // Organization_Name Extreme keys count
+int i_ON_ky_rng = 0 ;                                           // Organization_Name Narrow key ranges count
+int i_OY_ky_rng = 0 ;                                           // Organization_Name Typical key ranges count
+int i_OH_ky_rng = 0 ;                                           // Organization_Name Exhaustive key ranges count
+int i_OR_ky_rng = 0 ;                                           // Organization_Name Extreme key ranges count
 
-int i_1N_ky = 0 ;                                               // Address_Part1 Narrow keys count
-int i_1Y_ky = 0 ;                                               // Address_Part1 Typical keys count
-int i_1H_ky = 0 ;                                               // Address_Part1 Exhaustive keys count
-int i_1R_ky = 0 ;                                               // Address_Part1 Extreme keys count
+int i_1N_ky_rng = 0 ;                                           // Address_Part1 Narrow key ranges count
+int i_1Y_ky_rng = 0 ;                                           // Address_Part1 Typical key ranges count
+int i_1H_ky_rng = 0 ;                                           // Address_Part1 Exhaustive key ranges count
+int i_1R_ky_rng = 0 ;                                           // Address_Part1 Extreme key ranges count
 
-int i_GN_ky = 0 ;                                               // Sex_Code Narrow keys count
-int i_GY_ky = 0 ;                                               // Sex_Code Typical keys count
-int i_GH_ky = 0 ;                                               // Sex_Code Exhaustive keys count
-int i_GR_ky = 0 ;                                               // Sex_Code Extreme keys count
+/*
+int i_GN_ky = 0 ;                                               // Sex_Code Narrow key ranges count
+int i_GY_ky = 0 ;                                               // Sex_Code Typical key ranges count
+int i_GH_ky = 0 ;                                               // Sex_Code Exhaustive key ranges count
+int i_GR_ky = 0 ;                                               // Sex_Code Extreme key ranges count
+*/
 
-int i_Person_Name_keys  = 0 ;                                   // Person_Name Narrow , Typical , Exhaustive ,Extreme keys count
-int i_Organ_Name_keys   = 0 ;                                   // Organization_Name Narrow , Typical , Exhaustive ,Extreme keys count
-int i_Add_Part1_keys    = 0 ;                                   // Address_Part1 Narrow , Typical , Exhaustive ,Extreme keys count
-int i_sex_code_keys     = 0 ;                                   // Sex_Code Narrow , Typical , Exhaustive ,Extreme keys count
+int i_Person_Name_key_ranges  = 0 ;                             // Person_Name Narrow , Typical , Exhaustive ,Extreme key ranges count
+int i_Organ_Name_key_ranges   = 0 ;                             // Organization_Name Narrow , Typical , Exhaustive ,Extreme key ranges count
+int i_Add_Part1_key_ranges    = 0 ;                             // Address_Part1 Narrow , Typical , Exhaustive ,Extreme key ranges count
+//int i_sex_code_keys     = 0 ;                                 // Sex_Code Narrow , Typical , Exhaustive ,Extreme key ranges count
 
-int i_total_kys_written = 0 ;                                   // Total keys written
+int i_total_ky_ranges_written = 0 ;                             // Total key ranges written
 int i_addition_key      = 0 ;                                   // Addition of all keys
 int i_rec_number        = 0 ;                                   // Record counter
 
@@ -233,10 +235,10 @@ void s_print_usage( ) {
  End of subroutine s_print_usage                                      *
 **********************************************************************/
 
-static void s_getParameter( int argc , char *argv[] ) {
+static void s_getParameter ( int argc , char *argv[] ) {
 // This subroutine is default parameter of getopt in s_getParameter
 
-  s_date_time();                                                // Call subroutine s_date_time
+  s_date_time ( ) ;                                             // Call subroutine s_date_time
   while ( ( i_option = getopt ( argc , argv , "d:r:s:p:i:o:l:m:v::" ) ) != -1 ) {
     switch (i_option) {
       case 'd' :                                                // Data set parameter
@@ -276,13 +278,13 @@ static void s_getParameter( int argc , char *argv[] ) {
   // Data set number should be in a range of 100 to 999
   if( p_data_set > 999 || p_data_set < 100 ) {
     printf("%s","JOB ABANDONDED - Data set number should be integer and in a range of 100 to 999" ) ;
-    exit(1);
+    exit(1) ;
   }
 
   // Run time number should be in a range of 1000 to 9999
   if( p_run_time > 9999 || p_run_time < 1000 ) {
     printf("%s","JOB ABANDONDED - Run time number should be integer and in a range of 1000 to 9999" ) ;
-    exit(1);
+    exit(1) ;
   }
 
   if ( !*p_system_nm ) {                                        // Abort if System name is empty
@@ -295,11 +297,10 @@ static void s_getParameter( int argc , char *argv[] ) {
 
   i_multiplier = p_multiplier ;                                 // Multiplier value
 
-  // Check Input file directory ends with backslash or forward , if not add it
+  // Check Input file directory ends with backslash or forward slash , if not add it
   if(strchr(p_infdir,'/')) {
     i_len_of_dir = strlen(p_infdir) ;                           // Length of input file directory
     c_flg_slash = p_infdir[i_len_of_dir-1] ;                    // Last character of a String is / forward slash
-
     if(c_flg_slash != S_K_forward_slash[0]) {
       p_infdir = strcat(p_infdir,S_K_forward_slash) ;           // Concatenate forward slash to the input file directory
     }
@@ -308,13 +309,12 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_infdir,'\\')) {
     i_len_of_dir = strlen(p_infdir) ;                           // Length of output file directory
     c_flg_slash  = p_infdir[i_len_of_dir-1] ;                   // Last character of a String is / backslash
-
     if(c_flg_slash != S_K_back_slash[0]) {
       p_infdir = strcat(p_infdir,S_K_back_slash);               // Concatenate back slash to the input file directory
     }
   }
 
-  // Check Output file directory ends with backslash or forward , if not add it
+  // Check Output file directory ends with backslash or forward slash, if not add it
   if(strchr(p_outfdir,'/')) {
     i_len_of_dir = strlen(p_outfdir) ;                          // Length of log file directory
     c_flg_slash = p_outfdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
@@ -326,17 +326,15 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_outfdir,'\\')) {
     i_len_of_dir = strlen(p_outfdir) ;                          // Length of input file directory
     c_flg_slash = p_outfdir[i_len_of_dir-1] ;                   // Last character of a String is / back slash
-
     if(c_flg_slash != S_K_back_slash[0]) {
       p_outfdir = strcat(p_outfdir,S_K_back_slash);             // Concatenate back slash to the output file directory
     }
   }
 
-  // Check log file directory ends with backslash or forward , if not add it
+  // Check log file directory ends with backslash or forward slash, if not add it
   if(strchr(p_logfdir,'/')) {
     i_len_of_dir = strlen(p_logfdir) ;                          // Length of input file directory
     c_flg_slash = p_logfdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
-
     if(c_flg_slash != S_K_forward_slash[0]) {
       p_logfdir = strcat(p_logfdir,S_K_forward_slash) ;         // Concatenate forward slash to the log file directory
     }
@@ -345,7 +343,6 @@ static void s_getParameter( int argc , char *argv[] ) {
   if(strchr(p_logfdir,'\\')) {
     i_len_of_dir = strlen(p_logfdir) ;                          // Length of input file directory
     c_flg_slash = p_logfdir[i_len_of_dir-1] ;                   // Last character of a String is / back slash
-
     if(c_flg_slash != S_K_back_slash[0]) {
       p_logfdir = strcat(p_logfdir,S_K_back_slash) ;            // Concatenate back slash to the log file directory
     }
@@ -383,7 +380,7 @@ static void s_getParameter( int argc , char *argv[] ) {
     exit(1) ;
   }
 
-  fprintf ( f_log_fopen_status, "------ MkeKey EXECUTION START DATE AND TIME ------\n" ) ;
+  fprintf ( f_log_fopen_status, "------ MkeRng EXECUTION START DATE AND TIME ------\n" ) ;
   fprintf ( f_log_fopen_status, "%d-%s-%s %s:%s:%s \n\n", i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS ) ;
 
 }
@@ -394,7 +391,7 @@ static void s_getParameter( int argc , char *argv[] ) {
 static long s_test_dds_open (
 // To open a session to the dds-name3 service
 
-  long    l_sockh ,                                             // Set to -1
+  long    l_sockh ,                                             // Set to -1 as not calling the dds-name3 server
   long    *l_session_id ,                                       // Should be -1 on the ddsn3 open call ,or opening a new session
   char    *str_sysName ,                                        // Default
   char    *str_population ,                                     // Country name
@@ -406,6 +403,7 @@ static long s_test_dds_open (
 
   fprintf ( f_log_fopen_status , "Session Id   : %ld\n" , *l_session_id ) ;
 
+  //ssan3_open: This function opens and initiates an dds-name3 session in preparation for using further API function
   l_rc = ssan3_open
   (
     l_sockh ,                                                   // Set to -1 as not calling the dds-name3 server
@@ -474,7 +472,10 @@ from the dds-name3 key table
   for ( i = 0 ; i < ( int )rangeof ( a_str_ranges_array ) ; ++i )
     a_str_ranges_array[ i ] = a_ranges_data + i * ( 2*SSA_SI_KEY_SZ ) ;
 
-  l_num = 0 ;
+  l_num = 0 ;                                                   // No of keys count
+  
+  /*ssan3_get_ranges_encoded: Used to ge dds-name3 key ranges for name or address which the application
+     program will use in a Selct statement to retrieve records from the dds-name3 key table.*/
   l_rc = ssan3_get_ranges_encoded
   (
     l_sockh ,                                                   // Set to -1 as not calling the dds-name3 server
@@ -509,85 +510,87 @@ from the dds-name3 key table
 
   for ( i = 0 ; i < l_num ; ++i ) {
     if ( strcmp ( str_ky_fld_search_lvl , "PN") == 0 ) {        // Compare PN with abbreviation of key field and search level
-      i_PN_ky ++ ;                                              // Person_Name Narrow keys count
-      i_Person_Name_keys ++ ;                                   // Number of Person_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_PN_ky_rng ++ ;                                          // Person_Name Narrow keys count
+      i_Person_Name_key_ranges ++ ;                             // Number of Person_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "PY") == 0 ) {   // Compare PY with abbreviation of key field and search level
-      i_PY_ky ++ ;                                              // Person_Name Typical keys count
-      i_Person_Name_keys ++ ;                                   // Number of Person_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_PY_ky_rng ++ ;                                          // Person_Name Typical keys count
+      i_Person_Name_key_ranges ++ ;                             // Number of Person_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "PH") == 0 ) {   // Compare PH with abbreviation of key field and search level
-      i_PH_ky ++ ;                                              // Person_Name Exhaustive keys count
-      i_Person_Name_keys ++ ;                                   // Number of Person_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_PH_ky_rng ++ ;                                          // Person_Name Exhaustive keys count
+      i_Person_Name_key_ranges ++ ;                             // Number of Person_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "PR") == 0 ) {   // Compare PR with abbreviation of key field and search level
-      i_PR_ky ++ ;                                              // Person_Name Extreme keys count
-      i_Person_Name_keys ++ ;                                   // Number of Person_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_PR_ky_rng ++ ;                                          // Person_Name Extreme keys count
+      i_Person_Name_key_ranges ++ ;                             // Number of Person_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "ON") == 0 ) {   // Compare ON with abbreviation of key field and search level
-      i_ON_ky ++ ;                                              // Organization_Name Narrow keys count
-      i_Organ_Name_keys ++ ;                                    // Number of Organization_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_ON_ky_rng ++ ;                                          // Organization_Name Narrow keys count
+      i_Organ_Name_key_ranges ++ ;                              // Number of Organization_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "OY") == 0 ) {   // Compare OY with abbreviation of key field and search level
-      i_OY_ky ++ ;                                              // Organization_Name Typical keys count
-      i_Organ_Name_keys ++ ;                                    // Number of Organization_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_OY_ky_rng ++ ;                                          // Organization_Name Typical keys count
+      i_Organ_Name_key_ranges ++ ;                              // Number of Organization_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "OH") == 0 ) {   // Compare OH with abbreviation of key field and search level
-      i_OH_ky ++ ;                                              // Organization_Name Exhaustive keys count
-      i_Organ_Name_keys ++ ;                                    // Number of Organization_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_OH_ky_rng ++ ;                                          // Organization_Name Exhaustive keys count
+      i_Organ_Name_key_ranges ++ ;                              // Number of Organization_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "OR") == 0 ) {   // Compare OR with abbreviation of key field and search level
-      i_OR_ky ++ ;                                              // Organization_Name Extreme keys count
-      i_Organ_Name_keys ++ ;                                    // Number of Organization_Name keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_OR_ky_rng ++ ;                                          // Organization_Name Extreme keys count
+      i_Organ_Name_key_ranges ++ ;                              // Number of Organization_Name keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "1N") == 0 ) {   // Compare 1N with abbreviation of key field and search level
-      i_1N_ky ++ ;                                              // Address_Part1 Narrow keys count
-      i_Add_Part1_keys ++ ;                                     // Number of Address_Part1 keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_1N_ky_rng ++ ;                                          // Address_Part1 Narrow keys count
+      i_Add_Part1_key_ranges ++ ;                               // Number of Address_Part1 keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "1Y") == 0 ) {   // Compare 1Y with abbreviation of key field and search level
-      i_1Y_ky ++ ;                                              // Address_Part1 Typical keys count
-      i_Add_Part1_keys ++ ;                                     // Number of Address_Part1 keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_1Y_ky_rng ++ ;                                          // Address_Part1 Typical keys count
+      i_Add_Part1_key_ranges ++ ;                               // Number of Address_Part1 keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "1H") == 0 ) {   // Compare 1H with abbreviation of key field and search level
-      i_1H_ky ++ ;                                              // Address_Part1 Exhaustive keys count
-      i_Add_Part1_keys ++ ;                                     // Number of Address_Part1 keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_1H_ky_rng ++ ;                                          // Address_Part1 Exhaustive keys count
+      i_Add_Part1_key_ranges ++ ;                               // Number of Address_Part1 keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "1R") == 0 ) {   // Compare 1R with abbreviation of key field and search level
-      i_1R_ky ++ ;                                              // Address_Part1 Extreme keys count
-      i_Add_Part1_keys ++ ;                                     // Number of Address_Part1 keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_1R_ky_rng ++ ;                                          // Address_Part1 Extreme keys count
+      i_Add_Part1_key_ranges ++ ;                               // Number of Address_Part1 keys count
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
+    /*
     else if ( strcmp ( str_ky_fld_search_lvl , "GN") == 0 ) {   // Compare GN with abbreviation of key field and search level
       i_GN_ky ++ ;                                              // Sex_Code Narrow keys count
       i_sex_code_keys ++ ;                                      // Number of Sex_Code keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "GY") == 0 ) {   // Compare GY with abbreviation of key field and search level
       i_GY_ky ++ ;                                              // Sex_Code Typical keys count
       i_sex_code_keys ++ ;                                      // Number of Sex_Code keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "GH") == 0 ) {   // Compare GH with abbreviation of key field and search level
       i_GH_ky ++ ;                                              // Sex_Code Exhaustive keys count
       i_sex_code_keys ++ ;                                      // Number of Sex_Code keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
     else if ( strcmp ( str_ky_fld_search_lvl , "GR") == 0 ) {   // Compare GR with abbreviation of key field and search level
       i_GR_ky ++ ;                                              // Sex_Code Extreme keys count
       i_sex_code_keys ++ ;                                      // Number of Sex_Code keys count
-      i_total_kys_written ++ ;                                  // Total keys written
+      i_total_ky_ranges_written ++ ;                            // Total keys written
     }
+    */
 
     str_key = a_str_ranges_array[ i ] ;
     fprintf ( f_output_fopen_status ,"%.*s%.*s%s%s\n",SSA_SI_KEY_SZ , str_key , SSA_SI_KEY_SZ , str_key + SSA_SI_KEY_SZ , str_ky_fld_search_lvl , str_ID ) ;
@@ -605,6 +608,8 @@ SUB_RETURN:
 **********************************************************************/
 
 static long s_test_dds_close (
+// Close the previously open session
+
   long    l_sockh ,                                             // Set to -1 as not calling the SSA-name3 server
   long    *l_session_id ,                                       // Should be -1 on the ddsn3 open call ,or opening a new session
   char    *str_sysName ,                                        // Defines location of the population rules
@@ -616,10 +621,10 @@ static long s_test_dds_close (
   char    a_str_rsp_code[ SSA_SI_RSP_SZ ] ;                     // Indicates the success or failure of a call to dds-name3
   char    a_str_dds_msg[ SSA_SI_SSA_MSG_SZ ] ;                  // Error Message
 
-  s_date_time();                                                // Call date and time subroutine
+  s_date_time ( ) ;                                             // Call date and time subroutine
 
   /* ddsn3_close
-     Close the SSA-name3 session and releases memory.
+     Close the dds-name3 session and releases memory.
      This session is then available for reuse.
   */
   l_rc = ssan3_close
@@ -663,9 +668,9 @@ SUB_RETURN:
 
 static void s_doExit ( char *func ) {
 /* Error occurred in subroutines s_test_dds_open, s_test_dds_get_keys or
-  s_test_dds_close
-*/
+  s_test_dds_close */
 
+  fprintf ( f_log_fopen_status , "Error occurred in '%s'\n" , func ) ;
   printf ( "Error occurred in '%s'\n" , func ) ;
   exit ( 1 ) ;
 
@@ -676,8 +681,7 @@ static void s_doExit ( char *func ) {
 
 static void s_MkeRng_open ( ) {
 /* s_test_dds_open subroutine called in s_mkeKey_open subroutine and
-   assign subroutine parameters
-*/
+   assign subroutine parameters */
 
   l_rc = s_test_dds_open                                        // Open session
   (
@@ -702,8 +706,8 @@ s_test_dds_get_ranges subroutine call in s_MkeRng_ranges
 s_test_dds_get_ranges subroutine contain ssan3_get_ranges function
 Used to get the dds-name3 key rangfes for a name or address which
 the application program will use in a select statement to retreive records
-from the dds-name3 key table
-*/
+from the dds-name3 key table*/
+
   char *Narrow ,                                                // Narrow SEARCH LEVEL
   char *Typical ,                                               // Typical SEARCH LEVEL
   char *Exhaustive ,                                            // Exhaustive SEARCH LEVEL
@@ -717,11 +721,12 @@ from the dds-name3 key table
 
   // Search levels are Narrow , Typical , Exhaustive , Extreme
   char *SEARCH_LEVEL [ 4 ] = { Narrow , Typical , Exhaustive , Extreme } ;
-
+  
+  // Array contain abbrevation of key field and search level
   char *ky_fld_search_lvl [ 4 ] = { ky_fld_search_lvl1 , ky_fld_search_lvl2 , ky_fld_search_lvl3 , ky_fld_search_lvl4 } ;
 
   for( i_idx = 0 ; i_idx <= 3 ; i_idx++ ) {
-    l_rc = s_test_dds_get_ranges
+    l_rc = s_test_dds_get_ranges                                // Call subroutine s_test_dds_get_ranges
     (
       l_sockh ,                                                 // Set to -1 as not calling the SSA-name3 server
       &l_session_id ,                                           // Should be -1 on the ddsn3 open call ,or opening a new session
@@ -745,10 +750,11 @@ from the dds-name3 key table
 
 static void s_MkeRng_close ( ) {
 // Close the previously established session.
+
   l_rc = s_test_dds_close
   (
     l_sockh ,                                                   // Set to -1 as not calling the SSA-name3 server
-    &l_session_id ,                                             // Set to -1
+    &l_session_id ,                                             // Should be -1 on the ddsn3 open call ,or opening a new session
     p_system_nm ,                                               // System name
     p_population ,                                              // Country name
     ""                                                          // Controls
@@ -915,6 +921,7 @@ int main ( int argc , char *argv[] ) {
         s_MkeRng_ranges ( AN , AT ,AH , AR , abv_ANarr , abv_ATyp , abv_AExh , abv_AExtr , str_ID ) ;                                         // Call s_MkeRng_ranges
       }
 
+      /*
       // Check Address_Part1 is inside the current record
       if ( strstr ( str_current_rec , "Sex_Code" ) != NULL ) {
         char *GN = "FIELD=Sex_Code SEARCH_LEVEL=Narrow" ;
@@ -931,7 +938,7 @@ int main ( int argc , char *argv[] ) {
         i_sex_code_records++ ;                                     // No of records count that contains Address_Part1
 
         s_MkeRng_ranges ( GN , GT ,GH , GR , abv_GNarr , abv_GTyp , abv_GExh , abv_GExtr , str_ID ) ;                                         // Call s_MkeRng_ranges
-      }
+      }*/
     }
     else {
       // If Id field is missing display error message
@@ -960,7 +967,7 @@ int main ( int argc , char *argv[] ) {
   }
 
   if ( i_error_record_flds != 0 ) {                             // If fields error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n - Missing all 4 key fields    : %d\n", i_error_record_flds ) ;
+    fprintf ( f_log_fopen_status, "\n - Missing all 3 key fields    : %d\n", i_error_record_flds ) ;
   }
 
   if ( i_pn_records != 0 ) {                                    // If Records with Person_Name count non zero then only it will write on a file
@@ -975,102 +982,106 @@ int main ( int argc , char *argv[] ) {
     fprintf ( f_log_fopen_status, "\nRecords with Address_Part1     : %d\n", i_addp1_records ) ;
   }
   
+  /*
   if ( i_sex_code_records != 0 ) {                              // If Records with Address_Part1 count non zero then only it will write on a file
     fprintf ( f_log_fopen_status, "\nRecords with Sex_Code          : %d\n", i_sex_code_records ) ;
   }
+  */
 
-  if ( i_Person_Name_keys != 0 ) {                              // If Person_Name keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\nPerson_Name keys       : %d", i_Person_Name_keys ) ;
+  if ( i_Person_Name_key_ranges != 0 ) {                        // If Person_Name keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\nPerson_Name key ranges       : %d", i_Person_Name_key_ranges ) ;
   }
 
-  if ( i_PN_ky != 0 ) {                                         // If Person_Name Narrow keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_PN_ky ) ;
+  if ( i_PN_ky_rng != 0 ) {                                     // If Person_Name Narrow keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_PN_ky_rng ) ;
   }
 
-  if ( i_PY_ky != 0 ) {                                         // If Person_Name Typical keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Typical    : %d",  i_PY_ky ) ;
+  if ( i_PY_ky_rng != 0 ) {                                     // If Person_Name Typical keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Typical    : %d",  i_PY_ky_rng ) ;
   }
 
-  if ( i_PH_ky != 0 ) {                                         // If Person_Name Exhaustive keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Exhaustive : %d",  i_PH_ky ) ;
+  if ( i_PH_ky_rng != 0 ) {                                     // If Person_Name Exhaustive keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Exhaustive : %d",  i_PH_ky_rng ) ;
   }
 
-  if ( i_PR_ky != 0 ) {                                         // If Person_Name Extreme keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n",  i_PR_ky ) ;
+  if ( i_PR_ky_rng != 0 ) {                                     // If Person_Name Extreme keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n",  i_PR_ky_rng ) ;
   }
 
-  if ( i_Organ_Name_keys != 0 ) {                               // If Organization_Name keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\nOrganization_Name keys : %d", i_Organ_Name_keys ) ;
+  if ( i_Organ_Name_key_ranges != 0 ) {                         // If Organization_Name keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\nOrganization_Name key ranges : %d", i_Organ_Name_key_ranges ) ;
   }
 
-  if ( i_ON_ky != 0 ) {                                         // If Organization_Name Narrow keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_ON_ky ) ;
+  if ( i_ON_ky_rng != 0 ) {                                     // If Organization_Name Narrow keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_ON_ky_rng ) ;
   }
 
-  if ( i_OY_ky != 0 ) {                                         // If Organization_Name Typical keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Typical    : %d", i_OY_ky ) ;
+  if ( i_OY_ky_rng != 0 ) {                                     // If Organization_Name Typical keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Typical    : %d", i_OY_ky_rng ) ;
   }
 
-  if ( i_OH_ky != 0 ) {                                         // If Organization_Name Exhaustive keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Exhaustive : %d", i_OH_ky ) ;
+  if ( i_OH_ky_rng != 0 ) {                                     // If Organization_Name Exhaustive keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Exhaustive : %d", i_OH_ky_rng ) ;
   }
 
-  if ( i_OR_ky != 0 ) {                                         // If Organization_Name Extreme keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n", i_OR_ky ) ;
+  if ( i_OR_ky_rng != 0 ) {                                     // If Organization_Name Extreme keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n", i_OR_ky_rng ) ;
   }
 
-  if ( i_Add_Part1_keys != 0 ) {                               // If Address_Part1 keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\nAddress_Part1 keys     : %d", i_Add_Part1_keys ) ;
+  if ( i_Add_Part1_key_ranges != 0 ) {                          // If Address_Part1 keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\nAddress_Part1 key ranges     : %d", i_Add_Part1_key_ranges ) ;
   }
 
-  if ( i_1N_ky != 0 ) {                                        // If Address_Part1 Narrow keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_1N_ky ) ;
+  if ( i_1N_ky_rng != 0 ) {                                     // If Address_Part1 Narrow keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_1N_ky_rng ) ;
   }
 
-  if ( i_1Y_ky != 0 ) {                                        // If Address_Part1 Typical keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Typical    : %d", i_1Y_ky ) ;
+  if ( i_1Y_ky_rng != 0 ) {                                     // If Address_Part1 Typical keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Typical    : %d", i_1Y_ky_rng ) ;
   }
 
-  if ( i_1H_ky != 0 ) {                                        // If Address_Part1 Exhaustive keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Exhaustive : %d", i_1H_ky ) ;
+  if ( i_1H_ky_rng != 0 ) {                                     // If Address_Part1 Exhaustive keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Exhaustive : %d", i_1H_ky_rng ) ;
   }
 
-  if ( i_1R_ky != 0 ) {                                        // If Address_Part1 Extreme keys count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n", i_1R_ky ) ;
+  if ( i_1R_ky_rng != 0 ) {                                     // If Address_Part1 Extreme keys count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n", i_1R_ky_rng ) ;
   }
-
-  if ( i_sex_code_keys != 0 ) {                               // If Address_Part1 keys count non zero then only it will write on a file
+ 
+  /*
+  if ( i_sex_code_keys != 0 ) {                                 // If Address_Part1 keys count non zero then only it will write on a file
     fprintf ( f_log_fopen_status, "\nSex_Code keys          : %d", i_sex_code_keys ) ;
   }
 
-  if ( i_GN_ky != 0 ) {                                        // If Address_Part1 Narrow keys count non zero then only it will write on a file
+  if ( i_GN_ky != 0 ) {                                         // If Address_Part1 Narrow keys count non zero then only it will write on a file
     fprintf ( f_log_fopen_status, "\n -Narrow     : %d", i_GN_ky ) ;
   }
 
-  if ( i_GY_ky != 0 ) {                                        // If Address_Part1 Typical keys count non zero then only it will write on a file
+  if ( i_GY_ky != 0 ) {                                         // If Address_Part1 Typical keys count non zero then only it will write on a file
     fprintf ( f_log_fopen_status, "\n -Typical    : %d", i_GY_ky ) ;
   }
 
-  if ( i_GH_ky != 0 ) {                                        // If Address_Part1 Exhaustive keys count non zero then only it will write on a file
+  if ( i_GH_ky != 0 ) {                                         // If Address_Part1 Exhaustive keys count non zero then only it will write on a file
     fprintf ( f_log_fopen_status, "\n -Exhaustive : %d", i_GH_ky ) ;
   }
 
-  if ( i_GR_ky != 0 ) {                                        // If Address_Part1 Extreme keys count non zero then only it will write on a file
+  if ( i_GR_ky != 0 ) {                                         // If Address_Part1 Extreme keys count non zero then only it will write on a file
     fprintf ( f_log_fopen_status, "\n -Extreme    : %d\n", i_GR_ky ) ;
   }
+  */
 
-  if ( i_total_kys_written != 0 ) {                            // If Total keys written count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\nTotal keys written     : %d\n", i_total_kys_written ) ;
+  if ( i_total_ky_ranges_written != 0 ) {                       // If Total keys written count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\nTotal keys written           : %d\n", i_total_ky_ranges_written ) ;
   }
 
-  // Addition of all the keys and check it is match with total keys
+  // Addition of all the keys
   i_addition_key =
-                   i_PN_ky + i_PY_ky + i_PH_ky + i_PR_ky +
-                   i_ON_ky + i_OY_ky + i_OH_ky + i_OR_ky +
-                   i_1N_ky + i_1Y_ky + i_1H_ky + i_1R_ky +
-                   i_GN_ky + i_GY_ky + i_GH_ky + i_GR_ky ;
+                   i_PN_ky_rng + i_PY_ky_rng + i_PH_ky_rng + i_PR_ky_rng +
+                   i_ON_ky_rng + i_OY_ky_rng + i_OH_ky_rng + i_OR_ky_rng +
+                   i_1N_ky_rng + i_1Y_ky_rng + i_1H_ky_rng + i_1R_ky_rng ;
+                   /*i_GN_ky + i_GY_ky + i_GH_ky + i_GR_ky */
 
-  if ( i_addition_key != i_total_kys_written ) {
+  if ( i_addition_key != i_total_ky_ranges_written ) {          // Addition of all the keys and check it is match with total keys
     fprintf ( f_log_fopen_status, "\nMissmatch in counts\n") ;
   }
 
@@ -1117,4 +1128,444 @@ int main ( int argc , char *argv[] ) {
   fclose ( f_log_fopen_status ) ;                               // Close log_fopen_status
 
   return (0) ;
+
 }
+/**********************************************************************
+ End of scrit MkeRng.c                                                *
+**********************************************************************/
+
+/*
+  Make Range
+  
+1 Procedure Name
+
+2 Copyright
+
+3 Warnings
+
+4 Format of Output file
+
+5 Format of log files
+
+6 Technical
+  6.1 Variables used
+
+  6.2 Run Parameters
+
+  6.3 Compile Procedure
+
+  6.4 Execute procedure in different way
+
+  6.5 Execution Start and End date and time
+
+  6.6 Subroutines
+
+      6.6.1 Called by
+
+      6.6.2 Calling
+
+      6.6.3 Subroutine Structure
+
+7 Include Header
+
+Make Key
+
+  Generates ( Search ) key range from Tagged data for search levels
+  Narrow (N) , Typical (Y) , Exhaustive (H) , Extreme (R) for
+  Person_Name (P) , Organization_name (O) , Address_Part1 ,
+  Sex_Code (G) as found in Tagged data
+
+  SEARCH_LEVEL                 KEY_FIELD
+  ---------                    ---------
+  N|Narrow                     P|Person_Name
+  Y|Typical                    O|Organization_Name
+  H|Exhaustive                 1|Address_Part1
+  R|Extreme
+
+Procedure Name : MkeKey.c
+
+  Generate .ore file ( Output file ) using data set number and run time number 
+
+Copyright
+
+  Copyright ( c ) 2017 IdentLogic Systems Private Limited
+
+Warnings
+  Length of the Input file directory, Output file directory and
+  Log file directory should not exceed 1,000 bytes, with total
+  filepath not exceeding 1011 , 1011 ,1038 resp.  This is due
+  to the length of the Input file name, Output file name and
+  Log file name are 11, 11 and 38 resp.
+
+  Increase the array size as per your convenience.
+
+  Data set number , Run time number ,System name and population parameters
+  are mandatory.
+  Data set number should be in a range of 100 to 999
+  Run time number should be in a range of 1000 to 9999
+  Means Input file name should be integer and in range.
+  System name should not be empty
+  Population name should not be empty
+  If data set number and run number are empty it will throw an error
+  If data set number and run number are missing or not found it will not create output
+  or log file.
+  System name is the location( default folder) where india.ysp file is located.
+  Population means country name
+
+Format of Output file
+
+  Column  1 to 8   : key ( From / Begin )
+  Column  9 to 16  : key (  To  / End   )
+  Column 17 to 17  : KEY FIELDS   - P ( Person_Name ) , O ( Organization_Name )
+                                    1 ( Address_Part1 )
+  Column 18 to 18  : SEARCH_LEVEL - N ( Narrow ) , Y ( Typical ) ,
+                                    H ( Exhaustive ) , R ( Extreme )
+
+Format of log file
+
+  Log file will be created with data set number, run number ,procedure name
+   and date time
+  for eg. sssrrrr_MkeRng_YYYY_MM_DD_HH24_MI_SS.log
+
+  Log file display only not null or non empty information.
+  Those fields values are empty or not null it will not display in log file
+
+  Log file name contain below information.
+
+  ------ MkeRng EXECUTION START DATE AND TIME ------
+  YYYY-MM-DD HH24:MI:SS
+
+  ------ Run Parameters ------
+  Data set no           : data set number starting from 100 to 999
+  Run time number       : Run time number starting from 1000 to 9999
+  Population            : india
+  Input File Directory  : Input File path
+  Output File Directory : Output File path
+  Log File Directory    : Log File path
+  Verbose               : Yes/No
+
+  ------ File Names ------
+  Input file name       : <Input file name>
+  Output file name      : <Output file name>
+  Log file name         : <Log file name>
+
+  Error message:Missing Person Name, Organization name, Address Part 1 fields
+
+  If Person Name, Organization name and Address Part 1 fields is
+  missing in the record then error will be display with
+  record no with error message and record.
+
+  Error message: Missing Id field
+
+  If Id field is missing in the record then error will be display with
+  record no with error message and record.
+
+  ------Run summary------
+  Tagged records read            : <Count>
+  Error records                  : <Count>
+   - Missing id                  : <Count>
+   - Missing all 3 key fields    : <Count>
+  
+  Records with Person_Name       : <Count>
+  Records with Organization_Name : <Count>
+  Records with Address_Part1     : <Count>
+  
+  Person_Name key ranges       : <Count>
+   -Narrow     : <Count>
+   -Typical    : <Count>
+   -Exhaustive : <Count>
+   -Extreme    : <Count>
+  
+  Organization_Name key ranges : <Count>
+   -Narrow     : <Count>
+   -Typical    : <Count>
+   -Exhaustive : <Count>
+   -Extreme    : <Count>
+  
+  Address_Part1 key ranges     : <Count>
+   -Narrow     : <Count>
+   -Typical    : <Count>
+   -Exhaustive : <Count>
+   -Extreme    : <Count>
+
+  Total keys written           : <Count>
+
+  Ended YYYY-MM-DD HH24:MI:SS - HH:MM:SS to execute
+  
+  =================================================
+  
+  Note :
+   Addition of all the keys and check it is match with total keys
+   If Hours , Minutes and seconds are less than 10 prefix 0 will be added
+   within a procedure.
+
+  Terminal output:
+  
+  No of error record will e display if it is not zero.
+  
+  Verbose :
+
+    Assume that there are millions of records in a file.
+    Multiplier parameter show you so many records taken to execute
+    so many seconds after a particular Multiplier number.
+   
+   Multiplier:
+     If Multiplier parameter is null it will take default multiplier value
+     i.e 1 lakh
+     Set multiplier value with Multiplier parameter and to display use
+     verbose parameter
+     for eg : ... -v -m 100000
+              ... -m 100000 -v
+
+     On terminal( command window ) output : 
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     .
+     .
+     .
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     
+     multiply by 2 to muliplier number every time until the end of the file.
+
+     Processed so many tagged data records in YYYY:MM:SS to execute.
+
+Technical
+
+ Script name      - MkeRng.c
+ Package Number   -
+ Procedure Number -
+
+ Variables used
+
+ prefix of a variables       Meaning
+ ---------------------       --------
+ a_str                       Array string
+ c_                          Character
+ d_                          double
+ f_                          File
+ i_                          Integer
+ l_                          long
+ p_                          parameter
+ str_                        String
+ C_K                         character constant
+ S_K                         String contant
+ t_                          Time related variables
+ _flg                        Flag 0 or 1
+
+ Run Parameters
+
+ PARAMETER                DESCRIPTION                               ABV   VARIABLE
+ ---------                -----------                               ---  ---------
+ Set data number          Set data number - 100 to 999               d   p_data_set
+ Run number               Run number - 1000 to 9999                  r   p_run_time
+ System name              Defines location of the population rules   s   p_system_nm
+ Population               Country Name: india                        p   p_population
+ Input File Directory     Input File Directory                       i   p_infdir
+ Output File Directory    Output File Directory                      o   p_outfdir
+ Log File Directory       Log File Directory                         l   p_logfdir
+ Multiplier               Multiplier                                 m   p_multiplier
+ Verbose                  Display indformation about multiplier      v   i_verbose_flg
+
+ TimeStamp Variables   Description
+ -------------------   -----------
+   YYYY                  Year
+   MM                    Month
+   DD                    Date
+   HH24                  Hours
+   MI                    Minutes
+   SS                    Seconds
+
+ The extension of Input file name is .tag
+ The extension of Output file name is .ore
+ The extension of Log file name is .log
+
+ If Month, Date, Hours, Minutes, Seconds are less than 9 prefix 0 will be added to it.
+
+ Compile procedure
+
+  cl MkeRng.c stssan3cl.lib
+
+ Execute procedure
+
+   -d -r -s -p paramter are mandatory
+
+   1. MkeKey -d 101 -r 1001 -s default -p india
+
+   2. MkeKey -d 101 -r 1001 -s default -p india -i E:/ABC/EFG/HIJ/Input/
+     -o E:/ABC/EFG/HIJ/Output/ -l E:/ABC/EFG/HIJ/Log/
+
+   3. MkeKey -d 101 -r 1001 -s default -p india -i E:\ABC\EFG\HIJ\Input\
+     -o E:\ABC\EFG\HIJ\Output\ -l E:\ABC\EFG\HIJ\Log\
+
+   4. MkeKey -d 101 -r 1001 -s default -p india -i E:/ABC/EFG/HIJ/Input
+     -o E:/ABC/EFG/HIJ/Output -l E:/ABC/EFG/HIJ/Log
+
+   5. MkeKey -d 101 -r 1001 -s default -p india -i E:\ABC\EFG\HIJ\Input
+     -o E:\ABC\EFG\HIJ\Output -l E:\ABC\EFG\HIJ\Log -m 100000 -v
+
+   6. MkeKey -d 101 -r 1001 -s default -p india -i E:/ABC/EFG/HIJ/Input/
+
+   7. MkeKey -d 101 -r 1001 -s default -p india -m 100000 -v
+
+ Note :
+
+   If you forget to give backslash(\) or forward slash(/) at the end of the
+   Input, Output, and Log file directory path . The procedure will be append
+   backslash or forward slash at the end of path as per your directory path.
+   If you do not give Input File Directory then procedure will read
+   the file from the current directory.
+   If you do not give Output File Directory and Log File Directory
+   in the run parameter then output file and log file will be created
+   in the current directory.
+   Output and Log file created in the directory which is given in the
+   command prompt.
+
+ Execution Start and End date and time
+
+   In log file, also contain starting and ending execution time.
+   Hours, Minutes and Seconds will be display with 2 digits.
+
+ Subroutines
+
+ Subroutine            Description
+ ----------            -----------
+ s_date_time           Compute current date and time elements YYYY, MM, DD, HH24, MI and SS
+ s_print_usage         This subroutine is default parameter of getopt in s_getParameter
+ s_getParameter        This subroutine takes run parameters and perform operations.
+ s_test_dds_open       To open a session to the dds-NAME3 services
+ s_test_dds_get_ranges To build key ranges on names or addresses
+ s_test_dds_close      To close an open session to dds-NAME3
+ s_doExit              Error occurred in subroutines s_test_dds_open, s_test_dds_get_ranges, s_test_dds_close
+ s_MkeRng_open         s_test_dds_open subroutine called in s_MkeRng_open subroutine
+ s_MkeRng_ranges       s_test_dds_get_ranges subroutine called in s_MkeRng_ranges subroutine
+ s_MkeRng_close        s_test_dds_close subroutine called in s_MkeRng_close subroutine
+
+ Called by
+
+ Not indicated if only called by Main.
+
+ Subroutine            Called by
+ ----------            ---------
+ s_test_dds_open        s_MkeRng_open
+ s_test_dds_get_ranges  s_MkeRng_ranges
+ s_test_dds_close       s_MkeRng_close
+ s_doExit               s_MkeRng_open , s_MkeRng_ranges, s_MkeRng_close
+ s_print_usage          s_getParameter
+ s_date_time            s_getParameter , s_MkeRng_close
+
+ Calling
+
+ Subroutine           Calling Subroutine
+ ----------           ------------------
+ s_MkeRng_open        s_test_dds_open , s_doExit
+ s_MkeRng_ranges      s_test_dds_get_ranges , s_doExit
+ s_MkeRng_close       s_test_dds_close , s_doExit , s_date_time
+ s_getParameter       s_print_usage , s_date_time
+
+ Subroutine Structure
+
+ Main
+  |
+  |----- s_getParameter
+  |           |
+  |           |----- s_date_time
+  |           |
+  |           \----- s_print_usage
+  |
+  |----- s_MkeRng_open
+  |           |
+  |           |----- s_test_dds_open
+  |           |
+  |           \----- s_doExit
+  |
+  |----- s_MkeRng_ranges
+  |           |
+  |           |----- s_test_dds_get_ranges
+  |           |
+  |           \----- s_doExit
+  |
+  \----- s_MkeRng_close
+              |
+              |----- s_date_time
+              |
+              |----- s_test_dds_close
+              |
+              \----- s_doExit
+
+ Include Header
+ --------------
+
+ Header           Inbuild / External
+ ----------       -------------------
+ <stdio.h>      - Inbuild header file
+ <stdlib.h>     - Inbuild header file
+ <string.h>     - Inbuild header file
+ "ssan3cl.h"    - Dedupe header
+ <getopt.h>     - External header file
+ <unistd.h>     - External header file
+ <time.h>       - Inbuild header file
+
+
+ ssan3cl.h - Dedupe header
+ For this type of header file you need to install name3 server software
+ after installation E:\ids\nm3\h will be created.
+ ssan3cl.h file is there inside the h folder.
+
+ For running this types of procedure successfully you need to set
+ environment variables.
+
+ Follow the steps:
+
+ 1. My Computer -->Property --> Advanced --> Environment variable -->
+    System variables -->
+
+ 2. Variable Name  : PATH
+    Variable value : E:\ids\nm3\bin;
+
+    Variable Name  : LOG
+    Variable value : E:\ids\nm3\log;
+
+    Variable Name  : LIB
+    Variable value : E:\ids\nm3\lib;
+
+    Variable Name  : LIBPATH
+    Variable value : E:\ids\nm3\lib;
+
+    Variable Name  : INCLUDE
+    Variable value : E:\ids\nm3\h;
+
+    Variable Name  : SSATOP
+    Variable value : E:\ids\nm3
+
+    If any above variable is already there in the System variable,
+    do not create again, only paste the url.
+    Not neccessary the url are same in your pc.
+
+ getopt.h
+ --------
+
+ If you dont have getopt.h header file download it from the internet.
+ Url :
+ https://github.com/skandhurkat/Getopt-for-Visual-Studio/blob/master/getopt.h
+ and save it in the file with .h extension in E:\ids\nm3\h folder.
+
+ unistd.h
+ --------
+
+ If you dont have unistd.h header file either download it from the internet or
+ copy below code.
+
+ #ifndef __STRICT_ANSI__
+ # ifndef __MINGW32__
+ #  include <io.h>
+ #  include <process.h>
+
+ # else
+ #  include_next <unistd.h>
+ # endif
+ #endif
+
+*/
+
