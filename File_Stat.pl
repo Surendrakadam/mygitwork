@@ -459,7 +459,6 @@ while ( $v_rec = <$IN_FILE> ) {
    # Empty record or record with spaces
 
    if ( $v_rec eq '' or $v_rec =~ /^\s*$/ ) {
-      $v_rec_knt-- ;                                            # If record is empty record counter decremented by 1
       $v_rec_empty_knt ++ ;                                     # If record is empty record counter incremented by 1
       next ;
    }
@@ -913,8 +912,10 @@ sub sGetParameter {
    if ( $p_fld_spr eq "" ) { die "JOB ABANDONDED - No field separator character\n" ; }
 
    $p_fld_spr = &sHdlFdSiOptEncl ( $p_fld_spr , 'Field Separator' ) ;                                                    # Handle field separator aliases
-
-   $p_enc_chr = &sHdlFdSiOptEncl ( $p_enc_chr , 'Optional Field Enclosure' ) ;                                           # Handle optional field enclosure aliases
+   
+   if ( $p_enc_chr ne "" ) {
+     $p_enc_chr = &sHdlFdSiOptEncl ( $p_enc_chr , 'Optional Field Enclosure' ) ;                                           # Handle optional field enclosure aliases
+   }
 
    # If Output file is null set default output file name as input file name with . as _ and _statistics.tsv at end
    if ( $p_out_file eq "" ) {
