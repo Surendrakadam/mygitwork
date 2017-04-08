@@ -61,7 +61,7 @@ int   p_uni_enc    = 0 ;                                        // Parameter Uni
 char *p_nm_fmt     = "" ;                                       // Parameter Name format
 int   p_acc_lmt    = 0 ;                                        // Parameter Accept Limit
 int   p_rej_lmt    = 0 ;                                        // Parameter Reject Limit
-char *p_delimeter  = "" ;                                       // Parameter Delimeter
+char *p_delimeter  = "" ;                                       // Parameter Delimiter
 char *p_infdir     = "" ;                                       // Parameter input file name
 char *p_outfdir    = "" ;                                       // Parameter output file directory
 char *p_logfdir    = "" ;                                       // Parameter log file directory
@@ -150,9 +150,9 @@ char a_prps_ty[100]  = {0} ;                                    // Purpose with 
 char a_prps_con[100] = {0} ;                                    // Purpose with match level Conservative
 char a_prps_lse[100] = {0} ;                                    // Purpose with match level Loose
 
-char a_mtc_lvl_typ_acc_rej[100] = {0} ;
-char a_mtc_lvl_con_acc_rej[100] = {0} ;
-char a_mtc_lvl_lse_acc_rej[100] = {0} ;
+char a_mtc_lvl_typ_acc_rej[100] = {0} ;                         // Match level Typical with accept limit and reject limit
+char a_mtc_lvl_con_acc_rej[100] = {0} ;                         // Match level Conservative with accept limit and reject limit
+char a_mtc_lvl_lse_acc_rej[100] = {0} ;                         // Match level Loose with accept limit and reject limit
 
 char *S_K_prps        = "PURPOSE=" ;                            // PURPOSE= format
 char *str_prps_nm     = "" ;                                    // Purpose name
@@ -164,8 +164,32 @@ char *S_K_uni_enc     = " UNICODE_ENCODING=";                   // UNICODE_ENCOD
 int   i_uni_enc_d     = 0 ;                                     // Unicode encoding data
 char *S_K_nm_fmt      = " NAMEFORMAT=";                         // NAMEFORMAT= format
 char *str_nm_fmt_d    = "" ;                                    // Name format data
-char *S_K_delimeter   = " DELIMETER=" ;                         // DELIMETER= format
-char *str_delimeter_d = "" ;                                    // Delimeter data
+char *S_K_delimeter   = " DELIMITER=" ;                         // DELIMITER= format
+char *str_delimeter_d = "" ;                                    // Delimiter data
+
+int i_Add_prps_err_knt   = 0 ;                                  // Address purpose errors count
+int i_Con_prps_err_knt   = 0 ;                                  // Contact purpose errors count
+int i_CEn_prps_err_knt   = 0 ;                                  // Corp Entity purpose errors count
+int i_Div_prps_err_knt   = 0 ;                                  // Division purpose errors count
+int i_Fam_prps_err_knt   = 0 ;                                  // Family purpose errors count
+int i_Fld_prps_err_knt   = 0 ;                                  // Fields purpose errors count
+int i_Ftr1_prps_err_knt  = 0 ;                                  // Address purpose errors count
+int i_Ftr2_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr3_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr4_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr5_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr6_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr7_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr8_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Ftr9_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Hsho_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_ind_prps_err_knt   = 0 ;                                  // Filter1 purpose errors count
+int i_OrgN_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_PerN_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_Res_prps_err_knt   = 0 ;                                  // Filter1 purpose errors count
+int i_WCon_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
+int i_WHsho_prps_err_knt = 0 ;                                  // Filter1 purpose errors count
+
 
 /**********************************************************************
  Start of subroutines                                                 *
@@ -234,10 +258,10 @@ void s_print_usage( ) {
    (
     "GMtc -d <data_set> -r <run> -s<system-name> -p <population> "
     "-u<purpose> -e<unicode_encoding> -n<name_format> -a<accept_limit> "
-    "-j<reject_limit> -i <input_file_directory>"
+    "-j<reject_limit> -t<delimeter> -i <input_file_directory>"
     " -o <output_file_directory> -l <log_file_directory> -m <Multiplier> -v<verbose>\n\nExample:\n\n"
     "GMtc -d 101 -r 1001 -s default -p india -u Address -e 4 -n L  -a 20 -j -10 "
-    "-i E:/SurendraK/Work/DeDupeProcs/Input/"
+    "-t @ -i E:/SurendraK/Work/DeDupeProcs/Input/"
     " -o E:/SurendraK/Work/DeDupeProcs/Output/ -l E:/SurendraK/Work/SSAProcs/Log/ -m 10000 -v\n"
    ) ;
 
@@ -279,7 +303,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
       case 'j' :                                                // Reject limit parameter
         p_rej_lmt    = atoi( optarg ) ;
         break ;
-      case 't' :                                                // Delimeter parameter
+      case 't' :                                                // Delimiter parameter
         p_delimeter  = optarg ;
         break ;
       case 'i' :                                                // Input file directory parameter
@@ -309,6 +333,9 @@ static void s_getParameter ( int argc , char *argv[] ) {
   i_uni_enc_d  = p_uni_enc ;
 
   str_nm_fmt_d = p_nm_fmt ;
+
+  str_delimeter_d = p_delimeter ;
+
   // Data set number should be in a range of 100 to 999
   if( p_data_set > 999 || p_data_set < 100 ) {
     printf("%s","JOB ABANDONDED - Data set number should be integer and in a range of 100 to 999" ) ;
@@ -350,16 +377,17 @@ static void s_getParameter ( int argc , char *argv[] ) {
     }
   }
 
-  if ( i_uni_enc_d != 0 ) {
+  if ( i_uni_enc_d != 0 ) {                                     // If Unicode Encoding value is not zero
     sprintf ( a_uni_enc , "%s%d" , S_K_uni_enc , i_uni_enc_d ) ;
   }
 
-  if ( *str_nm_fmt_d ) {
+  if ( *str_nm_fmt_d ) {                                        // If NAMEFORMAT value is not empty
     sprintf ( a_nm_fmt , "%s%s" , S_K_nm_fmt , str_nm_fmt_d ) ;
   }
 
-  if ( *str_delimeter_d ) {
+  if ( *str_delimeter_d ) {                                     // If delimeter value is not empty 
     sprintf ( a_delimeter , "%s%s" , S_K_delimeter , str_delimeter_d ) ;
+    //printf ("DELI:%s\n" ,a_delimeter ) ;
   }
 
   i_multiplier = p_multiplier ;                                 // Multiplier value
@@ -731,17 +759,54 @@ int main ( int argc , char *argv[] ) {
 t_start_time = clock( ) ;                                       // Start time
 s_getParameter ( argc , argv ) ;                                // Subroutine to get parameter
 
+fprintf ( f_log_fopen_status, "------ Run Parameters ------" ) ;
+if ( p_data_set != 0 ) {                                      // If data set number is not empty
+  fprintf ( f_log_fopen_status, "\nData set number       : %d", p_data_set ) ;
+}
+
+if ( p_run_time != 0 ) {                                      // If run time number is not empty
+  fprintf ( f_log_fopen_status, "\nRun time number       : %d", p_run_time ) ;
+}
+
+if ( *p_population ) {                                        // If Population is non empty
+  fprintf ( f_log_fopen_status, "\nPopulation            : %s", p_population ) ;
+}
+
+if ( *p_system_nm ) {                                        // If System name is non empty
+  fprintf ( f_log_fopen_status, "\nSystem name           : %s", p_system_nm ) ;
+}
+
+if ( *p_infdir ) {                                            // If Input file directory is non empty
+  fprintf ( f_log_fopen_status, "\nInput File Directory  : %s", p_infdir ) ;
+}
+
+if ( *p_outfdir ) {                                           // If Output file directory is non empty
+  fprintf ( f_log_fopen_status, "\nOutput File Directory : %s", p_outfdir ) ;
+}
+
+if ( *p_logfdir ) {                                           // If Log file directory is non empty
+  fprintf ( f_log_fopen_status, "\nLog File Directory    : %s", p_logfdir ) ;
+}
+
+fprintf ( f_log_fopen_status, "\nVerbose               : %s\n", ( i_verbose_flg == 1 ? "Yes" : "No" ) ) ;
+
+fprintf ( f_log_fopen_status, "\n------ File Names ------" ) ;
+fprintf ( f_log_fopen_status, "\nInput file name       : %s", a_str_input_file ) ;
+fprintf ( f_log_fopen_status, "\nOutput file name      : %s", a_str_output_file ) ;
+fprintf ( f_log_fopen_status, "\nLog file name         : %s\n\n", a_str_log_file ) ;
+
 s_GMtc_open ( ) ;
 
   // Read a input file line by line
 while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
+  ++ i_rec_number ;                                             // Record number
   i_cur_rec_len = strlen( str_current_rec ) ;                   // Length of the current record
   if ( i_cur_rec_len > 0 && str_current_rec[i_cur_rec_len-1] == '\n' ) {
     str_current_rec[--i_cur_rec_len] = '\0' ;                   // Remove new line character from current record
   }
 
   for( i_idx = 1 ; i_idx < i_cur_rec_len; i_idx++ ) {
-    if( str_current_rec[i_idx] == ';' ) {                       // Search data and file data separator
+    if( str_current_rec[i_idx] == '\t' ) {                      // Search data and file data separator
       i_fld_spr = i_idx ;                                       // After *Id* first * position
       break ;                                                   // Until find separator
     }
@@ -887,7 +952,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
        a_mtc_lvl_typ_acc_rej ,                                  // Match level Typical with accept limit and reject limit
        a_uni_enc ,                                              // Unicode encoding format e.g UNICODE=4
        a_nm_fmt ,                                               // Name Format e.g NAMEFORMAT=R
-       a_delimeter                                              // Delimeter
+       a_delimeter                                              // Delimiter
     ) ;
 
     sprintf
@@ -900,7 +965,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
        a_mtc_lvl_con_acc_rej ,                                  // Match level Conservative with accept limit and reject limit
        a_uni_enc ,                                              // Unicode encoding format e.g UNICODE=4
        a_nm_fmt ,                                               // Name Format e.g NAMEFORMAT=R
-       a_delimeter                                              // Delimeter
+       a_delimeter                                              // Delimiter
     ) ;
 
     sprintf
@@ -913,37 +978,746 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
        a_mtc_lvl_lse_acc_rej ,                                  // Match level Loose with accept limit and reject limit
        a_uni_enc ,                                              // Unicode encoding format e.g UNICODE=4
        a_nm_fmt ,                                               // Name Format e.g NAMEFORMAT=R
-       a_delimeter                                              // Delimeter
+       a_delimeter                                              // Delimiter
     ) ;
 
     /*****************************************************************************/
 
-    s_GMtc_matches
-    (
-      a_search_data ,
-      a_file_data ,
-      i_search_data_len ,
-      i_file_data_len ,
-      str_ID_search ,
-      str_ID_file ,
-      a_prps_ty ,
-      a_prps_con ,
-      a_prps_lse
-    ) ;
 
-    printf ( "%s\n" , a_prps_ty ) ;
-    printf ( "%s\n" , a_prps_con ) ;
-    printf ( "%s\n" , a_prps_lse ) ;
+    if ( strcmp ( p_purpose , "Address" ) == 0 ) {
+      if ( strstr ( a_search_data , "Address_Part1" ) != NULL &&
+           strstr ( a_file_data ,   "Address_Part1" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Add_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Contact" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+             strstr ( a_search_data , "Organization_Name" ) != NULL &&
+             strstr ( a_search_data , "Address_Part1" ) != NULL ) &&
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+             strstr ( a_file_data , "Organization_Name" ) != NULL &&
+             strstr ( a_file_data , "Address_Part1" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Con_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Corp_Entity" ) == 0 ) {
+      if ( strstr ( a_search_data , "Organization_Name" ) != NULL &&
+           strstr ( a_file_data ,   "Organization_Name" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_CEn_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Division" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Organization_Name" ) != NULL &&
+             strstr ( a_search_data , "Address_Part1" ) != NULL ) &&
+           ( strstr ( a_file_data , "Organization_Name" ) != NULL &&
+             strstr ( a_file_data , "Address_Part1" ) != NULL )
+         ) {
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Div_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Family" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+             strstr ( a_search_data , "Address_Part1" ) != NULL &&
+             strstr ( a_search_data , "Telephone_Number" ) != NULL ) &&
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+             strstr ( a_file_data , "Address_Part1" ) != NULL &&
+             strstr ( a_file_data , "Telephone_Number" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Fam_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Fields" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Id" ) != NULL ||
+             strstr ( a_search_data , "Person_Name" ) != NULL ||
+             strstr ( a_search_data , "Organization_Name" ) != NULL ||
+             strstr ( a_search_data , "Address_Part1" ) != NULL ||
+             strstr ( a_search_data , "Address_Part2" ) != NULL ||
+             strstr ( a_search_data , "Postal_Area" ) != NULL ||
+             strstr ( a_search_data , "Telephone_Number" ) != NULL ||
+             strstr ( a_search_data , "Date" ) != NULL ||
+             strstr ( a_search_data , "Attribute1" ) != NULL ||
+             strstr ( a_search_data , "Attribute2" ) != NULL )
+             &&
+           ( strstr ( a_file_data , "Id" ) != NULL ||
+            strstr ( a_file_data , "Person_Name" ) != NULL ||
+            strstr ( a_file_data , "Organization_Name" ) != NULL ||
+            strstr ( a_file_data , "Address_Part1" ) != NULL ||
+            strstr ( a_file_data , "Address_Part2" ) != NULL ||
+            strstr ( a_file_data , "Postal_Area" ) != NULL ||
+            strstr ( a_file_data , "Telephone_Number" ) != NULL ||
+            strstr ( a_file_data , "Date" ) != NULL ||
+            strstr ( a_file_data , "Attribute1" ) != NULL ||
+            strstr ( a_file_data , "Attribute2" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Fld_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter1" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter1" ) != NULL &&
+           strstr ( a_file_data ,   "Filter1" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr1_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter2" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter2" ) != NULL &&
+           strstr ( a_file_data ,   "Filter2" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr2_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter3" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter3" ) != NULL &&
+           strstr ( a_file_data ,   "Filter3" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr3_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter4" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter4" ) != NULL &&
+           strstr ( a_file_data ,   "Filter4" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr4_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter5" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter5" ) != NULL &&
+           strstr ( a_file_data ,   "Filter5" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr5_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter6" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter6" ) != NULL &&
+           strstr ( a_file_data ,   "Filter6" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr6_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter7" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter7" ) != NULL &&
+           strstr ( a_file_data ,   "Filter7" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr7_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter8" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter8" ) != NULL &&
+           strstr ( a_file_data ,   "Filter8" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr8_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Filter9" ) == 0 ) {
+      if ( strstr ( a_search_data , "Filter9" ) != NULL &&
+           strstr ( a_file_data ,   "Filter9" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Ftr9_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Household" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+             strstr ( a_search_data , "Address_Part1" ) != NULL ) &&
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+             strstr ( a_file_data , "Address_Part1" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Hsho_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Individual" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+           ( strstr ( a_search_data , "Date" ) != NULL ||
+             strstr ( a_search_data , "Id" ) != NULL ) ) &&
+
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+           ( strstr ( a_file_data , "Date" ) != NULL ||
+             strstr ( a_file_data , "Id" ) != NULL ) ) ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_ind_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Organization" ) == 0 ) {
+      if ( strstr ( a_search_data , "Organization_Name" ) != NULL &&
+           strstr ( a_file_data , "Organization_Name" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_OrgN_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Person_Name" ) == 0 ) {
+      if ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+           strstr ( a_file_data , "Person_Name" ) != NULL ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_PerN_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Resident" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+             strstr ( a_search_data , "Address_Part1" ) != NULL ) &&
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+             strstr ( a_file_data , "Address_Part1" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_Res_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Wide_Contact" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+             strstr ( a_search_data , "Organization_Name" ) != NULL ) &&
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+             strstr ( a_file_data , "Organization_Name" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_WCon_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else if ( strcmp ( p_purpose , "Wide_Household" ) == 0 ) {
+      if ( ( strstr ( a_search_data , "Person_Name" ) != NULL &&
+             strstr ( a_search_data , "Address_Part1" ) != NULL &&
+             strstr ( a_search_data , "Telephone_Number" ) != NULL ) &&
+
+           ( strstr ( a_file_data , "Person_Name" ) != NULL &&
+             strstr ( a_file_data , "Address_Part1" ) != NULL &&
+             strstr ( a_file_data , "Telephone_Number" ) != NULL )
+         ) {
+
+        s_GMtc_matches
+        (
+          a_search_data ,
+          a_file_data ,
+          i_search_data_len ,
+          i_file_data_len ,
+          str_ID_search ,
+          str_ID_file ,
+          a_prps_ty ,
+          a_prps_con ,
+          a_prps_lse
+        ) ;
+      }
+      else {
+        i_WHsho_prps_err_knt ++ ;
+        
+        fprintf 
+        ( 
+          f_log_fopen_status , 
+          "\nRecord no : %d Error Message : %s %s" ,
+          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose 
+        ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+      }
+    }
+    else {
+      printf ( "%s\n" , "JOB-ABANDONDED : Wrong purpose entered" ) ;
+      exit(1) ;
+    }
+
+    //printf ( "%s\n" , a_prps_ty ) ;
+    //printf ( "%s\n" , a_prps_con ) ;
+    //printf ( "%s\n" , a_prps_lse ) ;
 
   } // End If
 
-  } // End while loop
-  s_GMtc_close ( ) ;
+} // End while loop
 
+  
+fprintf ( f_log_fopen_status , "Address purpose errors count    : %d\n" , i_Add_prps_err_knt ) ;
+/*printf ( "Contact purpose errors count    :%d\n" , i_Con_prps_err_knt ) ;
+printf ( "Corp Entity errors count        :%d\n" , i_CEn_prps_err_knt ) ;
+printf ( "Division purpose errors count   :%d\n" , i_Div_prps_err_knt ) ;
+printf ( "Family purpose errors count     :%d\n" , i_Fam_prps_err_knt ) ;
+printf ( "Fields purpose errors count     :%d\n" , i_Fld_prps_err_knt ) ;
+printf ( "Filter1 purpose errors count    :%d\n" , i_Ftr1_prps_err_knt ) ;
+printf ( "Filter2 purpose errors count    :%d\n" , i_Ftr2_prps_err_knt ) ;
+printf ( "Filter3 purpose errors count    :%d\n" , i_Ftr3_prps_err_knt ) ;
+printf ( "Filter4 purpose errors count    :%d\n" , i_Ftr4_prps_err_knt ) ;
+printf ( "Filter5 purpose errors count    :%d\n" , i_Ftr5_prps_err_knt ) ;
+printf ( "Filter6 purpose errors count    :%d\n" , i_Ftr6_prps_err_knt ) ;
+printf ( "Filter7 purpose errors count    :%d\n" , i_Ftr7_prps_err_knt ) ;
+printf ( "Filter8 purpose errors count    :%d\n" , i_Ftr8_prps_err_knt ) ;
+printf ( "Filter9 purpose errors count    :%d\n" , i_Ftr9_prps_err_knt ) ;
+printf ( "HouseHold purpose errors count  :%d\n" , i_Hsho_prps_err_knt ) ;
+printf ( "Individual purpose errors count :%d\n" , i_ind_prps_err_knt ) ;
+printf ( "Organization purpose errors count :%d\n" , i_OrgN_prps_err_knt ) ;
+printf ( "Person_Name purpose errors count :%d\n" , i_PerN_prps_err_knt ) ;
+printf ( "Resident purpose errors count :%d\n" , i_Res_prps_err_knt ) ;
+printf ( "Wide Contact purpose errors count :%d\n" , i_WCon_prps_err_knt ) ;
+printf ( "Wide Household purpose errors count :%d\n" , i_WHsho_prps_err_knt ) ;*/
 
+s_GMtc_close ( ) ;                                              // Close the previously open connection
 
-  return ( 0 ) ;
+fclose ( f_input_fopen_status ) ;                               // input_fopen_status
+fclose ( f_output_fopen_status ) ;                              // Close output_fopen_status
+fclose ( f_log_fopen_status ) ;                                 // Close log_fopen_status
 
+return ( 0 ) ;
 
 }
 /**********************************************************************
