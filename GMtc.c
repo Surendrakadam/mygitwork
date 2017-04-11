@@ -201,11 +201,38 @@ int i_Res_prps_err_knt   = 0 ;                                  // Filter1 purpo
 int i_WCon_prps_err_knt  = 0 ;                                  // Filter1 purpose errors count
 int i_WHsho_prps_err_knt = 0 ;                                  // Filter1 purpose errors count
 
+// Empty records
+int i_emp_rec_knt        = 0 ;                                  // Empty records count
 int i_src_rec_emp_knt    = 0 ;                                  // Count of empty Search data records
 int i_fle_rec_emp_knt    = 0 ;                                  // Count of empty File data records
 
+// Error Record : Id
+int i_id_err_rec_knt     = 0 ;                                  // Records error that does not contain Id
+int i_id_src_rec_err_knt = 0 ;                                  // Count of errors in search record that does not contain Id
+int i_id_fle_rec_err_knt = 0 ;                                  // Count of errors in file record that does not contain Id
+
 int i_src_rec_err_knt    = 0 ;                                  // Search records error count
 int i_fle_rec_err_knt    = 0 ;                                  // File records error count
+
+// Decision count
+int i_dec_A_knt          = 0 ;                                  // Count of decision results are A ( Accept )
+int i_dec_R_knt          = 0 ;                                  // Count of decision results are R ( Reject )
+int i_dec_U_knt          = 0 ;                                  // Count of decision results are U ( Undecided )
+
+// Score count
+int i_scr_pft_mtc_knt = 0 ;                                     // Perfect match
+int i_scr_90_99_knt   = 0 ;                                     // Score range 90 to 99
+int i_scr_80_89_knt   = 0 ;                                     // Score range 80 to 89
+int i_scr_70_79_knt   = 0 ;                                     // Score range 70 to 79
+int i_scr_60_69_knt   = 0 ;                                     // Score range 60 to 69
+int i_scr_50_59_knt   = 0 ;                                     // Score range 50 to 59
+int i_scr_40_49_knt   = 0 ;                                     // Score range 40 to 49
+int i_scr_30_39_knt   = 0 ;                                     // Score range 30 to 39
+int i_scr_20_29_knt   = 0 ;                                     // Score range 20 to 29
+int i_scr_10_19_knt   = 0 ;                                     // Score range 10 to 19
+int i_scr_1_9_knt     = 0 ;                                     // Score range 01 to 09
+int i_scr_nt_mtc_knt  = 0 ;                                     // Not matching
+
 
 /**********************************************************************
  Start of subroutines                                                 *
@@ -654,6 +681,56 @@ static long s_test_dds_match (
     l_rc = 1 ;
     goto SUB_RETURN ;
   }
+
+  if ( atoi( a_score ) == 100 ) {
+    i_scr_pft_mtc_knt ++ ;                                      // Perfect match count
+  }
+  else if ( atoi( a_score ) >= 90 && atoi( a_score ) <= 99 ) {
+    i_scr_90_99_knt ++ ;                                        // Score range 90 to 99
+  }
+  else if ( atoi( a_score ) >= 80 && atoi( a_score ) <= 89 ) {
+    i_scr_80_89_knt ++ ;                                        // Score range 80 to 89
+  }
+  else if ( atoi( a_score ) >= 70 && atoi( a_score ) <= 79 ) {
+    i_scr_70_79_knt ++ ;                                        // Score range 70 to 79
+  }
+  else if ( atoi( a_score ) >= 60 && atoi( a_score ) <= 69 ) {
+    i_scr_60_69_knt ++ ;                                        // Score range 60 to 69
+  }
+  else if ( atoi( a_score ) >= 50 && atoi( a_score ) <= 59 ) {
+    i_scr_50_59_knt ++ ;                                        // Score range 50 to 59
+  }
+  else if ( atoi( a_score ) >= 40 && atoi( a_score ) <= 49 ) {
+    i_scr_40_49_knt ++ ;                                        // Score range 40 to 49
+  }
+  else if ( atoi( a_score ) >= 30 && atoi( a_score ) <= 39 ) {
+    i_scr_30_39_knt ++ ;                                        // Score range 30 to 39
+  }
+  else if ( atoi( a_score ) >= 20 && atoi( a_score ) <= 29 ) {
+    i_scr_20_29_knt ++ ;                                        // Score range 20 to 29
+  }
+  else if ( atoi( a_score ) >= 10 && atoi( a_score ) <= 19 ) {
+    i_scr_10_19_knt ++ ;                                        // Score range 10 to 19
+  }
+  else if ( atoi( a_score ) >= 1  && atoi( a_score ) <= 9 ) {
+    i_scr_1_9_knt ++ ;                                          // Score range 01 to 09
+  }
+  else if ( atoi( a_score ) == 0 ) {
+    i_scr_nt_mtc_knt ++ ;                                       // Not matching
+  }
+
+  if ( strcmp ( a_decision , "A" ) == 0 ) {
+    i_dec_A_knt ++ ;                                            // Count of decision results are A ( Accept )
+  }
+
+  if ( strcmp ( a_decision , "R" ) == 0 ) {
+    i_dec_R_knt ++ ;                                            // Count of decision results are R ( Reject )
+  }
+
+  if ( strcmp ( a_decision , "U" ) == 0 ) {
+    i_dec_U_knt ++ ;                                            // Count of decision results are U ( Undecided )
+  }
+
   fprintf (f_output_fopen_status ,"%s-%s-%s-%s-%s\n" , a_score ,a_decision ,str_controls,str_ID_search ,str_ID_file ) ;
 
   l_rc = 0 ;
@@ -858,7 +935,44 @@ fprintf ( f_log_fopen_status, "\nVerbose               : %s\n", ( i_verbose_flg 
 fprintf ( f_log_fopen_status, "\n------ File Names ------" ) ;
 fprintf ( f_log_fopen_status, "\nInput file name       : %s", a_str_input_file ) ;
 fprintf ( f_log_fopen_status, "\nOutput file name      : %s", a_str_output_file ) ;
-fprintf ( f_log_fopen_status, "\nLog file name         : %s\n\n", a_str_log_file ) ;
+fprintf ( f_log_fopen_status, "\nLog file name         : %s\n", a_str_log_file ) ;
+
+fprintf ( f_log_fopen_status , "\n------ CONTROLS ------ \n") ;
+
+if ( *p_purpose ) {
+  fprintf ( f_log_fopen_status , "PURPOSE                : %s\n" , p_purpose ) ;
+}
+
+fprintf ( f_log_fopen_status , "MATCH_LEVEL            : ( %s ,%s ,%s )\n" ,
+           S_K_mtc_lvl_ty , S_K_mtc_lvl_con ,S_K_mtc_lvl_lse ) ;
+
+if ( i_uni_enc_d != 0 ) {
+  fprintf ( f_log_fopen_status , "UNICODE_ENCODING       : %d\n" , i_uni_enc_d ) ;
+}
+
+if ( *str_nm_fmt_d ) {
+  fprintf ( f_log_fopen_status , "NAMEFORMAT             : %s\n" , str_nm_fmt_d ) ;
+}
+
+if ( p_acc_lmt != 0 ) {
+  fprintf ( f_log_fopen_status , "Accept Limit (+/-nn)   : %+d\n" , p_acc_lmt ) ;
+}
+
+if ( p_rej_lmt != 0 ) {
+  fprintf ( f_log_fopen_status , "Reject Limit (+/-nn)   : %+d\n" , p_rej_lmt ) ;
+}
+
+if ( *str_adjwei_d ) {
+  fprintf ( f_log_fopen_status , "ADJWEIGHT              : %s\n" , str_adjwei_d ) ;
+}
+
+if ( i_adjwei_val_d != 0 ) {
+  fprintf ( f_log_fopen_status , "Adjweight value (+/-nn): %+d\n" , i_adjwei_val_d ) ;
+}
+
+if ( *str_delimeter_d ) {
+  fprintf ( f_log_fopen_status , "DELIMITER              : %s\n" , str_delimeter_d ) ;
+}
 
 s_GMtc_open ( ) ;
 
@@ -896,10 +1010,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
   if ( !*a_search_data ) {
     i_src_rec_emp_knt ++ ;                                      // Count of empty Search data records
+    i_emp_rec_knt ++ ;                                          // Empty records count
   }
 
   if ( !*a_file_data ) {
     i_fle_rec_emp_knt ++ ;                                      // Count of empty File data records
+    i_emp_rec_knt ++ ;                                          // Empty records count
   }
 
   i_search_data_len = strlen( a_search_data ) ;                 // Length of search data
@@ -2168,14 +2284,40 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
     } // End of else
 
   } // End If
+  else {
+
+    if ( strstr
+              (
+                a_search_data , ( *str_delimeter_d ? a_Id : "*Id*" )
+              ) == NULL ) {
+      i_id_err_rec_knt ++ ;                                     // Records error that does not contain Id
+      i_id_src_rec_err_knt ++ ;                                 // Count of errors in search record that does not contain Id
+      fprintf
+          (
+            f_log_fopen_status ,
+            "\nRecord no : %d Error Message : %s" ,
+            i_rec_number , "Missing Id in search record"
+          ) ;
+      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", a_search_data ) ;
+    }
+
+    if ( strstr
+              (
+                a_file_data , ( *str_delimeter_d ? a_Id : "*Id*" )
+              ) == NULL ) {
+      i_id_err_rec_knt ++ ;                                     // Records error that does not contain Id
+      i_id_fle_rec_err_knt ++ ;                                 // Count of errors in file record that does not contain Id
+      fprintf
+          (
+            f_log_fopen_status ,
+            "\nRecord no : %d Error Message : %s" ,
+            i_rec_number , "Missing Id in file record"
+          ) ;
+      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", a_file_data ) ;
+    }
+  }
 
 } // End while loop
-
-fprintf ( f_log_fopen_status , "PURPOSE=%s\n" , p_purpose ) ;
-fprintf ( f_log_fopen_status , 
-          "MATCH_LEVEL=( %s ,%s ,%s )\n" ,
-           S_K_mtc_lvl_ty , S_K_mtc_lvl_con ,S_K_mtc_lvl_lse ) ;
-fprintf ( f_log_fopen_status , "=%s\n" , p_purpose ) ;
 
 
 /*PURPOSE ERRORS COUNT ****************************************************************************/
@@ -2267,30 +2409,65 @@ if ( i_WHsho_prps_err_knt != 0 ) {
   fprintf ( f_log_fopen_status , "\nWide Household purpose errors count :%d\n" , i_WHsho_prps_err_knt ) ;
 }
 
-/*END PURPOSE ERRORS COUNT ************************************************************************/
+/* END PURPOSE ERRORS COUNT ***********************************************************************/
 
-  //fprintf ( f_log_fopen_status , "Empty records count:%d\n" , i_emp_rec_knt ) ;
-
-if ( i_src_rec_emp_knt != 0 ) {
-  fprintf ( f_log_fopen_status , " - Search records  :%d\n" , i_src_rec_emp_knt ) ;
-}
-
-if ( i_fle_rec_emp_knt != 0 ) {
-  fprintf ( f_log_fopen_status , " - File records    :%d\n" , i_fle_rec_emp_knt ) ;
-}
+/* SEARCH RECORDS AND FILE RECORDS ERROR COUNT ****************************************************/
 
 if ( i_src_rec_err_knt != 0 ) {
-  fprintf ( f_log_fopen_status , "Search records errors count    :%d\n" , i_src_rec_err_knt ) ;
+  fprintf ( f_log_fopen_status , " - Search records errors count    :%d\n" , i_src_rec_err_knt ) ;
 }
 
 if ( i_fle_rec_err_knt != 0 ) {
-  fprintf ( f_log_fopen_status , "File records errors count      :%d\n" , i_fle_rec_err_knt ) ;
+  fprintf ( f_log_fopen_status , " - File records errors count      :%d\n" , i_fle_rec_err_knt ) ;
+}
+/* END SEARCH RECORDS AND FILE RECORDS ERROR COUNT ************************************************/
+
+/* RECORDS THAT DOES NOT CONTAIN ID ERROR COUNT ***************************************************/
+
+if ( i_id_err_rec_knt != 0 ) {
+  fprintf ( f_log_fopen_status , "\nMissing Id error records : %d\n" , i_id_err_rec_knt ) ;
 }
 
-fprintf ( f_log_fopen_status , "Decision        : \n" ) ;
-fprintf ( f_log_fopen_status , "- Accept (A)    : \n" ) ;
-fprintf ( f_log_fopen_status , "- Reject (R)    : \n" ) ;
-fprintf ( f_log_fopen_status , "- Undecided (U) : \n" ) ;
+if ( i_id_src_rec_err_knt != 0 ) {
+  fprintf ( f_log_fopen_status , " - Search records        : %d\n" , i_id_src_rec_err_knt ) ;
+}
+
+if ( i_id_fle_rec_err_knt != 0 ) {
+  fprintf ( f_log_fopen_status , " - File records          : %d\n" , i_id_fle_rec_err_knt ) ;
+}
+/* END RECORDS THAT DOES NOT CONTAIN ID ERROR COUNT ***********************************************/
+
+if ( i_emp_rec_knt != 0 ) {
+  fprintf ( f_log_fopen_status , "\nEmpty records count : %d\n" , i_emp_rec_knt ) ;
+}
+
+if ( i_src_rec_emp_knt != 0 ) {
+  fprintf ( f_log_fopen_status , " - Search records   : %d\n" , i_src_rec_emp_knt ) ;
+}
+
+if ( i_fle_rec_emp_knt != 0 ) {
+  fprintf ( f_log_fopen_status , " - File records     : %d\n" , i_fle_rec_emp_knt ) ;
+}
+/* END EMPTY RECORDS COUNT ************************************************************************/
+
+fprintf ( f_log_fopen_status , "\n------ Decision counts ------\n" ) ;
+fprintf ( f_log_fopen_status , "- Accept      (A) : %d \n" , i_dec_A_knt ) ;
+fprintf ( f_log_fopen_status , "- Reject      (R) : %d\n"  , i_dec_R_knt );
+fprintf ( f_log_fopen_status , "- Undecided   (U) : %d\n" , i_dec_U_knt ) ;
+
+fprintf ( f_log_fopen_status , "\n------ Score range counts ------\n" ) ;
+fprintf ( f_log_fopen_status , "Perfect Match : %d\n" , i_scr_pft_mtc_knt ) ;
+fprintf ( f_log_fopen_status , "Score 90 - 99 : %d\n" , i_scr_90_99_knt ) ;
+fprintf ( f_log_fopen_status , "Score 80 - 89 : %d\n" , i_scr_80_89_knt ) ;
+fprintf ( f_log_fopen_status , "Score 70 - 79 : %d\n" , i_scr_70_79_knt ) ;
+fprintf ( f_log_fopen_status , "Score 60 - 69 : %d\n" , i_scr_60_69_knt ) ;
+fprintf ( f_log_fopen_status , "Score 50 - 59 : %d\n" , i_scr_50_59_knt ) ;
+fprintf ( f_log_fopen_status , "Score 40 - 49 : %d\n" , i_scr_40_49_knt ) ;
+fprintf ( f_log_fopen_status , "Score 30 - 39 : %d\n" , i_scr_30_39_knt ) ;
+fprintf ( f_log_fopen_status , "Score 20 - 29 : %d\n" , i_scr_20_29_knt ) ;
+fprintf ( f_log_fopen_status , "Score 10 - 19 : %d\n" , i_scr_10_19_knt ) ;
+fprintf ( f_log_fopen_status , "Score  0 -  9 : %d\n" , i_scr_1_9_knt ) ;
+fprintf ( f_log_fopen_status , "Not Matching  : %d\n" , i_scr_nt_mtc_knt ) ;
 
 s_GMtc_close( ) ;                                               // Close the previously open connection
 
