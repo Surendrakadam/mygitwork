@@ -1,14 +1,35 @@
 #!C:/Perl/bin/perl -w
 
-# Procedure     : File_Stat.pl
-# Application   :
+# Application   : File_Stat.pl
 # Client        : Internal
 # Copyright (c) : IdentLogic Systems Private Limited
 # Author        : Surendra Kadam
 # Creation Date : 10 February 2017
-# Description   :
+# Description   : File Statistics will give you over all statistic report of a file
 
-# WARNINGS      :
+# WARNINGS      : There are special character which cannot separate fields. To avoid this problem
+#                  i added backslash prefix to field separator or optional enclosing character
+#                  within a procedure.
+#
+#                 PIPE
+#                 ANCHOR
+#                 BACKSLASH
+#                 DOLLAR
+#                 OPENSQUAREBRACKET
+#                 QUESTION
+#                 PLUS
+#                 STAR
+#                 STOP
+#                 OPENBRACKET
+#                 CLOSEBRACKET
+#
+#                 Here document does not supported while generating transource file
+#                 it throws an error 'cant find String terminator'
+#                 therefore I kept $v_print_file_encl_represntations inside START AND END KEEP
+#
+#                 Splits the string EXPR into a list of strings and returns that list. By default,
+#                 empty leading fields are preserved and empty trailing ones are deleted. ( If all
+#                 fields are empty, they are considered to be trailing.)
 
 # HARD CODINGS  :
 
@@ -31,6 +52,7 @@ my $p_in_file   = '' ;                                          # Input file
 my $p_f_dt_1    = '' ;                                          # Flag if data starting from the the first record itself, or, first record has column headers (default)
 my $p_out_file  = '' ;                                          # Output file
 my $p_f_ct_c_dp = '' ;                                          # Flag if display control character equivalences and stop
+my $p_trc_chr   = '' ;                                          # Tracing character or characters
 
 # Invalid characters count
 
@@ -46,11 +68,13 @@ my $v_no_of_flds        = 0 ;                                   # Work variable 
 my $v_fld_len           = 0 ;                                   # Length of field currenly being examined
 my $vft_fld_typ         = '' ;                                  # work field type
 my $vft_prv_fld_typ     = '' ;                                  # Previous field type determined
+my $v_trc_chr           = '' ;                                  # Tracing character separated by comma
 
 # Work arrays
 
-my @a_fld    = () ;                                             # Contains individual fields of current record
-my @a_fld_nm = () ;                                             # Array field in first record
+my @a_fld     = () ;                                            # Contains individual fields of current record
+my @a_fld_nm  = () ;                                            # Array field in first record
+my @a_trc_chr = () ;                                            # Array contain tracing characters
 
 # Result variables count
 
@@ -74,6 +98,9 @@ my %h_fld_max_len        = () ;                                 # Maximum length
 my %h_rec_no_fld_max_len = () ;                                 # Record no of maxnimum length of field as per field number
 my %h_encl_knt           = () ;                                 # Field wise count where optional enclosures used
 my %h_bad_encl_knt       = () ;                                 # Field wise count where optional enclosure used only in begining or at end of field
+my %h_unesc_encl_knt     = () ;                                 # Unescape enclosing character count as per field number
+my %h_trc_chr_knt        = () ;                                 # Tracing character or characters as per field number count
+my %h_val_email_chk_knt  = () ;                                 # Valid email count as per field number
 
 # Maximum and minimum field count related variables
 
@@ -104,7 +131,7 @@ my $o_file_ext    = '' ;                                        # Output file ex
 
 # Display control character and meta characters equivalences for field separator or
 # optional enclosing character and stop
-   
+
 ### START KEEP
 my $v_print_file_encl_represntations = <<'FILE_ENCL';
 
@@ -337,9 +364,9 @@ while ( $v_rec = <$IN_FILE1> ) {                                # Get field type
    if ( $p_fld_spr eq ')' ) {
       $p_fld_spr = ( "\\" ) . $p_fld_spr ;
    }
-   
+
    #########################################################################################################
-   
+
    # If Optional field encloser character is PIPE added prefix backslash to Optional field encloser character
    if ( $p_enc_chr eq '|' ) {
       $p_enc_chr = ( "\\" ) . $p_enc_chr ;
@@ -443,6 +470,9 @@ if ( $v_max_no_of_fld_rec > 0 ) {
          $h_rec_no_fld_max_len{ $idx } = '' ;                   # Record no of maxnimum length of field
          $h_encl_knt{ $idx }           = '' ;                   # Field wise count where optional enclosures used
          $h_bad_encl_knt{ $idx }       = '' ;                   # Field wise count where optional enclosure used only in begining or at end of field
+         $h_unesc_encl_knt{ $idx }     = '' ;                   # Unescape enclosing character count as per field number
+         $h_trc_chr_knt{ $idx }        = '' ;                   # Tracing character or characters as per field number count
+         $h_val_email_chk_knt{ $idx }  = '' ;                   # Count of valid email as per field number
       } ## end if ( ! exists ( $h_fld_typ...))
    } ## end for ( $idx = 0 ; $idx <...)
 } ## end if ( $v_max_no_of_fld_rec...)
@@ -640,35 +670,81 @@ while ( $v_rec = <$IN_FILE> ) {
 
       # Check if field is enclosed with Optional enclosing character
 
-      if ( $a_fld[ $idx ] =~ /^$p_enc_chr.*$p_enc_chr$/ ) {
-         if ( ! exists $h_encl_knt{ $idx } ) { $h_encl_knt{ $idx } = 1 ; }
-         else                                { $h_encl_knt{ $idx }++ ; }
-      }
-      else {
-         if ( ! exists $h_encl_knt{ $idx } ) { $h_encl_knt{ $idx } = "" ; }
-      }
+      if ( $p_enc_chr ne "" ) {
+         if ( $a_fld[ $idx ] =~ /^$p_enc_chr.*$p_enc_chr$/ ) {
+            if ( ! exists $h_encl_knt{ $idx } ) { $h_encl_knt{ $idx } = 1 ; }
+            else                                { $h_encl_knt{ $idx }++ ; }
+         }
+         else {
+            if ( ! exists $h_encl_knt{ $idx } ) { $h_encl_knt{ $idx } = "" ; }
+         }
+      } ## end if
 
       # Bad enclosure count
 
-      if ( ( $a_fld[ $idx ] =~ /^$p_enc_chr/ ) and ( $a_fld[ $idx ] !~ /$p_enc_chr$/ ) ) {
-         $a_fld[ $idx ] = $a_fld[ $idx ] . $p_enc_chr ;
-         if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = 1 ; }
-         else                                    { $h_bad_encl_knt{ $idx }++ ; }
+      if ( $p_enc_chr ne "" ) {
+         if ( ( $a_fld[ $idx ] =~ /^$p_enc_chr/ ) and ( $a_fld[ $idx ] !~ /$p_enc_chr$/ ) ) {
+            $a_fld[ $idx ] = $a_fld[ $idx ] . $p_enc_chr ;
+            if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = 1 ; }
+            else                                    { $h_bad_encl_knt{ $idx }++ ; }
 
-      } ## end if ( ( $a_fld[ $idx ] ...))
-      else {
-         if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = "" ; }
-      }
+         } ## end if ( ( $a_fld[ $idx ] ...))
+         else {
+            if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = "" ; }
+         }
 
-      if ( $a_fld[ $idx ] !~ /^$p_enc_chr/ and $a_fld[ $idx ] =~ /$p_enc_chr$/ ) {
-         $a_fld[ $idx ] = $p_enc_chr . $a_fld[ $idx ] ;
-         if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = 1 ; }
-         else                                    { $h_bad_encl_knt{ $idx }++ ; }
+         if ( $a_fld[ $idx ] !~ /^$p_enc_chr/ and $a_fld[ $idx ] =~ /$p_enc_chr$/ ) {
+            $a_fld[ $idx ] = $p_enc_chr . $a_fld[ $idx ] ;
+            if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = 1 ; }
+            else                                    { $h_bad_encl_knt{ $idx }++ ; }
 
-      } ## end if ( $a_fld[ $idx ] !~...)
-      else {
-         if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = "" ; }
-      }
+         } ## end if ( $a_fld[ $idx ] !~...)
+         else {
+            if ( ! exists $h_bad_encl_knt{ $idx } ) { $h_bad_encl_knt{ $idx } = "" ; }
+         }
+      } ## end if
+
+      # Unescape enclosing character count as per field number
+
+      if ( $p_enc_chr ne "" ) {
+         $a_fld[ $idx ] =~ s/^$p_enc_chr// ;                    # Remove leading enclosing character
+         $a_fld[ $idx ] =~ s/$p_enc_chr$// ;                    # Remove trailing enclosing character
+         $a_fld[ $idx ] =~ s/$p_enc_chr$p_enc_chr//g ;          # Remove pair enclosing character
+
+         if ( $a_fld[ $idx ] =~ /$p_enc_chr/ ) {                # Check field contain enclosing character
+            if ( ! exists $h_unesc_encl_knt{ $idx } ) { $h_unesc_encl_knt{ $idx } = 1 ; }
+            else                                      { $h_unesc_encl_knt{ $idx }++ ; }
+
+         }
+         else {
+            if ( ! exists $h_unesc_encl_knt{ $idx } ) { $h_unesc_encl_knt{ $idx } = "" ; }
+         }
+      } ## end if
+
+      # Tracing character or characters count as per field number
+
+      if ( $p_trc_chr ne "" ) {
+         if ( $a_fld[ $idx ] =~ /[$p_trc_chr]/ ) {
+            if ( ! exists $h_trc_chr_knt{ $idx } ) { $h_trc_chr_knt{ $idx } = 1 ; }
+            else                                   { $h_trc_chr_knt{ $idx }++ ; }
+         }
+         else {
+            if ( ! exists $h_trc_chr_knt{ $idx } ) { $h_trc_chr_knt{ $idx } = "" ; }
+         }
+      } ## end if
+
+      # Count of valid email address
+
+      if ( $a_fld[ $idx ] ne "" ) {                             # Match email format
+         if ( $a_fld[ $idx ] =~ /^(([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{1,5}){1,25})+([, ](([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{1,5}){1,25})+)*$/ ) {
+
+            if ( ! exists $h_val_email_chk_knt{ $idx } ) { $h_val_email_chk_knt{ $idx } = 1 ; }
+            else                                         { $h_val_email_chk_knt{ $idx }++ ; }
+         }
+         else {
+            if ( ! exists $h_val_email_chk_knt{ $idx } ) { $h_val_email_chk_knt{ $idx } = "" ; }
+         }
+      } ## end if
 
    } ## end for ( $idx = 0 ; $idx <...)
 
@@ -691,24 +767,27 @@ open ( my $OUTFILE , ">" , $p_out_file ) or                     #
   die "Could not open output file $p_out_file - $!\n" ;
 
 print $OUTFILE                                                  # Print report header first line
-  "Serial No" . "\t" .                                          # 1
-  "Description" . "\t" .                                        # 2
-  "Occurences" . "\t" .                                         # 3
-  "Type (after removing unprintables)" . "\t" .                 # 4
-  "Empty" . "\t" .                                              # 5
-  "Contains unprintable characters count" . "\t" .              # 6
-  "Minimum not null length first record no." . "\t" .           # 7
-  "Minimum not null length" . "\t" .                            # 8
-  "Maximum length first record no." . "\t" .                    # 9
-  "Maximum length" . "\t" .                                     # 10
-  "Minimum not null value first record no." . "\t" .            # 11
-  "Minimum not null value" . "\t" .                             # 12
-  "Maximum value first record no." . "\t" .                     # 13
-  "Maximum value" . "\t" .                                      # 14
-  ( $p_enc_chr eq "" ? "" : "Count optional enclosing character" . "\t" ) .                #15
-  ( $p_enc_chr eq "" ? "" : "Unbalanced enclosure count" . "\t" ) .                        # 16
-  "Minimum Fields" . "\t" .                                     # 17
-  "Maximum Fields" . "\n" ;                                     # 18
+  "Serial No" . "\t" .                                          # 1 Serial No
+  "Description" . "\t" .                                        # 2 Description
+  "Occurences" . "\t" .                                         # 3 Occurences
+  "Type (after removing unprintables)" . "\t" .                 # 4 Type
+  "Empty" . "\t" .                                              # 5 Empty fields
+  "Contains unprintable characters count" . "\t" .              # 6 Unprintable characters
+  "Minimum not null length first record no." . "\t" .           # 7 Minimum not null length first record no
+  "Minimum not null length" . "\t" .                            # 8 Minimum not null length
+  "Maximum length first record no" . "\t" .                     # 9 Maximum length first record no
+  "Maximum length" . "\t" .                                     # 10 Maximum length
+  "Minimum not null value first record no" . "\t" .             # 11 Minimum not null value first record no
+  "Minimum not null value" . "\t" .                             # 12 Minimum not null value
+  "Maximum value first record no" . "\t" .                      # 13 Maximum value first record no
+  "Maximum value" . "\t" .                                      # 14 Maximum value
+  ( $p_enc_chr eq "" ? "" : "Count optional enclosing character" . "\t" ) .                # 15 Count optional enclosing character
+  ( $p_enc_chr eq "" ? "" : "Unbalanced enclosure count" . "\t" ) .                        # 16 Unbalanced enclosure count
+  ( $p_enc_chr eq "" ? "" : "Unescaped enclosure count" . "\t" ) .                         # 17 Unescaped enclosure count
+  ( $p_trc_chr eq "" ? "" : "Tracing characters" . "\t" ) .     # 18 Tracing characters
+  "Email like field count" . "\t" .                                  # 19 Valid Email count
+  "Minimum Fields" . "\t" .                                     # 20 Minimum Fields
+  "Maximum Fields" . "\n" ;                                     # 21 Maximum Fields
 
 # If file is empty set constant value to zero
 if ( $v_rec_no_min_no_flds == 0 and $v_rec_no_min_len == 0 ) {
@@ -743,8 +822,13 @@ if ( $v_rec_with_invalid_char_knt == 0 ) {
    $v_rec_with_invalid_char_knt = '' ;
 }
 
+if ( $p_trc_chr ne "" ) {                                       # If tracing character(s) are non empty
+   @a_trc_chr = split ( "" , $p_trc_chr ) ;                     # Split into single character
+   $v_trc_chr = join ( " , " , @a_trc_chr ) ;                   # Join with comma
+}
+
 print $OUTFILE                                                  # Write file information
-  ( $p_f_dt_1 eq "n" ? "With header" : "Without header" ) . "\t" .    # 1
+  ( $p_f_dt_1 eq "n" ? "With header" : "Without header" ) . "\t" .    # 1 With header or Without header
   "File/Fields: " . $p_in_file . "\t" .                         # 2 File name
   $v_rec_knt . "\t" .                                           # 3 No of records
   "Field separator: " .                                         # 4 Field separator
@@ -784,10 +868,13 @@ print $OUTFILE                                                  # Write file inf
      )
      . "\t"
   )
-  .                                                             # 15
-  ( $p_enc_chr eq ""           ? ""               : "\t" ) .    # 16
-  ( $v_rec_no_min_no_flds == 0 ? "$v_min_no_flds" : "Record no $v_rec_no_min_no_flds: $v_min_no_flds" ) . "\t" .    # 17
-  ( $v_rec_no_max_no_flds == 0 ? "$v_max_no_flds" : "Record no $v_rec_no_max_no_flds: $v_max_no_flds" ) . "\n" ;    # 18
+  .                                                             # 15 Enclosure parameter are empty then hide this column
+  ( $p_enc_chr eq "" ? "" : "\t" ) .                            # 16 Enclosure parameter are empty then hide this column
+  ( $p_enc_chr eq "" ? "" : "\t" ) .                            # 17 Enclosure parameter are empty then hide this column
+  ( $p_trc_chr eq "" ? "" : $v_trc_chr . "\t" ) .               # 18 Display tracing character if parameter is non empty
+  "\t" .                                                        # 19
+  ( $v_rec_no_min_no_flds == 0 ? "$v_min_no_flds" : "Record no $v_rec_no_min_no_flds: $v_min_no_flds" ) . "\t" .    # 20 Minimum fields with record no
+  ( $v_rec_no_max_no_flds == 0 ? "$v_max_no_flds" : "Record no $v_rec_no_max_no_flds: $v_max_no_flds" ) . "\n" ;    # 21 Maximum fields with record no
 
 for ( $idx = 0 ; $idx < $v_max_no_of_fld_rec ; $idx ++ ) {      # Print field wis information
 
@@ -815,8 +902,11 @@ for ( $idx = 0 ; $idx < $v_max_no_of_fld_rec ; $idx ++ ) {      # Print field wi
      $h_fld_max{ $idx } . "\t" .                                # 14 Field wise Maximum field value
      ( $p_enc_chr eq "" ? "" : $h_encl_knt{ $idx } . "\t" ) .   # 15 Count of Enclosing character
      ( $p_enc_chr eq "" ? "" : $h_bad_encl_knt{ $idx } . "\t" ) .                                                   # 16 Bad enclosure counts
-     "\t" .                                                     # 17
-     "\n" ;                                                     # 18
+     ( $p_enc_chr eq "" ? "" : $h_unesc_encl_knt{ $idx } . "\t" ) .                                                 # 17 Unescaped enclosing characters count
+     ( $p_trc_chr eq "" ? "" : $h_trc_chr_knt{ $idx } . "\t" ) .                                                    # 18 Tracing characters
+     $h_val_email_chk_knt{ $idx } . "\t" .                      # 19 Count of valid email address
+     "\t" .                                                     # 20  Minimum fields with record no
+     "\n" ;                                                     # 21  Maximum fields with record no
 
 } ## end for ( $idx = 0 ; $idx <...)
 
@@ -862,19 +952,26 @@ sub sGetParameter {
          verbose => "Optional field enclosing character - Control and meta character aliases can be used" ,
          order   => 4 ,
         } ,
+      tracing_character => {                                    # Tracing characters
+         type    => "=s" ,
+         env     => "-" ,
+         default => '' ,
+         verbose => "Tracing characters" ,
+         order   => 5 ,
+        } ,
       data_from_1_record_flag => {                              # Data starting from the first record instead of field labels in the first record
          type    => "!" ,
          env     => "-" ,
          default => "0" ,                                       # Default (parameter not mentioned) means field names in first record
          verbose => "Data starting from the first record - default header record present if not mentioned" ,
-         order   => 5 ,
+         order   => 6 ,
         } ,
       output_file => {                                          # Input file
          type    => "=s" ,
          env     => "-" ,
          default => '' ,
          verbose => "Output file path name" ,
-         order   => 6 ,
+         order   => 7 ,
         } ,
       control_character_display => {                            # Display control character equivalences for field separator or optional enclosing character and stop
          type    => '!' ,
@@ -886,7 +983,7 @@ sub sGetParameter {
 
    } ;
 
-   my ( $parameters ) = Getopt::Simple -> new () ;              # variable for runtime parameters
+   my ( $parameters ) = Getopt::Simple -> new () ;              # Variable for runtime parameters
 
    if ( ! $parameters -> getOptions ( $p_GetOptions , 'Usage: File_Stat.pl [options]' ) ) {
       exit ( -1 ) ;                                             # Failure.
@@ -895,9 +992,10 @@ sub sGetParameter {
    $p_in_file   = $$parameters{ 'switch' }{ 'input_file' } ;
    $p_fld_spr   = $$parameters{ 'switch' }{ 'field_separator' } ;
    $p_enc_chr   = $$parameters{ 'switch' }{ 'encloser_character' } ;
+   $p_trc_chr   = $$parameters{ 'switch' }{ 'tracing_character' } ;
    $p_f_dt_1    = $$parameters{ 'switch' }{ 'data_from_1_record_flag' } ;
    $p_out_file  = $$parameters{ 'switch' }{ 'output_file' } ;
-   $p_f_ct_c_dp = $$parameters{ 'switch' }{ 'control_character_display' } ;                                              # Flag if display control character equivalences and st
+   $p_f_ct_c_dp = $$parameters{ 'switch' }{ 'control_character_display' } ;                                              # Flag if display control character equivalences and stop
 
    # Display control character equivalences and stop option chosen
    if ( $p_f_ct_c_dp eq 1 ) {
@@ -912,9 +1010,9 @@ sub sGetParameter {
    if ( $p_fld_spr eq "" ) { die "JOB ABANDONDED - No field separator character\n" ; }
 
    $p_fld_spr = &sHdlFdSiOptEncl ( $p_fld_spr , 'Field Separator' ) ;                                                    # Handle field separator aliases
-   
+
    if ( $p_enc_chr ne "" ) {
-     $p_enc_chr = &sHdlFdSiOptEncl ( $p_enc_chr , 'Optional Field Enclosure' ) ;                                           # Handle optional field enclosure aliases
+      $p_enc_chr = &sHdlFdSiOptEncl ( $p_enc_chr , 'Optional Field Enclosure' ) ;                                        # Handle optional field enclosure aliases
    }
 
    # If Output file is null set default output file name as input file name with . as _ and _statistics.tsv at end
@@ -924,7 +1022,7 @@ sub sGetParameter {
       $p_out_file =~ s/\./\_/g ;                                # Replace dot to underscore
       $p_out_file =~ s/\__/\_/g ;                               # Replace double underscore to single underscore
       $p_out_file = $p_out_file . "_statistics.tsv" ;           # Concatinate _statistics.tsv to output file
-   } # end if
+   }                                                            # end if
 
    # Field separator to contain only one character
    if ( length $p_fld_spr > 1 ) {
@@ -960,7 +1058,7 @@ sub sHdlFdSiOptEncl {
       die "$0: JOB ABANDONED: INTERNAL SCRIPT ERROR: " .        #
         "Parameter >$vhfsoe_what< not 'Field Separator' nor " . #
         "'Optional Field Enclosure'\n" ;
-   } ## end if
+   } ## end if 
 
    if (
       $vhfsoe_what eq 'Field Separator' and                     # Field separator must
@@ -992,7 +1090,7 @@ sub sHdlFdSiOptEncl {
 
    return 1 ;
 
-} ## end sub sHdlFdSiOptEncl ( )
+} ## end sub sHdlFdSiOptEncl
 #######################################################################
 # End of sub sHdlFdSiOptEncl                                          #
 #######################################################################
@@ -1004,7 +1102,7 @@ sub sDpCtCStp {
    print $v_print_file_encl_represntations ;
    exit 1 ;
 
-} ## end sub sDpCtCStp ( )
+} ## end sub sDpCtCStp
 #######################################################################
 # End of sub sDpCtCStp                                                #
 #######################################################################
@@ -1111,16 +1209,18 @@ sub sGetFieldTypes {
 
 =head2 Description
 
- File Statistics procedure will give you over all statistic report of a file
+ File Statistics will give you over all statistic report of a file
 
 =head3 Records
 
- Count no of non empty and empty records in the file.
- Count no of unprintable characters in the records.
- Minimum not null length with record no.
- first Maximum length with record no.
+ Count no of non empty and empty records in the file
+ Count no of unprintable characters in the records
+ Minimum not null length with  record no
+ first Maximum length with record no
+ Display optional enclosing character if enclosing character run parameter
+  used.
  Minimum no of fields in a records with record no.
- Minimum no of fields in a records with record no.
+ Maximum no of fields in a records with record no.
 
 =head3 Fields
 
@@ -1139,22 +1239,37 @@ sub sGetFieldTypes {
  13. Field wise count where optional enclosures used with proper closed.
  14. Field wise count where optional enclosure used only in beginning or at
      end of field.
- 15. Some fields in the output file are showing empty means this field is empty
+ 16. Unescaped enclosing characters count a per field number
+      For checking Unescaped enclosing character i removed leading and trailing
+      characters and removed pair enclosing character. This will not affect to your
+      input file. its only for checking unescaped enclosing character.
+ 16. Count of tracing character or characters as per field number
+      Checking these characters are how many times came in fields.
+ 17. Count of valid email addresses field as per field number
+     I defined a regex which can take multiple email ids separated with
+      either comma(,) or space( ). Review the below code:
+
+      /^(([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{1,5}){1,25})+([, ](([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{1,5}){1,25})+)*$/
+
+ 18. Some fields in the output file are showing empty means this fields are empty
       or null in all records.
 
- Note: If the first record in the file contain header fields this procedure read
-       the file from second record otherwise it will start from the first record.
-       and if no header fields in file it will increment the fields using index.
-       If the header fields are empty in somewhere it will full fill that empty
-       space using *** Field field index ***.
+ Note: If enclosing character parameter is used in run parameter then only Count of
+        optional enclosing character , Unbalanced enclosure count , Unescaped enclosure
+        count columns get display else it hide.
+       If the first record in the file contain header fields this procedure read
+        the file from second record otherwise it will start from the first record.
+        and if no header fields in file it will increment the fields using index.
+        If the header fields are empty in somewhere it will full fill that empty
+        space using *** Field field index ***.
 
 =head3 Header fields in first record
 
  1. If first is empty it means that all fields in first record are empty then it
-    will assign its own value.
+     will assign its own value.
 
  2. If first record is non empty then each fields in header cleaned by using
-    some conditions.
+     some conditions.
     a) Replace control characters by space
     b) Replace multiple white space by space
     c) Remove leading and trailing blanks
@@ -1163,11 +1278,11 @@ sub sGetFieldTypes {
 =head3 Minimum and Maximum value as per field type
 
  It first check the data type of a field base on that it will perform the
- operation.
+  operation.
  If data type is ASCII, Unicode and unknown gt:greater than lt:less than
- operator is used.
- If data type is Integer, Signed integer ,Decimal and Signed decimal ( > ,< )
- operator  is used.
+  operator is used.
+ If data type is Integer, Signed integer ,Decimal and Signed decimal ( > , < )
+  operator  is used.
 
  Highest priority of a data type are as below:
 
@@ -1181,44 +1296,39 @@ sub sGetFieldTypes {
 
 =head2 Output file
 
+ In output file first row show you description of columns
+ Second column of second row display With or without header means
+  if you used data in a first record parameter then it will check
+  records of input file from first 1st record else it start from second
+  record. if it start from 1st record means without header else
+ Second Column of second row shows input file name which you taken.
+
  Input file name displayed in output file means which input file you taken as a input.
- Which field separator and optional enclosure character you taken that also displayed
- in output file.
+ Whatever field separator and optional enclosure character you taken that also displayed
+  in output file.
  If field separator and optional enclosure are control character then in output displayed
- ordinal value.
+  ordinal value.
 
  Give the output file extension: .tsv( tab separated field values ) file
  If you do not put output file name with extension it will create Output file by
- default.
+  default.
  for example ( input_File_extension_statistics.tsv )
  If you give input file with path the output file will be stored in that given path.
- else in same folder .
+  else in same folder .
 
 =head2 TSV format
 
  Output file extension is .tsv
  Open .tsv file in LibreOffice calc
  when you click on it one dialog box prompt it out.
- Choose Tab separator option (Choose as per your convenience otherwise 
- your output will be wrong )
+ Choose Tab separator option (Choose as per your convenience otherwise
+ your output file show you wrong format)
 
  Text delimiter choose as per convenience.
 
 =head2 Warning
 
- Always give the input file name otherwise it will give an error.
- Field separator should not be null
- Field separator contain only one character
- Optional enclosing separator contain only one character
- Escape character start with a backslash.
-
- These field separator cannot directly used in command prompt for that
- use in command prompt. To avoid this kind of problem use control character
- parameter .
- It will display control and meta character aliases for field separator or
- enclosing character and stop
-
- These are special character which cannot separate fields. To avoid this problem
+ There are special character which cannot separate fields. To avoid this problem
  i added backslash prefix to field separator or optional enclosing character within a procedure.
 
  PIPE
@@ -1232,13 +1342,17 @@ sub sGetFieldTypes {
  STOP
  OPENBRACKET
  CLOSEBRACKET
- 
+
  Here document does not supported while generating transource file
  it throws an error 'cant find String terminator'
  therefore I kept $v_print_file_encl_represntations inside START AND END KEEP
- 
+
+ Splits the string EXPR into a list of strings and returns that list. By default,
+ empty leading fields are preserved and empty trailing ones are deleted. ( If all
+ fields are empty, they are considered to be trailing.)
 
 =head2 Field separator and optional enclosing character
+
     i. Handle field separator and optional enclosing character.
 
    ii. If length of the character is more than one convert into upper case
@@ -1248,10 +1362,23 @@ sub sGetFieldTypes {
   iii. Display control character equivalences for field separator or
         optional enclosing character and stop.
 
+=head2 Error Message
+
+ Always give the input file name otherwise it will give an error.
+ Field separator should not be null
+ Field separator contain only one character
+ Optional enclosing separator contain only one character
+ Escape character start with a backslash.
+
+ Some control characters and metacharacter cannot directly used in command promp to
+  avoid this kind of problem use control character parameter .
+ It will display control and meta character aliases for field separator or
+  enclosing character and stop
+
 =head2 Technical
 
- Package Number   -
- Procedure Number -
+ Package Number   - 44
+ Procedure Number - 507
  Procedure Name   - File_Stat.pl
 
 =head3 Run parameters
@@ -1261,6 +1388,7 @@ sub sGetFieldTypes {
  input_file                 Input file name with extension       i   $p_in_file
  field_separator            Field Separator                      f   $p_fld_spr
  encloser_character         Enclosed separator                   e   $p_enc_chr
+ tracing_character          Tracing character or characters      t   $p_trc_chr
  data_from_1_record_flag    Data starting from the first record  d   $p_f_dt_1
  output_file                Output file name with extension      o   $p_out_file
  control_character_display  Flag if display control character    c   $p_f_ct_c_dp
@@ -1279,11 +1407,106 @@ sub sGetFieldTypes {
 
  perl File_Stat.pl -i input.txt -f STOP
 
+ perl File_Stat.pl -i input.txt -f STOP -t @#z
+
+ perl File_Stat.pl -i input.txt -f STOP -t *
+
+ perl File_Stat.pl -i input.txt -f STOP -c
+
  perl File_Stat.pl -i E:\folder1\folder2\input.txt -f SEMICOLON
   -e DOUBLEQUOTE -d  -o input_txt_filestatistics.tsv
 
  Input file is mandatory.
  Field separator is mandatory.
+ Encloser character is optional
+ Tracing character or characters are optional
+ Output file is optional
+ Control character is optional to check which are the field separator and
+ enclosing character.
+ data_from_1_record_flag is flag to determine data starting from the first record
+  there are no header file in input file.
+ Control character are optional , it is specially for new user
+
+=head4 Control character and meta characters
+
+ Display control character and meta characters equivalences for field separator or
+  optional enclosing character and stop
+
+ NUL                => 0 ,                                  # Null
+ SOH                => 1 ,                                  # Start of heading
+ STX                => 2 ,                                  # Start of text
+ ETX                => 3 ,                                  # End of text
+ EOT                => 4 ,                                  # End of transmission
+ ENQ                => 5 ,                                  # Enquiry
+ ACK                => 6 ,                                  # Aknowledge
+ BEL                => 7 ,                                  # Bell
+ \a                 => 7 ,                                  # Bell
+ BS                 => 8 ,                                  # Backspace
+ \b                 => 8 ,                                  # Backspace
+ TAB                => 9 ,                                  # Tab
+ \t                 => 9 ,                                  # Tab
+ LF                 => 10 ,                                 # Line feed
+ \n                 => 10 ,                                 # Line feed
+ VT                 => 11 ,                                 # Vertical tab
+ \v                 => 11 ,                                 # Vertical tab
+ FF                 => 12 ,                                 # Form feed
+ \f                 => 12 ,                                 # Form feed
+ CR                 => 13 ,                                 # Carriage return
+ \r                 => 13 ,                                 # Carriage return
+ SO                 => 14 ,                                 # Shift out
+ SI                 => 15 ,                                 # Shift in
+ DLE                => 16 ,                                 # Data link escape
+ DC1                => 17 ,                                 # Device control 1
+ DC2                => 18 ,                                 # Device control 2
+ DC3                => 19 ,                                 # Device control 3
+ DC4                => 20 ,                                 # Device control 4
+ NAK                => 21 ,                                 # Negative aknowledge
+ SYN                => 22 ,                                 # Synchronous idle
+ ETB                => 23 ,                                 # End of trans. block
+ CAN                => 24 ,                                 # Cancel
+ em                 => 25 ,                                 # End of medium
+ sub                => 26 ,                                 # Substitude
+ ESC                => 27 ,                                 # Escape
+ \e                 => 27 ,                                 # Escape
+ FS                 => 28 ,                                 # File separator
+ GS                 => 29 ,                                 # Group separator
+ RS                 => 30 ,                                 # Record separator
+ US                 => 31 ,                                 # Unit separator
+ SPACE              => 32 ,                                 # Space
+ EXCLAMATION        => 33 ,                                 # !
+ DOUBLEQUOTE        => 34 ,                                 # Double quote
+ HASH               => 35 ,                                 # #
+ DOLLAR             => 36 ,                                 # $
+ PERCENT            => 37 ,                                 # %
+ AND                => 38 ,                                 # &
+ SINGLEQUOTE        => 39 ,                                 # Single quote
+ OPENBRACKET        => 40 ,                                 # (
+ CLOSEBRACKET       => 41 ,                                 # )
+ STAR               => 42 ,                                 # *
+ PLUS               => 43 ,                                 # +
+ COMMA              => 44 ,                                 # ,
+ MINUS              => 45 ,                                 # -
+ STOP               => 46 ,                                 # .
+ FORWARDSLASH       => 47 ,                                 # /
+ COLON              => 58 ,                                 # :
+ SEMICOLON          => 59 ,                                 # ;
+ LESSTHAN           => 60 ,                                 # <
+ EQUAL              => 61 ,                                 # =
+ GREATERTHAN        => 62 ,                                 # >
+ QUESTION           => 63 ,                                 # ?
+ AT                 => 64 ,                                 # @
+ OPENSQUAREBRACKET  => 91 ,                                 # [
+ BACKSLASH          => 92 ,                                 # \
+ CLOSESQUAREBRACKET => 93 ,                                 # ]
+ ANCHOR             => 94 ,                                 # ^
+ UNDERSCORE         => 95 ,                                 # _
+ BACKTICK           => 96 ,                                 # `
+ OPENCURLYBRAKCKET  => 123 ,                                # {
+ PIPE               => 124 ,                                # |
+ \|                 => 124 ,                                # | Pipe
+ CLOSECURLYBRACKET  => 125 ,                                # }
+ TILDE              => 126 ,                                # ~
+ DEL                => 127                                  #
 
 =head4 Help and defaults
 
