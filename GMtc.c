@@ -61,9 +61,10 @@ char str_current_rec [ BUFSIZ ]  = {0} ;                        // Current recor
 int i_rec_number  = 0 ;                                         // Record counter
 int i_cur_rec_len = 0 ;                                         // Current record length
 int i_idx         = 0 ;                                         // Main method for loop initial variable
-int i_purpose_no        = 0 ;                                   // Purpose number
+int i_purpose_no  = 0 ;                                         // Purpose number
+int i_op_rec_knt  = 0 ;
 
-// Time variables
+// Time variables of program start
 int i_YYYY = 0 ;                                                // Year
 int i_MM   = 0 ;                                                // Month
 int i_DD   = 0 ;                                                // Date
@@ -173,11 +174,14 @@ char a_delimeter[100]= {0} ;                                    // Delimiter in 
 char a_prps_ty[100]  = {0} ;                                    // Purpose with match level Typical
 char a_prps_con[100] = {0} ;                                    // Purpose with match level Conservative
 char a_prps_lse[100] = {0} ;                                    // Purpose with match level Loose
-char a_Id[10]        = {0} ;
-
+char a_Id[10]        = {0} ;                                    // Id with delimiter *Id*
 char a_mtc_lvl_typ_acc_rej[100] = {0} ;                         // Match level Typical with accept limit and reject limit
 char a_mtc_lvl_con_acc_rej[100] = {0} ;                         // Match level Conservative with accept limit and reject limit
 char a_mtc_lvl_lse_acc_rej[100] = {0} ;                         // Match level Loose with accept limit and reject limit
+
+char *str_system_nm_d   = "" ;                                  // System name
+char *str_popln_nm_d    = "" ;                                  // Population name
+char *str_encoding_d    = "" ;                                  // Encoding datatype
 
 char *S_K_prps        = "PURPOSE=" ;                            // PURPOSE= format
 char *str_prps_nm     = "" ;                                    // Purpose name
@@ -359,15 +363,16 @@ void s_print_usage( ) {
 // Print help if user enters wrong run parameter
 // It displayed with example
 
-  printf
-   (
-    "GMtc -d <data_set> -r <run> -s<system-name> -p <population> -c <Encoding_datatype>"
-    "-u<purpose> -e<unicode_encoding> -n<name_format> -a<accept_limit> "
-    "-j<reject_limit> -w<Adjweight> -x<Adjweight_value> -t<delimeter> -i <input_file_directory>"
-    " -o <output_file_directory> -l <log_file_directory> -m <Multiplier> -v<verbose>\n\nExample:\n\n"
-    "GMtc -d 101 -r 1001 -s default -p india -c TEXT -u Address -e 4 -n L -a 20 -j 10 "
-    "-w Address_Part1 -x 1 -t @ -i E:/SurendraK/Work/DeDupeProcs/Input/"
-    " -o E:/SurendraK/Work/DeDupeProcs/Output/ -l E:/SurendraK/Work/SSAProcs/Log/ -m 10000 -v\n"
+  printf (
+    "GMtc -d <DATA_SET> -r <RUN> -u <PURPOSE> -s <system-name> -p <population> "
+    "-i <input_file_directory> -o <output_file_directory> -l <log_file_directory> "
+    "-t <delimeter> -c <encoding_datatype> -e <unicode_encoding> -n <name_format> "
+    "-a <accept_limit> -j <reject_limit> -w <adjweight> -x <adjweight_value> "
+    "-m <multiplier> -v(erbose)\n\nMANDATORY VALUES IN CAPITALS\n\nExample:\n\n"
+    "GMtc -d 101 -r 1001 -u Resident -s default -p india "
+    "-i E:/SurendraK/Work/DeDupeProcs/Input/ -o E:/SurendraK/Work/DeDupeProcs/Output/"
+    " -l E:/SurendraK/Work/SSAProcs/Log/ -t @ -c TEXT -e 4 -n L -a 20 -j 10"
+    " -w Address_Part1 -x 1 -m 10000 -v\n"
    ) ;
 
 }
@@ -442,17 +447,17 @@ static void s_getParameter ( int argc , char *argv[] ) {
     }
   }
 
-  str_prps_nm     = p_purpose ;                                 // Initialize purpose data in variable
+  str_prps_nm     = p_purpose ;                                 // Initialize purpose data in another variable
+  i_uni_enc_d     = p_uni_enc ;                                 // Initialize unicode_Encoding data in another variable
+  str_nm_fmt_d    = p_nm_fmt ;                                  // Initialize name format data in another variable
+  str_adjwei_d    = p_adjweight ;                               // Initialize adjweight data in another variable
+  i_adjwei_val_d  = p_adjwei_val ;                              // Initialize adjweight value data in another variable
+  str_delimeter_d = p_delimiter ;                               // Initialize delimiter data in another variable
+  i_multiplier    = p_multiplier ;                              // Multiplier value
 
-  i_uni_enc_d     = p_uni_enc ;                                 // Initialize Unicode_Encoding data in variable
-
-  str_nm_fmt_d    = p_nm_fmt ;                                  // Initialize Name format data in variable
-
-  str_adjwei_d    = p_adjweight ;                               // Initialize Adjweight data in variable
-
-  i_adjwei_val_d  = p_adjwei_val ;                              // Initialize Adjweight value data in variable
-
-  str_delimeter_d = p_delimiter ;                               // Initialize delimiter data in variable
+  str_system_nm_d   = p_system_nm ;                             // Initialize system name in another variable
+  str_popln_nm_d    = p_population ;                            // Initialize population name in another variable
+  str_encoding_d    = p_encoding ;                              // Initialize encoding datatype in another variable
 
   // Assign number to putpose
   if ( strcmp ( str_prps_nm , "Address" ) == 0 ) { i_purpose_no = 100 ; }
@@ -490,22 +495,31 @@ static void s_getParameter ( int argc , char *argv[] ) {
     exit(1) ;
   }
 
+  if ( !*p_delimiter ) {                                          // If delimeter parameter is empty
+    str_delimeter_d = "*" ;
+    sprintf ( a_delimeter , "%s%s" , S_K_delimeter , str_delimeter_d ) ;
+  }
+  else {
+    sprintf ( a_delimeter , "%s%s" , S_K_delimeter , p_delimiter ) ;
+  }
+
   if ( !*p_system_nm ) {                                        // Abort if System name is empty
-    printf ("%s","JOB ABANDONDED - Missing system name\n" ) ;
-    exit(1) ;
+    str_system_nm_d = "default" ;                               // Default value is default
   }
 
-  if ( !*p_population ) {                                       // Abort if Population is mepty
-    printf ("%s","JOB ABANDONDED - Missing population\n" ) ;
-    exit(1) ;
+  if ( !*p_population ) {                                       // Abort if Population is empty
+    str_popln_nm_d = "india" ;                                  // Default value is india
   }
 
-  if ( !*p_encoding ) {                                         // Abort if Encoding is mepty
-    printf ("%s","JOB ABANDONDED - Missing encoding datatype \n" ) ;
-    exit(1) ;
+  if ( !*p_encoding ) {                                         // Abort if Encoding is empty
+    str_encoding_d = "TEXT" ;                                   // Default value is TEXT
   }
 
-  if ( !*str_prps_nm ) {                                        // Abort if Purpose is mepty
+  if ( p_multiplier == 0 ) {
+    i_multiplier = 100000 ;                                     // Default multiplier number
+  }
+
+  if ( !*str_prps_nm ) {                                        // Abort if Purpose is empty
     printf ("%s","JOB ABANDONDED - Missing purpose\n" ) ;
     exit(1) ;
   }
@@ -586,16 +600,6 @@ static void s_getParameter ( int argc , char *argv[] ) {
       printf ("%s" , "Unknown ADJWEIGHT: Output file created without ADJWEIGHT field and its value\n" ) ;
       exit(1) ;
     }
-  }
-
-  if ( *str_delimeter_d ) {                                     // If delimeter value is not empty
-    sprintf ( a_delimeter , "%s%s" , S_K_delimeter , str_delimeter_d ) ;
-  }
-
-  i_multiplier = p_multiplier ;                                 // Multiplier value
-
-  if ( i_multiplier_flg == 0 ) {
-    i_multiplier = 100000 ;                                     // Default multiplier number
   }
 
   // Check Input file directory ends with backslash or forward slash , if not add it
@@ -948,8 +952,8 @@ static void s_GMtc_open ( ) {
   (
     l_sockh ,                                                   // Set to -1 as not calling the dds-name3 server
     &l_session_id ,                                             // Should be -1 on the ddsn3 open call ,or opening a new session
-    p_system_nm ,                                               // Defines location of the population rules
-    p_population ,                                              // Population name of country
+    ( !*p_system_nm ? str_system_nm_d : p_system_nm ) ,         // System name parameter is empty used default value
+    ( !*p_population ? str_popln_nm_d : p_population ) ,        // Population parameter is empty used default value
     ""                                                          // Controls
   ) ;
 
@@ -993,15 +997,15 @@ char *str_abv_lse                                               // Abbrevation o
     (
       l_sockh ,                                                 // Set to -1 as not calling the dds-name3 server
       &l_session_id ,                                           // Should be -1 on the ddsn3 open call ,or opening a new session
-      p_system_nm ,                                             // System name
-      p_population ,                                            // Population name
+      ( !*p_system_nm ? str_system_nm_d : p_system_nm ) ,       // System name parameter is empty used default value
+      ( !*p_population ? str_popln_nm_d : p_population ) ,      // Population parameter is empty used default value
       str_purpose[ i_idx ] ,                                    // Purpose with three match level
       str_search_data ,                                         // Search data
       i_search_data_len ,                                       // Length of search data
-      p_encoding ,                                              // Encoding data type of search data
+      ( !*p_encoding ? str_encoding_d : p_encoding ) ,          // Encoding data type of search data
       str_file_data ,                                           // File data
       i_file_data_len ,                                         // Length of file data
-      p_encoding ,                                              // Encoding data type of file data
+      ( !*p_encoding ? str_encoding_d : p_encoding ) ,          // Encoding data type of file data
       str_ID_search ,                                           // Id of search data
       str_ID_file ,                                             // Id of file data
       str_prps ,                                                // Purpose
@@ -1022,10 +1026,10 @@ static void s_GMtc_close ( ) {
 
   l_rc = s_test_dds_close
   (
-    l_sockh ,
-    &l_session_id ,
-    p_system_nm ,
-    p_population ,
+    l_sockh ,                                                   // Set to -1 as not calling the dds-name3 server
+    &l_session_id ,                                             // Should be -1 on the ddsn3 open call ,or opening a new session
+    ( !*p_system_nm ? str_system_nm_d : p_system_nm ) ,         // System name parameter is empty used default value
+    ( !*p_population ? str_popln_nm_d : p_population ) ,        // Population parameter is empty used default value
     ""
   ) ;
 
@@ -1047,65 +1051,65 @@ if ( *str_delimeter_d ) {                                       // If delimeter 
   sprintf ( a_Id ,"%sId%s", str_delimeter_d , str_delimeter_d ) ;
 }
 
-fprintf ( f_log_fopen_status, "------ Run Parameters ------" ) ;
+fprintf ( f_log_fopen_status, "------ Run Parameters ------\n" ) ;
 if ( p_data_set != 0 ) {                                        // If data set number is not empty
-  fprintf ( f_log_fopen_status, "\nData set number       : %d", p_data_set ) ;
+  fprintf ( f_log_fopen_status , "Data set number        : %d\n", p_data_set ) ;
 }
 
 if ( p_run_time != 0 ) {                                        // If run time number is not empty
-  fprintf ( f_log_fopen_status, "\nRun time number       : %d", p_run_time ) ;
+  fprintf ( f_log_fopen_status , "Run time number        : %d\n", p_run_time ) ;
 }
 
-if ( *p_system_nm ) {                                           // If System name is non empty
-  fprintf ( f_log_fopen_status, "\nSystem name           : %s", p_system_nm ) ;
+if ( *p_purpose ) {                                             // If purpose name is not empty
+  fprintf ( f_log_fopen_status , "Purpose                : %s\n" , p_purpose ) ;
 }
 
-if ( *p_population ) {                                          // If Population is non empty
-  fprintf ( f_log_fopen_status, "\nPopulation            : %s", p_population ) ;
+if ( !*p_system_nm ) {                                          // If System name is non empty
+  fprintf ( f_log_fopen_status , "System name            : Missing- Default:%s\n", str_system_nm_d ) ;
+}
+else {
+  fprintf ( f_log_fopen_status , "System name            : %s\n", p_system_nm ) ;
 }
 
-if ( *p_encoding ) {                                            // If Encoding datatype is non empty
-  fprintf ( f_log_fopen_status, "\nEncoding datatype     : %s", p_encoding ) ;
+if ( !*p_population ) {                                          // If Population is non empty
+  fprintf ( f_log_fopen_status , "Population             : Missing- Default:%s\n", str_popln_nm_d ) ;
+}
+else {
+  fprintf ( f_log_fopen_status , "Population             : %s\n", p_population ) ;
 }
 
 if ( *p_infdir ) {                                              // If Input file directory is non empty
-  fprintf ( f_log_fopen_status, "\nInput File Directory  : %s", p_infdir ) ;
+  fprintf ( f_log_fopen_status , "Input File Directory   : %s\n", p_infdir ) ;
 }
 
 if ( *p_outfdir ) {                                             // If Output file directory is non empty
-  fprintf ( f_log_fopen_status, "\nOutput File Directory : %s", p_outfdir ) ;
+  fprintf ( f_log_fopen_status , "Output File Directory  : %s\n", p_outfdir ) ;
 }
 
 if ( *p_logfdir ) {                                             // If Log file directory is non empty
-  fprintf ( f_log_fopen_status, "\nLog File Directory    : %s", p_logfdir ) ;
+  fprintf ( f_log_fopen_status , "Log File Directory     : %s\n", p_logfdir ) ;
 }
 
-fprintf ( f_log_fopen_status, "\nVerbose               : %s\n", ( i_verbose_flg == 1 ? "Yes" : "No" ) ) ;
-
-fprintf ( f_log_fopen_status, "\n------ File Names ------" ) ;
-fprintf ( f_log_fopen_status, "\nInput file name       : %s", a_str_input_file ) ;
-fprintf ( f_log_fopen_status, "\nOutput file name      : %s", a_str_output_file ) ;
-fprintf ( f_log_fopen_status, "\nLog file name         : %s\n", a_str_log_file ) ;
-
-fprintf ( f_log_fopen_status, "\n------ Environment variable ------" ) ;
-fprintf ( f_log_fopen_status, "\nSSATOP : %s" , getenv("SSATOP") ) ;
-fprintf ( f_log_fopen_status, "\nSSAPR  : %s\n" , getenv("SSAPR") ) ;
-
-fprintf ( f_log_fopen_status , "\n------ CONTROLS ------ \n") ;
-
-if ( *p_purpose ) {
-  fprintf ( f_log_fopen_status , "PURPOSE                : %s\n" , p_purpose ) ;
+if ( !*p_delimiter ) {
+  fprintf ( f_log_fopen_status , "Delimiter              : Missing- Default:%s\n" , str_delimeter_d ) ;
+}
+else {
+  fprintf ( f_log_fopen_status , "Delimiter              : %s\n" , p_delimiter ) ;
 }
 
-fprintf ( f_log_fopen_status , "MATCH_LEVEL            : ( %s ,%s ,%s )\n" ,
-           S_K_mtc_lvl_ty , S_K_mtc_lvl_con ,S_K_mtc_lvl_lse ) ;
+if ( !*p_encoding ) {                                            // If Encoding datatype is non empty
+  fprintf ( f_log_fopen_status , "Encoding datatype      : Missing- Default:%s\n", str_encoding_d ) ;
+}
+else {
+  fprintf ( f_log_fopen_status , "Encoding datatype      : %s\n", p_encoding ) ;
+}
 
 if ( i_uni_enc_d != 0 ) {
-  fprintf ( f_log_fopen_status , "UNICODE_ENCODING       : %d\n" , i_uni_enc_d ) ;
+  fprintf ( f_log_fopen_status , "Unicode encoding       : %d\n" , i_uni_enc_d ) ;
 }
 
 if ( *str_nm_fmt_d ) {
-  fprintf ( f_log_fopen_status , "NAMEFORMAT             : %s\n" , str_nm_fmt_d ) ;
+  fprintf ( f_log_fopen_status , "Name format            : %s\n" , str_nm_fmt_d ) ;
 }
 
 if ( p_acc_lmt != 0 ) {
@@ -1117,16 +1121,37 @@ if ( p_rej_lmt != 0 ) {
 }
 
 if ( *str_adjwei_d ) {
-  fprintf ( f_log_fopen_status , "ADJWEIGHT              : %s\n" , str_adjwei_d ) ;
+  fprintf ( f_log_fopen_status , "Adjweight              : %s\n" , str_adjwei_d ) ;
 }
 
 if ( i_adjwei_val_d != 0 ) {
   fprintf ( f_log_fopen_status , "Adjweight value (+/-nn): %+d\n" , i_adjwei_val_d ) ;
 }
 
-if ( *str_delimeter_d ) {
-  fprintf ( f_log_fopen_status , "DELIMITER              : %s\n" , str_delimeter_d ) ;
+if ( i_verbose_flg == 1 ) {
+  if ( p_multiplier == 0 ) {
+    fprintf ( f_log_fopen_status , "Multiplier             : Missing- Default :%d\n" , i_multiplier ) ;
+  }
+  else {
+    fprintf ( f_log_fopen_status , "Multiplier             : %d\n" , p_multiplier ) ;
+  }
 }
+
+fprintf ( f_log_fopen_status ,   "Verbose                : %s\n", ( i_verbose_flg == 1 ? "Yes" : "No" ) ) ;
+
+fprintf ( f_log_fopen_status, "\n------ File Names ------" ) ;
+fprintf ( f_log_fopen_status, "\nInput file name       : %s", a_str_input_file ) ;
+fprintf ( f_log_fopen_status, "\nOutput file name      : %s", a_str_output_file ) ;
+fprintf ( f_log_fopen_status, "\nLog file name         : %s\n", a_str_log_file ) ;
+
+fprintf ( f_log_fopen_status, "\n------ Environment variable ------" ) ;
+fprintf ( f_log_fopen_status, "\nSSATOP : %s" , getenv("SSATOP") ) ;
+fprintf ( f_log_fopen_status, "\nSSAPR  : %s\n" , getenv("SSAPR") ) ;
+
+//fprintf ( f_log_fopen_status , "\n------ CONTROLS ------ \n") ;
+
+/*fprintf ( f_log_fopen_status , "MATCH_LEVEL            : ( %s ,%s ,%s )\n" ,
+           S_K_mtc_lvl_ty , S_K_mtc_lvl_con ,S_K_mtc_lvl_lse ) ;*/
 
 s_GMtc_open ( ) ;                                               // Open get match connection
 
@@ -1224,14 +1249,14 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
   // Check search data and file data contain <delmiter>Id<delimiter> or not
   if ( strstr
        (
-         a_search_data , ( *str_delimeter_d ? a_Id : "*Id*" )   // If delimeter parameter is non empty find id in search data record
+         a_search_data , a_Id                                   // If delimeter parameter is non empty find id in search data record
        ) != NULL &&
        strstr
        (
-         a_file_data ,( *str_delimeter_d ? a_Id : "*Id*" )      // If delimeter parameter is non empty find id in file data record
+         a_file_data , a_Id                                     // If delimeter parameter is non empty find id in file data record
        ) != NULL ) {
 
-     if ( i_verbose_flg == 1 ) {                               // If Verbose flag is On
+     if ( i_verbose_flg == 1 ) {                                // If Verbose flag is On
 
         // Display so many records in so many seconds to execute
 
@@ -1247,7 +1272,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
     // Find Id of Search data
     str_ptr_id_search     = strstr
                            (
-                             a_search_data , ( *str_delimeter_d ? a_Id : "*Id*" )
+                             a_search_data , a_Id
                            ) ;                                  // Search <delmiter>Id<delimiter> in search data capture string from <delmiter>Id<delimiter> to till end of the string
 
     i_id_start_pos_search =                                     // Starting position of <delmiter>Id<delimiter> in search data
@@ -1257,7 +1282,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
     i_pos_afr_id_search   =
                             (
-                              i_id_start_pos_search + ( *str_delimeter_d ? strlen(a_Id) : 4 )
+                              i_id_start_pos_search + strlen( a_Id )
                             ) ;                                 // Position after <delmiter>Id<delimiter> in search data
 
     for( i_idx = i_pos_afr_id_search ; i_idx < i_search_data_len; i_idx++ ) {
@@ -1284,7 +1309,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
     // Find Id of File data
     str_ptr_id_file     = strstr
                          (
-                           a_file_data , ( *str_delimeter_d ? a_Id : "*Id*" )
+                           a_file_data , a_Id
                          ) ;                                    // Search <delmiter>Id<delimiter> in current record capture string from <delmiter>Id<delimiter> to till end of the string
 
     i_id_start_pos_file =                                       // Starting position of <delmiter>Id<delimiter>
@@ -1292,7 +1317,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       i_file_data_len - strlen(str_ptr_id_file)
     ) ;
 
-    i_pos_afr_id_file   = ( i_id_start_pos_file + ( *str_delimeter_d ? strlen(a_Id) : 4 )  ) ;         // Position after <delmiter>Id<delimiter>
+    i_pos_afr_id_file   = ( i_id_start_pos_file + strlen( a_Id ) ) ;            // Position after <delmiter>Id<delimiter>
 
     for( i_idx = i_pos_afr_id_file ; i_idx < i_file_data_len; i_idx++ ) {
       if( a_file_data[i_idx] == ( *str_delimeter_d ? str_delimeter_d[0] : '*' ) ) {
@@ -1404,10 +1429,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Address_Part1" ) != NULL &&
            strstr ( a_file_data ,   "Address_Part1" ) != NULL ) {
 
-        char *str_add = "S" ;                                   // Abbrevation purpose Address
+        char *str_add = "100" ;                                 // Purpose number of Address
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1420,7 +1447,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_add ,                                             // Abbrevation purpose Address
+          str_add ,                                             // Purpose number of Address
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1470,10 +1497,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Address_Part1" ) != NULL )
          ) {
 
-        char *str_contact = "N" ;                               // Abbrevation purpose Contact
+        char *str_contact = "101" ;                             // Purpose number Contact
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1486,7 +1515,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_contact ,                                         // Abbrevation purpose Contact
+          str_contact ,                                         // Purpose number of Contact
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1535,10 +1564,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Organization_Name" ) != NULL &&
            strstr ( a_file_data ,   "Organization_Name" ) != NULL ) {
 
-        char *str_cent = "E" ;                                  // Abbrevation purpose Corp_Entity
+        char *str_cent = "102" ;                                // Purpose number of Corp_Entity
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1551,7 +1582,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_cent ,                                            // Abbrevation purpose Corp_Entity
+          str_cent ,                                            // Purpose number of Corp_Entity
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1601,10 +1632,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Address_Part1" ) != NULL )
          ) {
 
-        char *str_div = "D" ;                                   // Abbrevation purpose Division
+        char *str_div = "103" ;                                 // Purpose number of Division
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1617,7 +1650,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_div ,                                             // Abbrevation purpose Division
+          str_div ,                                             // Purpose number of Division
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1671,10 +1704,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Telephone_Number" ) != NULL )
          ) {
 
-        char *str_fml = "M" ;                                   // Abbrevation purpose Family
+        char *str_fml = "104" ;                                 // Purpose number of Family
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1687,7 +1722,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_fml ,                                             // Abbrevation purpose family
+          str_fml ,                                             // Purpose number of family
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1757,10 +1792,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             strstr ( a_file_data , "Attribute1" ) != NULL ||
             strstr ( a_file_data , "Attribute2" ) != NULL )
          ) {
-        char *str_fld = "L" ;                                   // Abbrevation purpose Fields
+        char *str_fld = "105" ;                                 // Purpose number of Fields
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1773,7 +1810,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_fld ,                                             // Abbrevation purpose Fields
+          str_fld ,                                             // Purpose number of Fields
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1797,10 +1834,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter1" ) != NULL &&
            strstr ( a_file_data ,   "Filter1" ) != NULL ) {
 
-        char *str_ftr1 = "1" ;                                  // Abbrevation purpose Filter1
+        char *str_ftr1 = "106" ;                                // Purpose number of Filter1
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1813,7 +1852,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr1 ,                                            // Abbrevation purpose Filter1
+          str_ftr1 ,                                            // Purpose number of Filter1
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1860,10 +1899,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter2" ) != NULL &&
            strstr ( a_file_data ,   "Filter2" ) != NULL ) {
 
-        char *str_ftr2 = "2" ;                                  // Abbrevation purpose Filter2
+        char *str_ftr2 = "107" ;                                // Purpose number of Filter2
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1876,7 +1917,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr2 ,                                            // Abbrevation purpose Filter2
+          str_ftr2 ,                                            // Purpose number of Filter2
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1923,10 +1964,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter3" ) != NULL &&
            strstr ( a_file_data ,   "Filter3" ) != NULL ) {
 
-        char *str_ftr3 = "3" ;                                  // Abbrevation purpose Filter3
+        char *str_ftr3 = "108" ;                                // Purpose number of Filter3
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -1939,7 +1982,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr3 ,                                            // Abbrevation purpose Filter3
+          str_ftr3 ,                                            // Purpose number of Filter3
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -1986,10 +2029,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter4" ) != NULL &&
            strstr ( a_file_data ,   "Filter4" ) != NULL ) {
 
-        char *str_ftr4 = "4" ;                                  // Abbrevation purpose Filter4
+        char *str_ftr4 = "109" ;                                // Purpose number of Filter4
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2002,7 +2047,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr4 ,                                            // Abbrevation purpose Filter4
+          str_ftr4 ,                                            // Purpose number of Filter4
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2049,10 +2094,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter5" ) != NULL &&
            strstr ( a_file_data ,   "Filter5" ) != NULL ) {
 
-        char *str_ftr5 = "5" ;                                  // Abbrevation purpose Filter5
+        char *str_ftr5 = "110" ;                                // Purpose number of Filter5
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2065,7 +2112,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr5 ,                                            // Abbrevation purpose Filter5
+          str_ftr5 ,                                            // Purpose number of Filter5
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2112,10 +2159,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter6" ) != NULL &&
            strstr ( a_file_data ,   "Filter6" ) != NULL ) {
 
-        char *str_ftr6 = "6" ;                                  // Abbrevation purpose Filter6
+        char *str_ftr6 = "111" ;                                // Purpose number of Filter6
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2128,7 +2177,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr6 ,                                            // Abbrevation purpose Filter6
+          str_ftr6 ,                                            // Purpose number of Filter6
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2175,10 +2224,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter7" ) != NULL &&
            strstr ( a_file_data ,   "Filter7" ) != NULL ) {
 
-        char *str_ftr7 = "7" ;                                  // Abbrevation purpose Filter7
+        char *str_ftr7 = "112" ;                                // Purpose number of Filter7
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2191,7 +2242,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr7 ,                                            // Abbrevation purpose Filter7
+          str_ftr7 ,                                            // Purpose number of Filter7
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2238,10 +2289,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter8" ) != NULL &&
            strstr ( a_file_data ,   "Filter8" ) != NULL ) {
 
-        char *str_ftr8 = "8" ;                                  // Abbrevation purpose Filter8
+        char *str_ftr8 = "113" ;                                // Purpose number of Filter8
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2254,7 +2307,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr8 ,                                            // Abbrevation purpose Filter7
+          str_ftr8 ,                                            // Purpose number of Filter7
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2301,10 +2354,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Filter9" ) != NULL &&
            strstr ( a_file_data ,   "Filter9" ) != NULL ) {
 
-        char *str_ftr9 = "9" ;                                  // Abbrevation purpose Filter9
+        char *str_ftr9 = "114" ;                                // Purpose number of Filter9
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2317,7 +2372,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr9 ,                                            // Abbrevation purpose Filter9
+          str_ftr9 ,                                            // Purpose number of Filter9
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2367,10 +2422,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Address_Part1" ) != NULL )
          ) {
 
-        char *str_hsho = "H" ;                                  // Abbrevation purpose Household
+        char *str_hsho = "115" ;                                // Purpose number of Household
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2383,7 +2440,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_hsho ,                                            // Abbrevation purpose Household
+          str_hsho ,                                            // Purpose number of Household
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2437,10 +2494,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
            ( strstr ( a_file_data , "Date" ) != NULL ||
              strstr ( a_file_data , "Id" ) != NULL ) ) ) {
 
-        char *str_ind = "I" ;                                   // Abbrevation purpose Individual
+        char *str_ind = "116" ;                                 // Purpose number of Individual
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2453,7 +2512,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_ind ,                                             // Abbrevation purpose Individual
+          str_ind ,                                             // Purpose number of Individual
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2504,10 +2563,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Organization_Name" ) != NULL &&
            strstr ( a_file_data , "Organization_Name" ) != NULL ) {
 
-        char *str_org = "O" ;                                   // Abbrevation purpose Organization
+        char *str_org = "117" ;                                 // Purpose number of Organization
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2520,7 +2581,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_org ,                                             // Abbrevation purpose Organization
+          str_org ,                                             // Purpose number of Organization
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2567,10 +2628,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
       if ( strstr ( a_search_data , "Person_Name" ) != NULL &&
            strstr ( a_file_data , "Person_Name" ) != NULL ) {
 
-        char *str_psn = "P" ;                                   // Abbrevation purpose Person_Name
+        char *str_psn = "118" ;                                 // Purpose number of Person_Name
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2583,7 +2646,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_psn ,                                             // Abbrevation purpose Person_Name
+          str_psn ,                                             // Purpose number of Person_Name
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2633,10 +2696,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Address_Part1" ) != NULL )
          ) {
 
-        char *str_rsd = "R" ;                                   // Abbrevation purpose Resident
+        char *str_rsd = "119" ;                                 // Purpose number of Resident
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2649,7 +2714,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_rsd ,                                             // Abbrevation purpose Resident
+          str_rsd ,                                             // Purpose number of Resident
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2701,10 +2766,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Organization_Name" ) != NULL )
          ) {
 
-        char *str_wcon = "W" ;                                  // Abbrevation purpose Wide_Contact
+        char *str_wcon = "120" ;                                // Purpose number of Wide_Contact
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2717,7 +2784,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_wcon ,                                            // Abbrevation purpose Wide_Contact
+          str_wcon ,                                            // Purpose number of Wide_Contact
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2772,10 +2839,12 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
              strstr ( a_file_data , "Telephone_Number" ) != NULL )
          ) {
 
-        char *str_whsho = "Y" ;                                 // Abbrevation purpose Wide_Household
+        char *str_whsho = "121" ;                               // Purpose number of Wide_Household
         char *str_ty  = "T" ;                                   // Match level Typical abbrevation
         char *str_con = "C" ;                                   // Match level Conservative abbrevation
         char *str_lse = "L" ;                                   // Match level Loose abbrevation
+
+        i_op_rec_knt ++ ;                                       // Output records count
 
         s_GMtc_matches                                          // Call s_GMtc_matches subroutine
         (
@@ -2788,7 +2857,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           a_prps_ty ,                                           // Controls with Typical match level
           a_prps_con ,                                          // Controls with Conservative match level
           a_prps_lse ,                                          // Controls with Loose match level
-          str_whsho ,                                           // Abbrevation purpose Wide_Household
+          str_whsho ,                                           // Purpose number of Wide_Household
           str_ty ,                                              // Match level Typical abbrevation
           str_con ,                                             // Match level Conservative abbrevation
           str_lse                                               // Match level Loose abbrevation
@@ -2844,7 +2913,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
     i_tot_err_rec_knt ++ ;                                      // Total error record count
     if ( strstr
               (
-                a_search_data , ( *str_delimeter_d ? a_Id : "*Id*" )
+                a_search_data , a_Id
               ) == NULL ) {
       i_id_err_rec_knt ++ ;                                     // Records error that does not contain Id
       i_id_src_rec_err_knt ++ ;                                 // Count of errors in search record that does not contain Id
@@ -2860,7 +2929,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
     if ( strstr
               (
-                a_file_data , ( *str_delimeter_d ? a_Id : "*Id*" )
+                a_file_data , a_Id
               ) == NULL ) {
       i_id_err_rec_knt ++ ;                                     // Records error that does not contain Id
       i_id_fle_rec_err_knt ++ ;                                 // Count of errors in file record that does not contain Id
@@ -3189,6 +3258,8 @@ if ( i_fle_rec_emp_knt != 0 ) {
 }
 /* END EMPTY RECORDS COUNT ************************************************************************/
 
+  fprintf ( f_log_fopen_status , "\nOutput records count : %d\n" , i_op_rec_knt ) ;
+
 /* DECISION COUNT *********************************************************************************/
 
 if ( i_dec_A_knt != 0 ||
@@ -3431,8 +3502,7 @@ Warnings
 
   Increase the array size as per your convenience.
 
-  Data set number , Run time number , System name , Population , Encoding
-  and Purpose parameters are mandatory.
+  Data set number , Run time number and Purpose parameters are mandatory.
 
   Data set number should be integer and in a range of 100 to 999
   Run time number should be integer and in a range of 1000 to 9999
@@ -3492,7 +3562,7 @@ Format of Output file : sssrrrr_nnn.umj
                      Purpose and Match Level
                    'U' meaning 'Undecided'. The Score is in between the Accept Limit and the
                     Reject Limit for the specified Purpose and Match Level.
-                    
+
   Purpose           Purpose Number
   -------------     --------------
   Address         :    100
@@ -3527,20 +3597,40 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
   Log file display only not null or non empty information.
   Those fields values are empty or not null it will not display in log file
 
+  -d -r -u run parameters are mandatory
+
+  If System name , Population name and Encoding datatype parameters are empty
+  then it will take default value and write it on log file with
+  message : Missing- Default:<default_value>
+
+  If verbose flag is on then only multiplier value will be write it on log file
+  If verbose flag is on and muliplier parameter is empty then it will take
+  default value of multiplier which is 1 lakh.
+
   Log file name contain below information.
 
   ------ GMtc EXECUTION START DATE AND TIME ------
   YYYY-MM-DD HH24:MI:SS
 
   ------ Run Parameters ------
-  Data set no           : data set number starting from 100 to 999
-  Run time number       : Run time number starting from 1000 to 9999
-  Population            : india
-  Encoding datatype     : Unicode encoding of search data and file data
-  Input File Directory  : Input File path
-  Output File Directory : Output File path
-  Log File Directory    : Log File path
-  Verbose               : Yes/No
+  Data set number        : data set number starting from 100 to 999
+  Run time number        : Run time number starting from 1000 to 9999
+  Purpose                : Address
+  System name            : default
+  Population             : india
+  Input File Directory   : Input File path
+  Output File Directory  : Output File path
+  Log File Directory     : Log File path
+  DELIMITER              : single character variable
+  Encoding datatype      : Unicode encoding of search data and file data
+  Unicode encoding       : <DIGIT> Either 4 , 6 or 8
+  Name format            : Either L or R
+  Accept Limit (+/-nn)   : <DIGIT>
+  Reject Limit (+/-nn)   : <DIGIT>
+  Adjweight              : <FIELD-NAME>
+  Adjweight value (+/-nn): <DIGIT>
+  Multiplier             : <MULTIPLIER_VALUE>
+  Verbose                : Yes/No
 
   ------ File Names ------
   Input file name       : <Input file name>
@@ -3550,17 +3640,6 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
   ------ Environment variable ------
   SSATOP : <PATH>
   SSAPR  : <PATH>
-
-  ------ CONTROLS ------
-  PURPOSE                : Address
-  MATCH_LEVEL            : ( Typical ,Conservative ,Loose )
-  UNICODE_ENCODING       : 4/6/8
-  NAMEFORMAT             : (L/R)
-  Accept Limit (+/-nn)   : <digit>
-  Reject Limit (+/-nn)   : <digit>
-  ADJWEIGHT              : <FIELD>
-  Adjweight value (+/-nn): <digit>
-  DELIMITER              : single character variable
 
   Error message: Missing Id field
 
@@ -3632,6 +3711,7 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
    - Search records   : <Count>
    - File records     : <Count>
 
+  Output records count : <Count>
 
   ------ Decision counts ------
   Accept      (A) : <Count>
@@ -3661,6 +3741,10 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
   Terminal output:
 
   Number of error record will be display if it is not zero.
+
+  If your input file contain less than 1 lakh records and your doing verbose
+  it will not display on command prompt. If you really want to see how how it process
+  then you need to change the multiplier default value.
 
   Verbose :
 
@@ -3693,11 +3777,11 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
 Technical
 
   Script name      - GMtc.c
-  Package Number   -
-  Procedure Number -
-  
+  Package Number   - 44
+  Procedure Number - 506
+
   Variables used
-  
+
   prefix of a variables       Meaning
   ---------------------       --------
   a_str                       Array string
@@ -3714,66 +3798,66 @@ Technical
   _flg                        Flag 0 or 1
 
   Run Parameters
-  
+
   PARAMETER                DESCRIPTION                                   ABV   VARIABLE
   ---------                -------------------------------------------   ---  ---------
   Set data number          Set data number - 100 to 999                   d   p_data_set
-  
+
   Run number               Run number - 1000 to 9999                      r   p_run_time
-  
+
   System name              Defines location of the population rules       s   p_system_nm
-  
+
   Population               Country Name: india                            p   p_population
-  
+
   Encoding datatype        Encoding type of search data and file data
                             it must be any one of these TEXT , UTF-8 ,
                             UTF-16 , UTF-16LE , UTF-16BE , UTF-32 ,
                             UCS-2 , UCS-4                                 c   p_encoding
-  
+
   Purpose                  The PURPOSE Control specifies the name of
                             the Matching Purpose to use in the Match
                             call.                                         u   p_pupose
-  
+
   Unicode encoding         UNICODE_ENCODING instructs dds-NAME3 to
                             accept Unicode data input, and in what
                             Unicode format the data will be passed.
                            Unicode encoding must be 4 , 6 or 8.           e   p_uni_enc
-  
+
   Name format              Defines major word in the name or address
                             can be commonly found (left or right end)
                            Name format must be L or R                     n   p_nm_fmt
-  
+
   Accept limit             The MATCH_LEVEL Control can also be used to
                             adjust the pre-defined Accept Score Limits
                             that affect the Match Decisions.
                            If accept limit are null and reject limit
                             contain value it assign to 0 to accept
                             limit.                                        a   p_acc_lmt
-  
+
   Reject limit             The MATCH_LEVEL Control can also be used to
                             adjust the pre-defined Accept Score Limits
                             that affect the Match Decisions.              j   p_rej_lmt
-  
+
   Adjweight                Used to adjust the weight of a single field
                             in a Match Purpose up or down relative to
                             the other fields in the Purpose.
                            Always write Adjweight with its value          w   p_adjweight
-  
+
   Adjweight value          Increase and Decrease importance of fields     x   p_adjwei_val
-  
+
   Delimiter                If the Search and File data is being passed
                             using the Tagged Data Format, this control
                             may be used to override the default
                             delimiter – asterisk (*).                     t   p_delimeter
-  
+
   Input File Directory     Input File Directory                           i   p_infdir
-  
+
   Output File Directory    Output File Directory                          o   p_outfdir
-  
+
   Log File Directory       Log File Directory                             l   p_logfdir
-  
+
   Multiplier               Multiplier                                     m   p_multiplier
-  
+
   Verbose                  Display indformation about multiplier          v   i_verbose_flg
 
  TimeStamp Variables   Description
