@@ -1,7 +1,7 @@
 #!C:/Perl/bin/perl -w
 
-# Application   :
-# Client        :
+# Application   : 44_503_MkeTag_100_999.pl
+# Client        : Internal
 # Copyright (c) : IdentLogic Systems Private Limited
 # Author        : Surendra Kadam
 # Creation Date : 9 March 2017
@@ -33,14 +33,18 @@
 #                 it throws an error 'cant find String terminator'
 #                 therefore I kept $v_print_file_encl_represntations inside START AND END KEEP
 
-# HARD CODINGS  : Column 1  : Id
-#                 Column 2  : Person_Name
-#                 Column 3  : Organization_Name
-#                 Column 4  : Address_Part1
-#                 Column 5
-#                   and
-#                 Column 6  : Address_Part2
-#                 Coulmn 7  : Postal_Area
+# HARD CODINGS  : Column 12   : Id
+#                 Column 11   : Person_Name
+#                 Column 10   : Address_Part1
+#                 Column  9 ,
+#                         8 ,
+#                     and 7   : Address_Part2
+#                 Column  5   : Postal_Area
+#                 Column  4   : Telephone_Number
+#                 Column  3   : Telephone_Number
+#                 Column  2   : Telephone_Number
+#                 Column  1   
+#                    and  0   : Attribute1
 
 # Limitations   :
 # Dependencies  :
@@ -52,6 +56,11 @@ use strict ;
 use warnings ;
 
 use Getopt::Simple ;
+
+use constant K_PACKAGE        => 44 ;                           # Package number
+use constant K_PROCEDURE      => 503 ;                          # Procedure number
+use constant K_PROCEDURE_NAME => "44_503_MkeTag_100_999.pl" ;   # Procedure name
+use constant K_PROCEDURE_DS   => "Make Tag" ;                   # Procedure description
 
 # Run variables
 my $pp_set_data  = '' ;                                         # Set data no customer
@@ -492,38 +501,51 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
       }
 
       $a_fld[ $idx ] =~ s/[[:cntrl:]]+/ /g ;                    # Replace control characters to space
+      $a_fld[ $idx ] =~ s/p{C}/ /g ;                            # Replace unicode non printable character
       $a_fld[ $idx ] =~ s/\s\s+/ /g ;                           # Replace two or more spaces to single space
       $a_fld[ $idx ] =~ s/^\s+// ;                              # Trim leading space
       $a_fld[ $idx ] =~ s/\s+$// ;                              # Trim trailing space
    } ## end for ( my $idx = 0 ; $idx...)
 
-   my $v_addp2 = $a_fld[ 4 ] . ' ' . $a_fld[ 5 ] ;              # Address part 2 combined city and country
+   my $v_addp2 = $a_fld[ 9 ] . ' ' . $a_fld[ 8 ] . ' ' . $a_fld[ 7 ] ;    # Address part 2 combined city and country
+
    $v_addp2 =~ s/^\s+|\s+$// ;                                  # Remove space if one of the field is empty
 
-   if ( $a_fld[ 0 ] eq '' ) {                                   # Skip if no Id
+   if ( $a_fld[ 12 ] eq '' ) {                                  # Skip if no Id
       $v_err_no_id_knt ++ ;                                     # Count of records without Id
       $v_err_knt ++ ;                                           # Count of error records
       next ;
    }
 
    if (
-      $a_fld[ 1 ] eq '' and                                     # Person_Name field missing
-      $a_fld[ 2 ] eq '' and                                     # Organization_Name field missing
-      $a_fld[ 3 ] eq ''
-     ) {                                                        # Address_Part1 field missing
+      $a_fld[ 11 ] eq '' and                                    # Person_Name field missing
+      $a_fld[ 10 ] eq ''                                        # Address_Part1 field missing
+     ) {
       $v_err_ky_fld_knt ++ ;                                    # Count of records without any one or more key field of Person_Name , Organization_Name or Address_Part1
       $v_err_knt ++ ;                                           # Count of error records
       next ;
    } ## end if
 
    print $OUTFILE                                               #
-     $v_del_chr . 'Id' . $v_del_chr . $a_fld[ 0 ] . ( $a_fld[ 1 ] eq '' ? '' : $v_del_chr . 'Person_Name' . $v_del_chr . $a_fld[ 1 ] ) .    # Only write field if not empty
-     ( $a_fld[ 2 ] eq ''   ? '' : $v_del_chr . 'Organization_Name' . $v_del_chr . $a_fld[ 2 ] )
-     . ( $a_fld[ 3 ] eq '' ? '' : $v_del_chr . 'Address_Part1' . $v_del_chr . $a_fld[ 3 ] )
-     . ( ( $a_fld[ 4 ] eq '' and $a_fld[ 5 ] eq '' ) ? '' : $v_del_chr . 'Address_Part2' . $v_del_chr . $v_addp2 )
-     .                                                          # Address_Part2 is join of City and Country
-     ( $a_fld[ 6 ] eq '' ? '' : $v_del_chr . 'Postal_Area' . $v_del_chr . $a_fld[ 6 ] ) .                                                   #
-     $v_del_chr . $v_del_chr . $v_del_chr . "\n" ;
+     $v_del_chr . 'Id' . $v_del_chr . $a_fld[ 12 ] .            #
+     ( $a_fld[ 11 ] eq ''   ? '' : $v_del_chr . 'Person_Name' . $v_del_chr . $a_fld[ 11 ] )
+     . ( $a_fld[ 10 ] eq '' ? '' : $v_del_chr . 'Address_Part1' . $v_del_chr . $a_fld[ 10 ] )
+     . (
+      ( $a_fld[ 9 ] eq '' and $a_fld[ 8 ] eq '' and $a_fld[ 7 ] eq '' )
+      ? ''
+      : $v_del_chr . 'Address_Part2' . $v_del_chr . $v_addp2
+     )
+     .                                                          # Address_Part2 is join of City ,Sub ditrict and District
+     ( $a_fld[ 5 ] eq ''   ? '' : $v_del_chr . 'Postal_Area' . $v_del_chr . $a_fld[ 5 ] ) .      #
+     ( $a_fld[ 4 ] eq ''   ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 4 ] )
+     . ( $a_fld[ 3 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 3 ] )
+     . ( $a_fld[ 2 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 2 ] )
+     . ( $a_fld[ 1 ] eq '' ? '' : $v_del_chr . 'Attribute1' . $v_del_chr . $a_fld[ 1 ] )
+     . ( $a_fld[ 0 ] eq '' ? '' : $v_del_chr . 'Attribute1' . $v_del_chr . $a_fld[ 0 ] )
+     . $v_del_chr
+     . $v_del_chr
+     . $v_del_chr
+     . "\n" ;
 
 } ## end while ( $v_rec = <$IN_FILE1>)
 
@@ -557,10 +579,11 @@ close $OUTFILE or die "Could not close output Tagged file $pp_set_data$pp_run_da
 # End of Main                                                         #
 #######################################################################
 
-sub sGetParameter {                                            
+sub sGetParameter {
+
    # Subroutine to get parameter and handle field separator and
    # optional enclosing character and delimiter character
-   
+
    my ( $pp_GetOptions ) = {
       help => {                                                 # Help
          type    => '' ,
@@ -601,10 +624,10 @@ sub sGetParameter {
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
-         verbose => 'Optional enclosing character - for control characters ' . #
-                     'use escaped value or term or hexadecimal, ' . #
-                     'e.g. \t or TAB or \011 or \x09 for tab character' ,
-         order   => 6 ,
+         verbose => 'Optional enclosing character - for control characters ' .    #
+           'use escaped value or term or hexadecimal, ' .       #
+           'e.g. \t or TAB or \011 or \x09 for tab character' ,
+         order => 6 ,
         } ,
       delimiter_character => {                                  # Optional delimiter
          type    => '=s' ,
@@ -813,25 +836,25 @@ sub sDpCtCStp {
  2. Replace two or more spaces to single space
  3. Trim leading space
  4. Trim trailing space
- 5. Combined to fields City and Country
+ 5. Combined to fields City , Sub district and District
 
 =head2 Output file
 
  Extension of output file is .tag which are created with data set number and run number
  Assume that delimiter is default asterisk (*)
 
- Column 1  : Id
- Column 2  : Person_Name
- Column 3  : Organization_Name
- Column 4  : Address_Part1
- Column 5
-   and
- Column 6  : Address_Part2
- Coulmn 7  : Postal_Area
-
- Input : 123;Suren;ISPL;malad;mumbai;india;400064
- Output:
- *Id*123*Person_Name*Suren*Organization_Name*ISPL*Address_Part1*malad*Address_Part2*mumbai india*Postal_Area*400064***
+ Column 12   : Id
+ Column 11   : Person_Name
+ Column 10   : Address_Part1
+ Column  9 ,
+         8 ,
+     and 7   : Address_Part2
+ Column  5   : Postal_Area
+ Column  4   : Telephone_Number
+ Column  3   : Telephone_Number
+ Column  2   : Telephone_Number
+ Column  1   
+    and  0   : Attribute1
 
 =head2 Terminal output
 
@@ -843,16 +866,16 @@ sub sDpCtCStp {
 
 =head2 Delimiter
 
-    i. If delimiter character is empty it will take default delimiter which is
-        asterisk (*).
-
-   ii. You can also used delimiter character which is user defined using delimiter character
-        parameter. If delimiter is contol or meta character check Display control character
-        paramter using -c command you will get what to use for .
-
-  iii. If record in a input file found delimiter that is a error record
-
-   iv. Tagged data will not create where record found delimiter
+ 1. If delimiter character is empty it will take default delimiter which is
+     asterisk (*).
+ 
+ 2. You can also used delimiter character which is user defined using delimiter character
+     parameter. If delimiter is contol or meta character check Display control character
+     paramter using -c command you will get what to use for .
+ 
+ 3. If record in a input file found delimiter that is a error record
+ 
+ 4. Tagged data will not create where record found delimiter
 
 =head2 Error Message
 
@@ -1031,4 +1054,3 @@ sub sDpCtCStp {
 #######################################################################
 # End of 43_503_MkeTag_100_999.pl                                     #
 #######################################################################
-
