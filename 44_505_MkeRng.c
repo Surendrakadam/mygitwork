@@ -113,10 +113,11 @@ double t_time_taken   = 0.0 ;                                   // Time taken
 int i_t_time_taken    = 0 ;                                     // Round of float value
 
 // Run summary
-int i_record_read       = 0 ;                                   // No of read records counts
-int i_error_record_read = 0 ;                                   // No of error records counts
-int i_error_record_id   = 0 ;                                   // Missing id error record count
-int i_error_record_flds = 0 ;                                   // Error records where Person_Name Organization_Name AddressPart1 fields are missing
+int i_record_read  = 0 ;                                        // No of read records counts
+int i_im_rec       = 0 ;                                        // Improper record
+int i_err_rec_r    = 0 ;                                        // No of error records counts
+int i_err_rec_id   = 0 ;                                        // Missing id error record count
+int i_err_rec_flds = 0 ;                                        // Error records where Person_Name Organization_Name AddressPart1 fields are missing
 
 int i_pn_records        = 0 ;                                   // No of Person_Name records counts
 int i_on_records        = 0 ;                                   // No of Organization records counts
@@ -998,10 +999,11 @@ s_MkeRng_open ( ) ;                                             // Call S_MkeRng
 // Read a input file line by line
 while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
 
+  int i_fld_rec_knt ;                                           // Number of tab delimited fields count in current record of input file
   ++i_rec_number ;                                              // Record count
 
   // Tab delimited split
-  sscanf( str_current_rec , "%s\t%[^\n]", str_tag_id , str_tag_data );
+  i_fld_rec_knt = sscanf( str_current_rec , "%[^\t]\t%[^\n]", str_tag_id , str_tag_data );
 
   // Calculate the length of the current tag data
   i_tag_data_len = strlen( str_tag_data ) ;                     // Length of the current tag data
@@ -1010,346 +1012,360 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
   }
 
   i_record_read++ ;                                             // No of records read
-
-  if ( strstr ( str_current_rec , a_Id ) != NULL ) {            // Check current tag data contain *Id*
-
-    if ( i_verbose_flg == 1 ) {                                 // If Verbose flag is On
-
-      if ( i_rec_number == i_multiplier ) {                     // If Records number equals Multiplier number
-        t_end_time = clock( ) - t_start_time ;                  // End time
-        t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;              // In seconds
-        printf( "\nDisplay %d records in %.f seconds to execute \n", i_multiplier , t_time_taken ) ;      // Print time
-
-        i_multiplier = i_multiplier * 2 ;                       // Multiplier value multiply by 2
+  
+  if ( i_fld_rec_knt == 2 ) {                                   // If proper current record with tab demilted
+    if ( strstr ( str_tag_data , a_Id ) != NULL ) {             // Check current tag data contain *Id*
+    
+      if ( i_verbose_flg == 1 ) {                               // If Verbose flag is On
+    
+        if ( i_rec_number == i_multiplier ) {                   // If Records number equals Multiplier number
+          t_end_time = clock( ) - t_start_time ;                // End time
+          t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;              // In seconds
+          printf( "\nDisplay %d records in %.f seconds to execute \n", i_multiplier , t_time_taken ) ;      // Print time
+    
+          i_multiplier = i_multiplier * 2 ;                     // Multiplier value multiply by 2
+        }
+      }
+    
+      // IF Person Name , Organization Name , Address_Part1 and Sex_Code are empty throw an error message
+      if ( strstr ( str_tag_data , "Person_Name" ) == NULL &&
+           strstr ( str_tag_data , "Organization_Name" ) == NULL &&
+           strstr ( str_tag_data , "Address_Part1" ) == NULL && 
+           strstr ( str_tag_data , "Sex_Code" ) == NULL ) {
+        i_err_rec_r ++ ;                                        // Error record count
+        i_err_rec_flds ++ ;                                     // Missing Person Name , Organization name , Address Part and Sex_Code1 fields records count
+        fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Person Name, Organization name, Address Part1 and Sex Code fields" ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
+      }
+    
+      // Check Person_Name is inside the current record
+      if ( strstr ( str_tag_data , "Person_Name" ) != NULL ) {
+    
+        char *abv_PNarr  = "PN" ;                               // abrevation of Person_Name Narrow
+        char *abv_PTyp   = "PY" ;                               // abrevation of Person_Name Typical
+        char *abv_PExh   = "PH" ;                               // abrevation of Person_Name Exhaustive
+        char *abv_PExtr  = "PR" ;                               // abrevation of Person_Name Extreme
+    
+        sprintf
+        (
+          a_ctrl_pn ,                                           // Control with Person_Name Narrow search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_SRCLVL_N ,                                        // SEARCH_LEVEL=Narrow
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_py ,                                           // Control with Person_Name Typical search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_SRCLVL_Y ,                                        // SEARCH_LEVEL=Typical
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_ph ,                                           // Control with Person_Name Exhaustive search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_SRCLVL_H ,                                        // SEARCH_LEVEL=Exhaustive
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_pr ,                                           // Control with Person_Name Extreme search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_SRCLVL_R ,                                        // SEARCH_LEVEL=Extreme
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        i_pn_records++ ;                                        // No of records count that contains Person_Name
+    
+        s_MkeRng_ranges                                         // Call s_MkeRng_ranges
+        (
+          a_ctrl_pn ,
+          a_ctrl_py ,
+          a_ctrl_ph ,
+          a_ctrl_pr ,
+          abv_PNarr ,
+          abv_PTyp ,
+          abv_PExh ,
+          abv_PExtr ,
+          str_tag_id
+        ) ;
+      }
+    
+      // Check Organization_Name is inside the current record
+      if ( strstr ( str_tag_data , "Organization_Name" ) != NULL ) {
+    
+        char *abv_ONarr  = "ON" ;                               // abrevation of Organization_Name Narrow
+        char *abv_OTyp   = "OY" ;                               // abrevation of Organization_Name Typical
+        char *abv_OExh   = "OH" ;                               // abrevation of Organization_Name Exhaustive
+        char *abv_OExtr  = "OR" ;                               // abrevation of Organization_Name Extreme
+    
+        sprintf
+        (
+          a_ctrl_on ,                                           // Control with Organization_Name Narrow search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_SRCLVL_N ,                                        // SEARCH_LEVEL=Narrow
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_oy ,                                           // Control with Organization_Name Typical search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_SRCLVL_Y ,                                        // SEARCH_LEVEL=Typical
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_oh ,                                           // Control with Organization_Name Exhaustive search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_SRCLVL_H ,                                        // SEARCH_LEVEL=Exhaustive
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_or ,                                           // Control with Organization_Name Extreme search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_SRCLVL_R ,                                        // SEARCH_LEVEL=Extreme
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        i_on_records++ ;                                        // No of records count that contains Organization_Name
+    
+        s_MkeRng_ranges                                         // Call s_MkeRng_ranges
+        (
+          a_ctrl_on ,
+          a_ctrl_oy ,
+          a_ctrl_oh ,
+          a_ctrl_or ,
+          abv_ONarr ,
+          abv_OTyp ,
+          abv_OExh ,
+          abv_OExtr ,
+          str_tag_id
+        ) ;
+      }
+    
+      // Check Address_Part1 is inside the current record
+      if ( strstr ( str_tag_data , "Address_Part1" ) != NULL ) {
+    
+        char *abv_ANarr  = "1N" ;                               // abrevation of Address_Part1 Narrow
+        char *abv_ATyp   = "1Y" ;                               // abrevation of Address_Part1 Typical
+        char *abv_AExh   = "1H" ;                               // abrevation of Address_Part1 Exhaustive
+        char *abv_AExtr  = "1R" ;                               // abrevation of Address_Part1 Extreme
+    
+        sprintf
+        (
+          a_ctrl_an ,                                           // Control with Address_Part1 Narrow search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_SRCLVL_N ,                                        // SEARCH_LEVEL=Narrow
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_ay ,                                           // Control with Address_Part1 Typical search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_SRCLVL_Y ,                                        // SEARCH_LEVEL=Typical
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_ah ,                                           // Control with Address_Part1 Exhaustive search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_SRCLVL_H ,                                        // SEARCH_LEVEL=Exhaustive
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_ar ,                                           // Control with Address_Part1 Extreme search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_SRCLVL_R ,                                        // SEARCH_LEVEL=Extreme
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        i_addp1_records++ ;                                     // No of records count that contains Address_Part1
+    
+        s_MkeRng_ranges                                         // Call s_MkeRng_ranges
+        (
+          a_ctrl_an ,
+          a_ctrl_ay ,
+          a_ctrl_ah ,
+          a_ctrl_ar ,
+          abv_ANarr ,
+          abv_ATyp ,
+          abv_AExh ,
+          abv_AExtr ,
+          str_tag_id
+        ) ;
+      }
+    
+      // Check Address_Part1 is inside the current record
+      if ( strstr ( str_tag_data , "Sex_Code" ) != NULL ) {
+    
+        char *abv_GNarr  = "GN" ;                               // abrevation of Address_Part1 Narrow
+        char *abv_GTyp   = "GY" ;                               // abrevation of Address_Part1 Typical
+        char *abv_GExh   = "GH" ;                               // abrevation of Address_Part1 Exhaustive
+        char *abv_GExtr  = "GR" ;                               // abrevation of Address_Part1 Extreme
+    
+        sprintf
+        (
+          a_ctrl_sn ,                                           // Control with Sex_Code Narrow search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_SEXC ,                                        // Field Sex_Code
+          S_K_SRCLVL_N ,                                        // SEARCH_LEVEL=Narrow
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_sy ,                                           // Control with Sex_Code Typical search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_SEXC ,                                        // Field Sex_Code
+          S_K_SRCLVL_Y ,                                        // SEARCH_LEVEL=Typical
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_sh ,                                           // Control with Sex_Code Exhaustive search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_SEXC ,                                        // Field Sex_Code
+          S_K_SRCLVL_H ,                                        // SEARCH_LEVEL=Exhaustive
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        sprintf
+        (
+          a_ctrl_sr ,                                           // Control with Sex_Code Extreme search level
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_SEXC ,                                        // Field Sex_Code
+          S_K_SRCLVL_R ,                                        // SEARCH_LEVEL=Extreme
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+    
+        i_sex_code_records++ ;                                  // No of records count that contains Address_Part1
+    
+        s_MkeRng_ranges                                         // Call s_MkeRng_ranges
+        (
+          a_ctrl_sn ,
+          a_ctrl_sy ,
+          a_ctrl_sh ,
+          a_ctrl_sr ,
+          abv_GNarr ,
+          abv_GTyp ,
+          abv_GExh ,
+          abv_GExtr ,
+          str_tag_id
+        ) ;
       }
     }
-
-    // IF Person Name , Organization Name and Address_Part1 are empty throw an error message
-    if ( strstr ( str_tag_data , "Person_Name" ) == NULL &&
-         strstr ( str_tag_data , "Organization_Name" ) == NULL &&
-         strstr ( str_tag_data , "Address_Part1" ) == NULL ) {
-      i_error_record_read ++ ;                                  // Error record count
-      i_error_record_flds ++ ;                                  // Missing Person Name, Organization name and Address Part 1 fields records count
-      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Person Name, Organization name, Address Part 1 fields" ) ;
+    else {
+      // If Id field is missing display error message
+      i_err_rec_r ++ ;                                          // Error record count
+      i_err_rec_id ++ ;                                         // Missing id
+    
+      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
       fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
-    }
-
-    // Check Person_Name is inside the current record
-    if ( strstr ( str_tag_data , "Person_Name" ) != NULL ) {
-
-      char *abv_PNarr  = "PN" ;                                 // abrevation of Person_Name Narrow
-      char *abv_PTyp   = "PY" ;                                 // abrevation of Person_Name Typical
-      char *abv_PExh   = "PH" ;                                 // abrevation of Person_Name Exhaustive
-      char *abv_PExtr  = "PR" ;                                 // abrevation of Person_Name Extreme
-
-      sprintf
-      (
-        a_ctrl_pn ,                                             // Control with Person_Name Narrow search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_SRCLVL_N ,                                          // SEARCH_LEVEL=Narrow
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_py ,                                             // Control with Person_Name Typical search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_SRCLVL_Y ,                                          // SEARCH_LEVEL=Typical
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ph ,                                             // Control with Person_Name Exhaustive search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_SRCLVL_H ,                                          // SEARCH_LEVEL=Exhaustive
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_pr ,                                             // Control with Person_Name Extreme search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_SRCLVL_R ,                                          // SEARCH_LEVEL=Extreme
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_pn_records++ ;                                          // No of records count that contains Person_Name
-
-      s_MkeRng_ranges                                           // Call s_MkeRng_ranges
-      (
-        a_ctrl_pn ,
-        a_ctrl_py ,
-        a_ctrl_ph ,
-        a_ctrl_pr ,
-        abv_PNarr ,
-        abv_PTyp ,
-        abv_PExh ,
-        abv_PExtr ,
-        str_tag_id
-      ) ;
-    }
-
-    // Check Organization_Name is inside the current record
-    if ( strstr ( str_tag_data , "Organization_Name" ) != NULL ) {
-
-      char *abv_ONarr  = "ON" ;                                 // abrevation of Organization_Name Narrow
-      char *abv_OTyp   = "OY" ;                                 // abrevation of Organization_Name Typical
-      char *abv_OExh   = "OH" ;                                 // abrevation of Organization_Name Exhaustive
-      char *abv_OExtr  = "OR" ;                                 // abrevation of Organization_Name Extreme
-
-      sprintf
-      (
-        a_ctrl_on ,                                             // Control with Organization_Name Narrow search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_SRCLVL_N ,                                          // SEARCH_LEVEL=Narrow
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_oy ,                                             // Control with Organization_Name Typical search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_SRCLVL_Y ,                                          // SEARCH_LEVEL=Typical
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_oh ,                                             // Control with Organization_Name Exhaustive search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_SRCLVL_H ,                                          // SEARCH_LEVEL=Exhaustive
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_or ,                                             // Control with Organization_Name Extreme search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_SRCLVL_R ,                                          // SEARCH_LEVEL=Extreme
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_on_records++ ;                                          // No of records count that contains Organization_Name
-
-      s_MkeRng_ranges                                           // Call s_MkeRng_ranges
-      (
-        a_ctrl_on ,
-        a_ctrl_oy ,
-        a_ctrl_oh ,
-        a_ctrl_or ,
-        abv_ONarr ,
-        abv_OTyp ,
-        abv_OExh ,
-        abv_OExtr ,
-        str_tag_id
-      ) ;
-    }
-
-    // Check Address_Part1 is inside the current record
-    if ( strstr ( str_tag_data , "Address_Part1" ) != NULL ) {
-
-      char *abv_ANarr  = "1N" ;                                 // abrevation of Address_Part1 Narrow
-      char *abv_ATyp   = "1Y" ;                                 // abrevation of Address_Part1 Typical
-      char *abv_AExh   = "1H" ;                                 // abrevation of Address_Part1 Exhaustive
-      char *abv_AExtr  = "1R" ;                                 // abrevation of Address_Part1 Extreme
-
-      sprintf
-      (
-        a_ctrl_an ,                                             // Control with Address_Part1 Narrow search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_SRCLVL_N ,                                          // SEARCH_LEVEL=Narrow
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ay ,                                             // Control with Address_Part1 Typical search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_SRCLVL_Y ,                                          // SEARCH_LEVEL=Typical
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ah ,                                             // Control with Address_Part1 Exhaustive search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_SRCLVL_H ,                                          // SEARCH_LEVEL=Exhaustive
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ar ,                                             // Control with Address_Part1 Extreme search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_SRCLVL_R ,                                          // SEARCH_LEVEL=Extreme
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_addp1_records++ ;                                       // No of records count that contains Address_Part1
-
-      s_MkeRng_ranges                                           // Call s_MkeRng_ranges
-      (
-        a_ctrl_an ,
-        a_ctrl_ay ,
-        a_ctrl_ah ,
-        a_ctrl_ar ,
-        abv_ANarr ,
-        abv_ATyp ,
-        abv_AExh ,
-        abv_AExtr ,
-        str_tag_id
-      ) ;
-    }
-
-    // Check Address_Part1 is inside the current record
-    if ( strstr ( str_tag_data , "Sex_Code" ) != NULL ) {
-
-      char *abv_GNarr  = "GN" ;                                 // abrevation of Address_Part1 Narrow
-      char *abv_GTyp   = "GY" ;                                 // abrevation of Address_Part1 Typical
-      char *abv_GExh   = "GH" ;                                 // abrevation of Address_Part1 Exhaustive
-      char *abv_GExtr  = "GR" ;                                 // abrevation of Address_Part1 Extreme
-
-      sprintf
-      (
-        a_ctrl_sn ,                                             // Control with Sex_Code Narrow search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_SEXC ,                                          // Field Sex_Code
-        S_K_SRCLVL_N ,                                          // SEARCH_LEVEL=Narrow
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_sy ,                                             // Control with Sex_Code Typical search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_SEXC ,                                          // Field Sex_Code
-        S_K_SRCLVL_Y ,                                          // SEARCH_LEVEL=Typical
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_sh ,                                             // Control with Sex_Code Exhaustive search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_SEXC ,                                          // Field Sex_Code
-        S_K_SRCLVL_H ,                                          // SEARCH_LEVEL=Exhaustive
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_sr ,                                             // Control with Sex_Code Extreme search level
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_SEXC ,                                          // Field Sex_Code
-        S_K_SRCLVL_R ,                                          // SEARCH_LEVEL=Extreme
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_sex_code_records++ ;                                    // No of records count that contains Address_Part1
-
-      s_MkeRng_ranges                                           // Call s_MkeRng_ranges
-      (
-        a_ctrl_sn ,
-        a_ctrl_sy ,
-        a_ctrl_sh ,
-        a_ctrl_sr ,
-        abv_GNarr ,
-        abv_GTyp ,
-        abv_GExh ,
-        abv_GExtr ,
-        str_tag_id
-      ) ;
     }
   }
   else {
-    // If Id field is missing display error message
-    i_error_record_read ++ ;                                    // Error record count
-    i_error_record_id ++ ;                                      // Missing id
-
-    fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
-    fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
+    // If there are improper record then display error with current record
+    i_im_rec ++ ;                                               // Improper record
+    fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Improper record" ) ;
+    fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
   }
-
+  
 }
 /**********************************************************************
  End of While loop                                                    *
 **********************************************************************/
 
   fprintf ( f_log_fopen_status, "\n------Run summary------\n" ) ;
-  fprintf ( f_log_fopen_status, "Tagged Records read            : %d", i_record_read ) ;
+  fprintf ( f_log_fopen_status, "Tagged records read            : %d", i_record_read ) ;
 
-  if ( i_error_record_read != 0 ) {                             // If error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\nError records                  : %d", i_error_record_read ) ;
-    printf ("Error records : %d", i_error_record_read ) ;
+  if ( i_err_rec_r != 0 ) {                                     // If error records count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\nError records                  : %d", i_err_rec_r ) ;
+    printf ("Error records : %d", i_err_rec_r ) ;
   }
 
-  if ( i_error_record_id != 0 ) {                               // If id error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n - Missing Id                  : %d", i_error_record_id ) ;
+  if ( i_err_rec_id != 0 ) {                                    // If id error records count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n - Missing Id                  : %d", i_err_rec_id ) ;
   }
 
-  if ( i_error_record_flds != 0 ) {                             // If fields error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n - Missing all 3 key fields    : %d\n", i_error_record_flds ) ;
+  if ( i_err_rec_flds != 0 ) {                                  // If fields error records count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n - Missing all 3 key fields    : %d\n", i_err_rec_flds ) ;
+  }
+  
+  if ( i_im_rec != 0 ) {                                        // If improper records are non zero
+    fprintf ( f_log_fopen_status , "\nImproper records count         : %d", i_im_rec ) ;
+    printf ("Improper records : %d\n", i_im_rec ) ;
   }
 
   if ( i_pn_records != 0 ) {                                    // If Records with Person_Name count non zero then only it will write on a file
@@ -1664,9 +1680,9 @@ Format of log file - sssrrrr_MkeRng_YYYY_MM_DD_HH24_MI_SS.log
   SSATOP : <PATH>
   SSAPR  : <PATH>
 
-  Error message:Missing Person Name, Organization name, Address Part 1 fields
+  Error message: Missing Person Name, Organization name, Address Part1 and Sex code fields
 
-  If Person Name, Organization name and Address Part 1 fields is
+  If Person Name, Organization name Address Part 1 and Sex code fields are
   missing in the record then error will be display with
   record no with error message and record.
 
@@ -1674,13 +1690,17 @@ Format of log file - sssrrrr_MkeRng_YYYY_MM_DD_HH24_MI_SS.log
 
   If Id field is missing in the record then error will be display with
   record no with error message and record.
+  
+  Error message: Improper record
+  If current record does not contain Tag id and Tag data with tab delimited.
+  and Either tag id or tag data missing then this error will write it on log file
 
   ------Run summary------
   Tagged records read            : <COUNT>
   Error records                  : <COUNT>
    - Missing id                  : <COUNT>
    - Missing all 3 key fields    : <COUNT>
-
+  Improper records count         : <COUNT>
   Records with Person_Name       : <COUNT>
   Records with Organization_Name : <COUNT>
   Records with Address_Part1     : <COUNT>
@@ -1722,7 +1742,8 @@ Format of log file - sssrrrr_MkeRng_YYYY_MM_DD_HH24_MI_SS.log
 
   Terminal output:
 
-  No of error record will e display if it is not zero.
+  Error records     : <COUNT>
+  Improper records  : <COUNT>
 
   Verbose :
 
