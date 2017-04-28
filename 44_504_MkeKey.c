@@ -111,9 +111,10 @@ int i_t_time_taken    = 0 ;                                     // Round of floa
 
 // Run summary variables
 int i_record_read       = 0 ;                                   // No of read records counts
-int i_error_record_read = 0 ;                                   // No of error records counts
-int i_error_record_id   = 0 ;                                   // Missing id error record count
-int i_error_record_flds = 0 ;                                   // Error records where Person_Name Organization_Name AddressPart1 fields are missing
+int i_err_rec_r         = 0 ;                                   // No of error records counts
+int i_err_rec_id        = 0 ;                                   // Missing id field in tag data
+int i_err_rec_flds      = 0 ;                                   // Missing Person_Name Organization_Name AddressPart1 fields in tag data
+int i_im_rec            = 0 ;                                   // Improper record
 int i_pn_records        = 0 ;                                   // No of Person_Name records counts
 int i_on_records        = 0 ;                                   // No of Organization records counts
 int i_addp1_records     = 0 ;                                   // No of Address Part1 records counts
@@ -394,7 +395,7 @@ static void s_getParameter( int argc , char *argv[] ) {
     sprintf ( a_nm_fmt , "%s%s" , S_K_NM_FMT , str_nm_fmt_d ) ;
   }
 
-  if ( !*p_delimiter ) {                                          // If delimeter parameter is empty
+  if ( !*p_delimiter ) {                                        // If delimeter parameter is empty
     str_delimeter_d = "*" ;
     sprintf ( a_delimeter , "%s%s" , S_K_delimeter , str_delimeter_d ) ;
   }
@@ -766,13 +767,13 @@ static void s_mkeKey_open ( ) {
 /* s_test_dds_open subroutine called in s_mkeKey_open subroutine and
    assign subroutine parameters*/
 
-  l_rc =                                                      // Error request code
+  l_rc =                                                        // Error request code
   s_test_dds_open (
-    l_sockh ,                                                 // Set to -1 as not calling the dds-name3 server
-    &l_session_id ,                                           // Should be -1 on the ddsn3 open call ,or opening a new session
-    ( !*p_system_nm ? str_system_nm_d : p_system_nm ) ,       // System name parameter is empty used default value
-    ( !*p_population ? str_popln_nm_d : p_population ) ,      // Population parameter is empty used default value
-    ""                                                        // Controls
+    l_sockh ,                                                   // Set to -1 as not calling the dds-name3 server
+    &l_session_id ,                                             // Should be -1 on the ddsn3 open call ,or opening a new session
+    ( !*p_system_nm ? str_system_nm_d : p_system_nm ) ,         // System name parameter is empty used default value
+    ( !*p_population ? str_popln_nm_d : p_population ) ,        // Population parameter is empty used default value
+    ""                                                          // Controls
   ) ;
 
   if ( 0 != l_rc )
@@ -941,11 +942,11 @@ s_mkeKey_open( ) ;                                              // subroutine to
 
 // Read a input file line by line
 while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
-
-  ++i_rec_number ;
+  int i_fld_knt ;                                               // Number of tab delimited fields count in current record of input file
+  ++ i_rec_number ;                                             // Record number
 
   // Tab delimited split
-  sscanf( str_current_rec , "%s\t%[^\n]", str_tag_id, str_tag_data );
+  i_fld_knt = sscanf( str_current_rec , "%[^\t]\t%[^\n]", str_tag_id, str_tag_data );
 
   // Calculate the length of the tag data
   i_tag_data_len = strlen( str_tag_data ) ;                     // Length of the current tag data
@@ -955,185 +956,191 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
   i_record_read++ ;                                             // No of records read
 
-  if ( strstr ( str_tag_data , a_Id ) != NULL ) {               // Check tag data contain <DELIMITER>Id<DELIMITER>
+  if ( i_fld_knt == 2  ) {
+    if ( strstr ( str_tag_data , a_Id ) != NULL ) {             // Check tag data contain <DELIMITER>Id<DELIMITER>
 
-    if ( i_verbose_flg == 1 ) {                                 // If Verbose flag is On
+      if ( i_verbose_flg == 1 ) {                               // If Verbose flag is On
 
-      // Display so many records in so many seconds to execute
-      if ( i_rec_number == i_multiplier ) {                     // If Records number equals Multiplier number
-        t_end_time = clock( ) - t_start_time ;                  // End time
-        t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;              // In seconds
-        printf( "\nDisplay %d records in %.f seconds to execute \n", i_multiplier , t_time_taken ) ;      // Print time
+        // Display so many records in so many seconds to execute
+        if ( i_rec_number == i_multiplier ) {                   // If Records number equals Multiplier number
+          t_end_time = clock( ) - t_start_time ;                // End time
+          t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;              // In seconds
+          printf( "\nDisplay %d records in %.f seconds to execute \n", i_multiplier , t_time_taken ) ;      // Print time
 
-        i_multiplier = i_multiplier * 2 ;                       // Multiplier value multiply by 2
+          i_multiplier = i_multiplier * 2 ;                     // Multiplier value multiply by 2
+        }
+      }
+
+      // IF Person Name , Organization Name and Address_Part1 are empty throw an error message
+      if ( strstr ( str_tag_data , "Person_Name" ) == NULL &&
+           strstr ( str_tag_data , "Organization_Name" ) == NULL &&
+           strstr ( str_tag_data , "Address_Part1" ) == NULL ) {
+
+        i_err_rec_r ++ ;                                        // Error record count
+        i_err_rec_flds ++ ;                                     // Missing Person Name, Organization name, Address Part 1 fields records count
+        fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Person Name, Organization name, Address Part 1 fields" ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
+      }
+
+      // Check Person_Name is inside the current tag data
+      if ( strstr ( str_tag_data , "Person_Name" ) != NULL ) {
+
+        char *abv_PLim   = "PM" ;                               // abrevation of Person_Name Limited
+        char *abv_PStand = "PS" ;                               // abrevation of Person_Name Standard
+        char *abv_PExt   = "PX" ;                               // abrevation of Person_Name Extended
+
+        sprintf
+        (
+          a_ctrl_pm ,                                           // Control with Person_Name limited key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_KYLVL_M ,                                         // KEY_LEVEL=Limited
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        sprintf
+        (
+          a_ctrl_ps ,                                           // Control with Person_Name Standard key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_KYLVL_S ,                                         // KEY_LEVEL=Standard
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        sprintf
+        (
+          a_ctrl_px ,                                           // Control with Person_Name Extended key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_PN ,                                          // Field Person_Name
+          S_K_KYLVL_X ,                                         // KEY_LEVEL=Extended
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        i_pn_records++ ;                                        // No of records count that contains Person_Name
+
+        // Call s_mkeKey_getKey
+        s_mkeKey_getKey( a_ctrl_pm , a_ctrl_ps , a_ctrl_px , abv_PLim , abv_PStand , abv_PExt ,str_tag_id ) ;
+      }
+
+      // Check Organization_Name is inside the current tag data
+      if ( strstr ( str_tag_data , "Organization_Name" ) != NULL ) {
+
+        char *abv_OLim   = "OM" ;                               // abrevation of Organization_Name Limited
+        char *abv_OStand = "OS" ;                               // abrevation of Organization_Name Standard
+        char *abv_OExt   = "OX" ;                               // abrevation of Organization_Name Extended
+
+        sprintf
+        (
+          a_ctrl_om ,                                           // Control with Organization_Name limited key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_KYLVL_M ,                                         // KEY_LEVEL=Limited
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        sprintf
+        (
+          a_ctrl_os ,                                           // Control with Organization_Name Standard key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_KYLVL_S ,                                         // KEY_LEVEL=Standard
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        sprintf
+        (
+          a_ctrl_ox ,                                           // Control with Organization_Name Extended key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ON ,                                          // Field Organization_Name
+          S_K_KYLVL_X ,                                         // KEY_LEVEL=Extended
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        i_on_records++ ;                                        // No of records count that contains Organization_Name
+
+        // Call s_mkeKey_getKey
+        s_mkeKey_getKey( a_ctrl_om , a_ctrl_os , a_ctrl_ox , abv_OLim , abv_OStand , abv_OExt, str_tag_id ) ;
+      }
+
+      // Check Address_Part1 is inside the current tag data
+      if ( strstr ( str_tag_data , "Address_Part1" ) != NULL ) {
+
+        char *abv_ALim   = "1M" ;                               // abrevation of Address_Part1 Limited
+        char *abv_AStand = "1S" ;                               // abrevation of Address_Part1 Standard
+        char *abv_AExt   = "1X" ;                               // abrevation of Address_Part1 Extended
+
+        sprintf
+        (
+          a_ctrl_am ,                                           // Control with Address_Part1 limited key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_KYLVL_M ,                                         // KEY_LEVEL=Limited
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        sprintf
+        (
+          a_ctrl_as ,                                           // Control with Address_Part1 Standard key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_KYLVL_S ,                                         // KEY_LEVEL=Standard
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        sprintf
+        (
+          a_ctrl_ax ,                                           // Control with Address_Part1 Extended key
+          "%s%s%s%s%s%s" ,
+          S_K_FLD ,                                             // Format FIELD=
+          S_K_FLD_ADP1 ,                                        // Field Address_Part1
+          S_K_KYLVL_X ,                                         // KEY_LEVEL=Extended
+          a_uni_enc ,                                           // Unicode encoding format e.g UNICODE=4/6/8
+          a_nm_fmt ,                                            // Name Format e.g NAMEFORMAT=L/R
+          a_delimeter                                           // Delimiter
+        ) ;
+
+        i_addp1_records++ ;                                     // No of records count that contains Address_Part1
+
+        // Call s_mkeKey_getKey
+        s_mkeKey_getKey( a_ctrl_am , a_ctrl_as , a_ctrl_ax , abv_ALim , abv_AStand , abv_AExt ,str_tag_id ) ;
       }
     }
-
-    // IF Person Name , Organization Name and Address_Part1 are empty throw an error message
-    if ( strstr ( str_tag_data , "Person_Name" ) == NULL &&
-         strstr ( str_tag_data , "Organization_Name" ) == NULL &&
-         strstr ( str_tag_data , "Address_Part1" ) == NULL ) {
-
-      i_error_record_read ++ ;                                  // Error record count
-      i_error_record_flds ++ ;                                  // Missing Person Name, Organization name, Address Part 1 fields records count
-      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Person Name, Organization name, Address Part 1 fields" ) ;
+    else {
+      i_err_rec_r ++ ;                                          // Error record count
+      i_err_rec_id ++ ;                                         // Missing id field
+      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing tag id field" ) ;
       fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
-    }
-
-    // Check Person_Name is inside the current tag data
-    if ( strstr ( str_tag_data , "Person_Name" ) != NULL ) {
-
-      char *abv_PLim   = "PM" ;                                 // abrevation of Person_Name Limited
-      char *abv_PStand = "PS" ;                                 // abrevation of Person_Name Standard
-      char *abv_PExt   = "PX" ;                                 // abrevation of Person_Name Extended
-
-      sprintf
-      (
-        a_ctrl_pm ,                                             // Control with Person_Name limited key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_KYLVL_M ,                                           // KEY_LEVEL=Limited
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ps ,                                             // Control with Person_Name Standard key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_KYLVL_S ,                                           // KEY_LEVEL=Standard
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_px ,                                             // Control with Person_Name Extended key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_PN ,                                            // Field Person_Name
-        S_K_KYLVL_X ,                                           // KEY_LEVEL=Extended
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_pn_records++ ;                                          // No of records count that contains Person_Name
-
-      // Call s_mkeKey_getKey
-      s_mkeKey_getKey( a_ctrl_pm , a_ctrl_ps , a_ctrl_px , abv_PLim , abv_PStand , abv_PExt ,str_tag_id ) ;
-    }
-
-    // Check Organization_Name is inside the current tag data
-    if ( strstr ( str_tag_data , "Organization_Name" ) != NULL ) {
-
-      char *abv_OLim   = "OM" ;                                 // abrevation of Organization_Name Limited
-      char *abv_OStand = "OS" ;                                 // abrevation of Organization_Name Standard
-      char *abv_OExt   = "OX" ;                                 // abrevation of Organization_Name Extended
-
-      sprintf
-      (
-        a_ctrl_om ,                                             // Control with Organization_Name limited key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_KYLVL_M ,                                           // KEY_LEVEL=Limited
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_os ,                                             // Control with Organization_Name Standard key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_KYLVL_S ,                                           // KEY_LEVEL=Standard
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ox ,                                             // Control with Organization_Name Extended key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ON ,                                            // Field Organization_Name
-        S_K_KYLVL_X ,                                           // KEY_LEVEL=Extended
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_on_records++ ;                                         // No of records count that contains Organization_Name
-
-      // Call s_mkeKey_getKey
-      s_mkeKey_getKey( a_ctrl_om , a_ctrl_os , a_ctrl_ox , abv_OLim , abv_OStand , abv_OExt, str_tag_id ) ;
-    }
-
-    // Check Address_Part1 is inside the current tag data
-    if ( strstr ( str_tag_data , "Address_Part1" ) != NULL ) {
-
-      char *abv_ALim   = "1M" ;                                 // abrevation of Address_Part1 Limited
-      char *abv_AStand = "1S" ;                                 // abrevation of Address_Part1 Standard
-      char *abv_AExt   = "1X" ;                                 // abrevation of Address_Part1 Extended
-
-      sprintf
-      (
-        a_ctrl_am ,                                             // Control with Address_Part1 limited key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_KYLVL_M ,                                           // KEY_LEVEL=Limited
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_as ,                                             // Control with Address_Part1 Standard key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_KYLVL_S ,                                           // KEY_LEVEL=Standard
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      sprintf
-      (
-        a_ctrl_ax ,                                             // Control with Address_Part1 Extended key
-        "%s%s%s%s%s%s" ,
-        S_K_FLD ,                                               // Format FIELD=
-        S_K_FLD_ADP1 ,                                          // Field Address_Part1
-        S_K_KYLVL_X ,                                           // KEY_LEVEL=Extended
-        a_uni_enc ,                                             // Unicode encoding format e.g UNICODE=4/6/8
-        a_nm_fmt ,                                              // Name Format e.g NAMEFORMAT=L/R
-        a_delimeter                                             // Delimiter
-      ) ;
-
-      i_addp1_records++ ;                                       // No of records count that contains Address_Part1
-
-      // Call s_mkeKey_getKey
-      s_mkeKey_getKey( a_ctrl_am , a_ctrl_as , a_ctrl_ax , abv_ALim , abv_AStand , abv_AExt ,str_tag_id ) ;
     }
   }
   else {
-    // If Id field is missing display error message
-    i_error_record_read ++ ;                                    // Error record count
-    i_error_record_id ++ ;                                      // Missing id
-
-    fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
-    fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
+      // If there are improper record then display error with current record
+      i_im_rec ++ ;                                             // Improper record
+      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Improper record" ) ;
+      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
   }
 
 }
@@ -1142,19 +1149,24 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 **********************************************************************/
 
   fprintf ( f_log_fopen_status, "\n------Run summary------\n" ) ;
-  fprintf ( f_log_fopen_status, "Tagged Records read            : %d", i_record_read ) ;
+  fprintf ( f_log_fopen_status, "Tagged records read            : %d", i_record_read ) ;
 
-  if ( i_error_record_read != 0 ) {                             // If error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\nError records                  : %d", i_error_record_read ) ;
-    printf ("Error records : %d", i_error_record_read ) ;
+  if ( i_err_rec_r != 0 ) {                                     // If error records count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\nErrors records                 : %d", i_err_rec_r ) ;
+    printf ("Error records    : %d\n", i_err_rec_r ) ;
   }
-
-  if ( i_error_record_id != 0 ) {                               // If id error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n - Missing Id                  : %d", i_error_record_id ) ;
+  
+  if ( i_err_rec_id != 0 ) {                                    // Id field missing error
+    fprintf ( f_log_fopen_status, "\n - Missing id field            : %d\n", i_err_rec_id ) ;
   }
-
-  if ( i_error_record_flds != 0 ) {                             // If fields error records count non zero then only it will write on a file
-    fprintf ( f_log_fopen_status, "\n - Missing all 3 key fields    : %d\n", i_error_record_flds ) ;
+  
+  if ( i_err_rec_flds != 0 ) {                                  // If fields error records count non zero then only it will write on a file
+    fprintf ( f_log_fopen_status, "\n - Missing all 3 key fields    : %d\n", i_err_rec_flds ) ;
+  }
+  
+  if ( i_im_rec != 0 ) {
+    fprintf ( f_log_fopen_status , "\nImproper records count         : %d", i_im_rec ) ;
+    printf ("Improper records : %d\n", i_im_rec ) ;
   }
 
   if ( i_pn_records != 0 ) {                                    // If Records with Person_Name count non zero then only it will write on a file
@@ -1290,7 +1302,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
 5 Format of Output file
 
-6 Format of log file
+6 Format of Log file
 
 7 Technical
 
@@ -1379,7 +1391,7 @@ Format of Output file - sssrrrr.knf - ( knf stands for k(ey) n(ot applicable) f(
   Column 10        : KEY_LEVEL   - M ( Limited ), S ( Standard ), X ( Extended )
   Column 11 onward : Id
 
-Format of log file
+Format of Log file
 
   Log file will be created with data set number, run number ,procedure name
    and date time
@@ -1409,9 +1421,9 @@ Format of log file
   System name           : Missing- Default:default / <SYSTEM_NAME>
   Population            : Missing- Default:india   / <POPULATION_NAME>
   Encoding datatype     : Missing- Default:TEXT    / <ENCODING_DATATYPE>
-  Input File Directory  : <Input_File_path>
-  Output File Directory : <Output_File_path>
-  Log File Directory    : <Log_File_path>
+  Input File Directory  : <INPUT_FILE_PATH>
+  Output File Directory : <OUTPUT_FILE_PATH>
+  Log File Directory    : <LOG_FILE_PATH>
   Delimiter             : Missing- Default:* / <DELIMITER>
   Unicode encoding      : <UNICODE_ENCODING>
   Name format           : <NAME_FORMAT>
@@ -1433,36 +1445,41 @@ Format of log file
   missing in the record then error will be display with
   record no with error message and record.
 
-  Error message: Missing Id field
+  Error message: Missing tag id field
 
   If Id field is missing in the record then error will be display with
   record no with error message and record.
+  
+  Error message: Improper record
+  If current record does not contain Tag id and Tag data with tab delimited.
+  and Either tag id or tag data missing then this error will write it on log file
 
   ------Run summary------
-  Tagged Records read            : <Count>
-  Error records                  : <Count>
-   - Missing Id                  : <Count>
-   - Missing all 3 key fields    : <Count>
-  Records with Person_Name       : <Count>
-  Records with Organization_Name : <Count>
-  Records with Address_Part1     : <Count>
+  Tagged Records read            : <COUNT>
+  Error records                  : <COUNT>
+   - Missing Id                  : <COUNT>
+   - Missing all 3 key fields    : <COUNT>
+  Improper records count         : <COUNT>
+  Records with Person_Name       : <COUNT>
+  Records with Organization_Name : <COUNT>
+  Records with Address_Part1     : <COUNT>
 
-  Person_Name keys       : <Count>
-   -Limited  : <Count>
-   -Standard : <Count>
-   -Extended : <Count>
+  Person_Name keys       : <COUNT>
+   -Limited  : <COUNT>
+   -Standard : <COUNT>
+   -Extended : <COUNT>
 
-  Organization_Name keys : <Count>
-   -Limited  : <Count>
-   -Standard : <Count>
-   -Extended : <Count>
+  Organization_Name keys : <COUNT>
+   -Limited  : <COUNT>
+   -Standard : <COUNT>
+   -Extended : <COUNT>
 
-  Address_Part1 keys     : <Count>
-   -Limited  : <Count>
-   -Standard : <Count>
-   -Extended : <Count>
+  Address_Part1 keys     : <COUNT>
+   -Limited  : <COUNT>
+   -Standard : <COUNT>
+   -Extended : <COUNT>
 
-  Total keys written     : <Count>
+  Total keys written     : <COUNT>
 
   Ended YYYY-MM-DD HH24:MI:SS - HH:MM:SS to execute
 
@@ -1473,8 +1490,8 @@ Format of log file
    If Hours , Minutes and seconds are less than 10 prefix 0 will be added.
 
   Terminal output:
-
-  No of error record will e display if it is not zero.
+  Error records     : <COUNT>
+  Improper records  : <COUNT>
 
   Verbose :
 
