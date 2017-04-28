@@ -1132,7 +1132,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
     else {
       i_err_rec_r ++ ;                                          // Error record count
       i_err_rec_id ++ ;                                         // Missing id field
-      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing tag id field" ) ;
+      fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Missing Id field" ) ;
       fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_tag_data ) ;
     }
   }
@@ -1298,33 +1298,35 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
 3 Warnings
 
-4 Format of Input file
+4 Error Messages
 
-5 Format of Output file
+5 Format of Input file
 
-6 Format of Log file
+6 Format of Output file
 
-7 Technical
+7 Format of Log file
 
-  7.1 Variables used
+8 Technical
 
-  7.2 Run Parameters
+  8.1 Variables used
 
-  7.3 Compile Procedure
+  8.2 Run Parameters
 
-  7.4 Execute procedure in different way
+  8.3 Compile Procedure
 
-  7.5 Execution Start and End date and time
+  8.4 Execute procedure in different way
 
-  7.6 Subroutines
+  8.5 Execution Start and End date and time
 
-      7.6.1 Called by
+  8.6 Subroutines
 
-      7.6.2 Calling
+      8.6.1 Called by
 
-      7.6.3 Subroutine Structure
+      8.6.2 Calling
 
-8 Include Header
+      8.6.3 Subroutine Structure
+
+9 Include Header
 
 Make Key
 
@@ -1348,6 +1350,7 @@ Copyright
   Copyright ( c ) 2017 IdentLogic Systems Private Limited
 
 Warnings
+
   If your data can contain asterisks, make sure that these are either
    cleaned out prior to calling the dds-name3 functions , or use a different
    DELIMITER=setting.
@@ -1363,18 +1366,14 @@ Warnings
 
   Increase the array size as per your convenience.
 
-  Data set number , Run time number ,System name and population parameters
-  are mandatory.
-  Data set number should be in a range of 100 to 999
-  Run time number should be in a range of 1000 to 9999
-  Means Input file name should be integer and in range.
-  System name should not be empty
-  Population name should not be empty
-  If data set number and run number are empty it will throw an error
-  If data set number and run number are missing or not found it will not create output
-  or log file.
-  System name is the location( default folder) where india.ysp file is located.
-  Population means country name
+Error Messages
+
+  JOB ABANDONDED - DATA SET NUMBER SHOULD BE INTEGER AND IN A RANGE OF 100 TO 999
+  JOB ABANDONDED - RUN TIME NUMBER SHOULD BE INTEGER AND IN A RANGE OF 1000 TO 9999
+  JOB ABANDONDED - UNKNOWN ENCODING DATATYPE
+  JOB ABANDONDED - INVALID CHARACTER ENCODING VALUE
+  JOB ABANDONDED - INVALID NAMEFORMAT VALUE - MUST BE L OR R
+  JOB ABANDONDED - DELIMITER MUST BE ONE CHARACTER
 
 Format of Input file  - sssrrrr.tag - TAB delimited
 
@@ -1445,7 +1444,7 @@ Format of Log file
   missing in the record then error will be display with
   record no with error message and record.
 
-  Error message: Missing tag id field
+  Error message: Missing Id field
 
   If Id field is missing in the record then error will be display with
   record no with error message and record.
