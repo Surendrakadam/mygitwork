@@ -213,7 +213,7 @@ int i_id_fle_rec_err_knt = 0 ;                                  // Count of erro
 int i_src_rec_err_knt    = 0 ;                                  // Search records error count
 int i_fle_rec_err_knt    = 0 ;                                  // File records error count
 
-int i_emp_flds_err_knt   = 0 ;                                  // Empty fields error count
+int i_im_rec             = 0 ;                                  // Improper records count
 
 // Total errors count
 int i_tot_err_knt        = 0 ;                                  // Total errors count
@@ -1140,18 +1140,20 @@ s_GMtc_open ( ) ;                                               // Open get matc
 
   // Read a input file line by line
 while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
+  
+  int i_fld_rec_knt ;                                           // Number of tab delimited fields count in current record of input file
   ++ i_rec_number ;                                             // Record number
 
   // Tab delimited split
-  sscanf
-  (
-    str_current_rec ,
-    "%[^\t]\t%[^\t]\t%[^\t]\t%[^\n]" ,
-    str_src_tag_dta ,
-    str_fle_tag_dta ,
-    str_src_id ,
-    str_fle_id
-  );
+  i_fld_rec_knt =  sscanf
+                  (
+                    str_current_rec ,
+                    "%[^\t]\t%[^\t]\t%[^\t]\t%[^\n]" ,
+                    str_src_tag_dta ,
+                    str_fle_tag_dta ,
+                    str_src_id ,
+                    str_fle_id
+                  );
 
   i_src_tag_dta_len = strlen( str_src_tag_dta ) ;               // Length of search data
   i_fle_tag_dta_len = strlen( str_fle_tag_dta ) ;               // Length of file data
@@ -1202,1659 +1204,1644 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
   if ( strstr ( str_fle_tag_dta , "Filter9" ) != NULL ) { i_ft9_in_fle_rec_knt ++ ; }
 /* END FILE DATA CONTAIN FOLLOWING FIELD COUNTS ***************************************************/
 
+  if ( i_fld_rec_knt == 4 ) {
+    // Check search data and file data contain <delmiter>Id<delimiter> or not
+    if ( strstr
+         (
+           str_src_tag_dta , a_Id                               // If delimeter parameter is non empty find id in search data record
+         ) != NULL &&
+         strstr
+         (
+           str_fle_tag_dta , a_Id                               // If delimeter parameter is non empty find id in file data record
+         ) != NULL
+       ) {
 
-  // Check search data and file data contain <delmiter>Id<delimiter> or not
-  if ( strstr
-       (
-         str_src_tag_dta , a_Id                                 // If delimeter parameter is non empty find id in search data record
-       ) != NULL &&
-       strstr
-       (
-         str_fle_tag_dta , a_Id                                 // If delimeter parameter is non empty find id in file data record
-       ) != NULL &&
-       strcmp ( str_src_tag_dta , "" ) != 0 &&                  // Check search tag data empty or not
-       strcmp ( str_fle_tag_dta , "" ) != 0 &&                  // Check file tag data empty or not
-       strcmp ( str_src_id , "" ) != 0  &&                      // Check search tag id empty or not
-       strcmp ( str_fle_id , "" ) != 0                          // Check file tag id empty or not
-     ) {
+       if ( i_verbose_flg == 1 ) {                              // If Verbose flag is On
 
-     if ( i_verbose_flg == 1 ) {                                // If Verbose flag is On
+          // Display so many records in so many seconds to execute
 
-        // Display so many records in so many seconds to execute
+          if ( i_rec_number == i_multiplier ) {                 // If Records number equals Multiplier number
+            t_end_time = clock( ) - t_start_time ;              // End time
+            t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;              // In seconds
+            printf( "\nDisplay %d records in %.f seconds to execute \n", i_multiplier , t_time_taken ) ;      // Print time
 
-        if ( i_rec_number == i_multiplier ) {                   // If Records number equals Multiplier number
-          t_end_time = clock( ) - t_start_time ;                // End time
-          t_time_taken = ( ( double )t_end_time )/CLOCKS_PER_SEC ;              // In seconds
-          printf( "\nDisplay %d records in %.f seconds to execute \n", i_multiplier , t_time_taken ) ;      // Print time
+            i_multiplier = i_multiplier * 2 ;                   // Multiplier value multiply by 2
+          }
+       }
 
-          i_multiplier = i_multiplier * 2 ;                     // Multiplier value multiply by 2
-        }
-     }
+      /* MATCH LEVEL WITH ACCEPT LIMIT OR REJECT LIMIT AND CONTROLS WITH THREE MATCH LEVEL***********/
 
-    /* MATCH LEVEL WITH ACCEPT LIMIT OR REJECT LIMIT AND CONTROLS WITH THREE MATCH LEVEL***********/
-
-    if ( p_acc_lmt == 0 && p_rej_lmt == 0 ) {                   // Both accept limit and reject limit are zero
-      sprintf ( a_mtc_lvl_typ_acc_rej ,"%s" , S_K_mtc_lvl_ty ) ;
-    }
-    else if ( p_acc_lmt != 0 && p_rej_lmt != 0 ) {              // Both accept limit and reject limit are non zero
-      sprintf ( a_mtc_lvl_typ_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_ty , p_acc_lmt , p_rej_lmt ) ;
-    }
-    else if ( p_acc_lmt == 0 && p_rej_lmt != 0 ) {              // Accept limit are zero and reject limit are not zero
-      sprintf ( a_mtc_lvl_typ_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_ty , p_acc_lmt , p_rej_lmt ) ;
-    }
-    else if ( p_acc_lmt !=0  && p_rej_lmt == 0 ) {              // Accept limit are non zero and reject limit are zero
-      sprintf ( a_mtc_lvl_typ_acc_rej ,"%s%+d" , S_K_mtc_lvl_ty , p_acc_lmt ) ;
-    }
-
-    if ( p_acc_lmt == 0 && p_rej_lmt == 0 ) {                   // Both accept limit and reject limit are zero
-      sprintf ( a_mtc_lvl_con_acc_rej ,"%s" , S_K_mtc_lvl_con ) ;
-    }
-    else if ( p_acc_lmt != 0 && p_rej_lmt != 0 ) {              // Both accept limit and reject limit are non zero
-      sprintf ( a_mtc_lvl_con_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_con , p_acc_lmt , p_rej_lmt ) ;
-    }
-    else if ( p_acc_lmt == 0 && p_rej_lmt != 0 ) {              // Accept limit are zero and reject limit are not zero
-      sprintf ( a_mtc_lvl_con_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_con , p_acc_lmt , p_rej_lmt ) ;
-    }
-    else if ( p_acc_lmt !=0  && p_rej_lmt == 0 ) {              // Accept limit are non zero and reject limit are zero
-      sprintf ( a_mtc_lvl_con_acc_rej ,"%s%+d" , S_K_mtc_lvl_con , p_acc_lmt ) ;
-    }
-
-    if ( p_acc_lmt == 0 && p_rej_lmt == 0 ) {                   // Both accept limit and reject limit are zero
-      sprintf ( a_mtc_lvl_lse_acc_rej ,"%s" , S_K_mtc_lvl_lse ) ;
-    }
-    else if ( p_acc_lmt != 0 && p_rej_lmt != 0 ) {              // Both accept limit and reject limit are non zero
-      sprintf ( a_mtc_lvl_lse_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_lse , p_acc_lmt , p_rej_lmt ) ;
-    }
-    else if ( p_acc_lmt == 0 && p_rej_lmt != 0 ) {              // Accept limit are zero and reject limit are not zero
-      sprintf ( a_mtc_lvl_lse_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_lse , p_acc_lmt , p_rej_lmt ) ;
-    }
-    else if ( p_acc_lmt !=0  && p_rej_lmt == 0 ) {              // Accept limit are non zero and reject limit are zero
-      sprintf ( a_mtc_lvl_lse_acc_rej ,"%s%+d" , S_K_mtc_lvl_lse , p_acc_lmt ) ;
-    }
-
-    sprintf
-    (
-       a_prps_ty ,                                              // Purpose with match level Typical
-      "%s%s %s%s%s%s%s%s" ,
-       S_K_prps ,                                               // PURPOSE= format
-       str_prps_nm ,                                            // Purpose name
-       S_K_mtc_lvl ,                                            // MATCH_LEVEL= format
-       a_mtc_lvl_typ_acc_rej ,                                  // Match level Typical with accept limit and reject limit
-       a_uni_enc ,                                              // Unicode encoding format e.g UNICODE=4
-       a_nm_fmt ,                                               // Name Format e.g NAMEFORMAT=R
-       a_adj_wei ,
-       a_delimeter                                              // Delimiter
-    ) ;
-
-    sprintf
-    (
-       a_prps_con ,                                             // Purpose with match level Conservative
-       "%s%s %s%s%s%s%s%s" ,
-       S_K_prps ,                                               // PURPOSE= format
-       str_prps_nm ,                                            // Purpose name
-       S_K_mtc_lvl ,                                            // MATCH_LEVEL= format
-       a_mtc_lvl_con_acc_rej ,                                  // Match level Conservative with accept limit and reject limit
-       a_uni_enc ,                                              // Unicode encoding format e.g UNICODE=4
-       a_nm_fmt ,                                               // Name Format e.g NAMEFORMAT=R
-       a_adj_wei ,
-       a_delimeter                                              // Delimiter
-    ) ;
-
-    sprintf
-    (
-       a_prps_lse ,                                             // Purpose with match level Loose
-      "%s%s %s%s%s%s%s%s" ,
-       S_K_prps ,                                               // PURPOSE= format
-       str_prps_nm ,                                            // Purpose name
-       S_K_mtc_lvl ,                                            // MATCH_LEVEL= format
-       a_mtc_lvl_lse_acc_rej ,                                  // Match level Loose with accept limit and reject limit
-       a_uni_enc ,                                              // Unicode encoding format e.g UNICODE=4
-       a_nm_fmt ,                                               // Name Format e.g NAMEFORMAT=R
-       a_adj_wei ,
-       a_delimeter                                              // Delimiter
-    ) ;
-
-    /* END MATCH LEVEL WITH ACCEPT LIMIT OR REJECT LIMIT AND CONTROLS WITH THREE MATCH LEVEL*******/
-
-    if ( strcmp ( p_purpose , "Address" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Address_Part1" ) != NULL ) {
-
-        char *str_add = "100" ;                                 // Purpose number of Address
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_add ,                                             // Purpose number of Address
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
+      if ( p_acc_lmt == 0 && p_rej_lmt == 0 ) {                 // Both accept limit and reject limit are zero
+        sprintf ( a_mtc_lvl_typ_acc_rej ,"%s" , S_K_mtc_lvl_ty ) ;
       }
+      else if ( p_acc_lmt != 0 && p_rej_lmt != 0 ) {            // Both accept limit and reject limit are non zero
+        sprintf ( a_mtc_lvl_typ_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_ty , p_acc_lmt , p_rej_lmt ) ;
+      }
+      else if ( p_acc_lmt == 0 && p_rej_lmt != 0 ) {            // Accept limit are zero and reject limit are not zero
+        sprintf ( a_mtc_lvl_typ_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_ty , p_acc_lmt , p_rej_lmt ) ;
+      }
+      else if ( p_acc_lmt !=0  && p_rej_lmt == 0 ) {            // Accept limit are non zero and reject limit are zero
+        sprintf ( a_mtc_lvl_typ_acc_rej ,"%s%+d" , S_K_mtc_lvl_ty , p_acc_lmt ) ;
+      }
+
+      if ( p_acc_lmt == 0 && p_rej_lmt == 0 ) {                 // Both accept limit and reject limit are zero
+        sprintf ( a_mtc_lvl_con_acc_rej ,"%s" , S_K_mtc_lvl_con ) ;
+      }
+      else if ( p_acc_lmt != 0 && p_rej_lmt != 0 ) {            // Both accept limit and reject limit are non zero
+        sprintf ( a_mtc_lvl_con_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_con , p_acc_lmt , p_rej_lmt ) ;
+      }
+      else if ( p_acc_lmt == 0 && p_rej_lmt != 0 ) {            // Accept limit are zero and reject limit are not zero
+        sprintf ( a_mtc_lvl_con_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_con , p_acc_lmt , p_rej_lmt ) ;
+      }
+      else if ( p_acc_lmt !=0  && p_rej_lmt == 0 ) {            // Accept limit are non zero and reject limit are zero
+        sprintf ( a_mtc_lvl_con_acc_rej ,"%s%+d" , S_K_mtc_lvl_con , p_acc_lmt ) ;
+      }
+
+      if ( p_acc_lmt == 0 && p_rej_lmt == 0 ) {                 // Both accept limit and reject limit are zero
+        sprintf ( a_mtc_lvl_lse_acc_rej ,"%s" , S_K_mtc_lvl_lse ) ;
+      }
+      else if ( p_acc_lmt != 0 && p_rej_lmt != 0 ) {            // Both accept limit and reject limit are non zero
+        sprintf ( a_mtc_lvl_lse_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_lse , p_acc_lmt , p_rej_lmt ) ;
+      }
+      else if ( p_acc_lmt == 0 && p_rej_lmt != 0 ) {            // Accept limit are zero and reject limit are not zero
+        sprintf ( a_mtc_lvl_lse_acc_rej ,"%s%+d%+d" , S_K_mtc_lvl_lse , p_acc_lmt , p_rej_lmt ) ;
+      }
+      else if ( p_acc_lmt !=0  && p_rej_lmt == 0 ) {            // Accept limit are non zero and reject limit are zero
+        sprintf ( a_mtc_lvl_lse_acc_rej ,"%s%+d" , S_K_mtc_lvl_lse , p_acc_lmt ) ;
+      }
+
+      sprintf
+      (
+         a_prps_ty ,                                            // Purpose with match level Typical
+        "%s%s %s%s%s%s%s%s" ,
+         S_K_prps ,                                             // PURPOSE= format
+         str_prps_nm ,                                          // Purpose name
+         S_K_mtc_lvl ,                                          // MATCH_LEVEL= format
+         a_mtc_lvl_typ_acc_rej ,                                // Match level Typical with accept limit and reject limit
+         a_uni_enc ,                                            // Unicode encoding format e.g UNICODE=4
+         a_nm_fmt ,                                             // Name Format e.g NAMEFORMAT=R
+         a_adj_wei ,
+         a_delimeter                                            // Delimiter
+      ) ;
+
+      sprintf
+      (
+         a_prps_con ,                                           // Purpose with match level Conservative
+         "%s%s %s%s%s%s%s%s" ,
+         S_K_prps ,                                             // PURPOSE= format
+         str_prps_nm ,                                          // Purpose name
+         S_K_mtc_lvl ,                                          // MATCH_LEVEL= format
+         a_mtc_lvl_con_acc_rej ,                                // Match level Conservative with accept limit and reject limit
+         a_uni_enc ,                                            // Unicode encoding format e.g UNICODE=4
+         a_nm_fmt ,                                             // Name Format e.g NAMEFORMAT=R
+         a_adj_wei ,
+         a_delimeter                                            // Delimiter
+      ) ;
+
+      sprintf
+      (
+         a_prps_lse ,                                           // Purpose with match level Loose
+        "%s%s %s%s%s%s%s%s" ,
+         S_K_prps ,                                             // PURPOSE= format
+         str_prps_nm ,                                          // Purpose name
+         S_K_mtc_lvl ,                                          // MATCH_LEVEL= format
+         a_mtc_lvl_lse_acc_rej ,                                // Match level Loose with accept limit and reject limit
+         a_uni_enc ,                                            // Unicode encoding format e.g UNICODE=4
+         a_nm_fmt ,                                             // Name Format e.g NAMEFORMAT=R
+         a_adj_wei ,
+         a_delimeter                                            // Delimiter
+      ) ;
+
+      /* END MATCH LEVEL WITH ACCEPT LIMIT OR REJECT LIMIT AND CONTROLS WITH THREE MATCH LEVEL*******/
+
+      if ( strcmp ( p_purpose , "Address" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Address_Part1" ) != NULL ) {
+
+          char *str_add = "100" ;                               // Purpose number of Address
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_add ,                                           // Purpose number of Address
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Add_prps_err_knt ++ ;                             // Address purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Add_prps_err_knt ++ ;                             // Address purpose error count
+            i_tot_err_knt ++ ;                                  // Total errors count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End if Resident
+      else if ( strcmp ( p_purpose , "Contact" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
+           ) {
+
+          char *str_contact = "101" ;                           // Purpose number Contact
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_contact ,                                       // Purpose number of Contact
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Con_prps_err_knt ++ ;                             // Contact purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Con_prps_err_knt ++ ;                             // Contact purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Contact
+      else if ( strcmp ( p_purpose , "Corp_Entity" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Organization_Name" ) != NULL ) {
+
+          char *str_cent = "102" ;                              // Purpose number of Corp_Entity
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_cent ,                                          // Purpose number of Corp_Entity
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ) {
+
+            i_CEn_prps_err_knt ++ ;                             // Corp_Entity purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta ,   "Organization_Name" ) == NULL ) {
+
+            i_CEn_prps_err_knt ++ ;                             // Corp_Entity purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Corp_Entity
+      else if ( strcmp ( p_purpose , "Division" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
+           ) {
+
+          char *str_div = "103" ;                               // Purpose number of Division
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_div ,                                           // Purpose number of Division
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Div_prps_err_knt ++ ;                             // Division purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ){
+
+            i_Div_prps_err_knt ++ ;                             // Division purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Division
+      else if ( strcmp ( p_purpose , "Family" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
+               strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL )
+           ) {
+
+          char *str_fml = "104" ;                               // Purpose number of Family
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_fml ,                                           // Purpose number of family
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ||
+               strstr ( str_src_tag_dta , "Telephone_Number" ) == NULL ) {
+
+            i_Fam_prps_err_knt ++ ;                             // Family purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Telephone_Number" ) == NULL ) {
+
+            i_Fam_prps_err_knt ++ ;                             // Family purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Family
+      else if ( strcmp ( p_purpose , "Fields" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Id" ) != NULL ||
+               strstr ( str_src_tag_dta , "Person_Name" ) != NULL ||
+               strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ||
+               strstr ( str_src_tag_dta , "Address_Part2" ) != NULL ||
+               strstr ( str_src_tag_dta , "Postal_Area" ) != NULL ||
+               strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ||
+               strstr ( str_src_tag_dta , "Date" ) != NULL ||
+               strstr ( str_src_tag_dta , "Attribute1" ) != NULL ||
+               strstr ( str_src_tag_dta , "Attribute2" ) != NULL )
+               &&
+             ( strstr ( str_fle_tag_dta , "Id" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Address_Part2" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Postal_Area" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Date" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Attribute1" ) != NULL ||
+              strstr ( str_fle_tag_dta , "Attribute2" ) != NULL )
+           ) {
+          char *str_fld = "105" ;                               // Purpose number of Fields
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_fld ,                                           // Purpose number of Fields
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+          i_Fld_prps_err_knt ++ ;                               // Fields purpose error count
+
+          fprintf
+          (
+            f_log_fopen_status ,
+            "\nRecord no : %d Error Message : %s %s" ,
+            i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose
+          ) ;
+          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
+        }
+      } // End of else if Fields
+      else if ( strcmp ( p_purpose , "Filter1" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter1" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter1" ) != NULL ) {
+
+          char *str_ftr1 = "106" ;                              // Purpose number of Filter1
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr1 ,                                          // Purpose number of Filter1
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter1" ) == NULL ) {
+
+            i_Ftr1_prps_err_knt ++ ;                            // Filter1 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter1" ) == NULL ) {
+
+            i_Ftr1_prps_err_knt ++ ;                            // Filter1 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter1
+      else if ( strcmp ( p_purpose , "Filter2" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter2" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter2" ) != NULL ) {
+
+          char *str_ftr2 = "107" ;                              // Purpose number of Filter2
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr2 ,                                          // Purpose number of Filter2
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter2" ) == NULL ) {
+
+            i_Ftr2_prps_err_knt ++ ;                            // Filter2 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter2" ) == NULL ) {
+
+            i_Ftr2_prps_err_knt ++ ;                            // Filter2 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter2
+      else if ( strcmp ( p_purpose , "Filter3" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter3" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter3" ) != NULL ) {
+
+          char *str_ftr3 = "108" ;                              // Purpose number of Filter3
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr3 ,                                          // Purpose number of Filter3
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter3" ) == NULL ) {
+
+            i_Ftr3_prps_err_knt ++ ;                            // Filter3 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter3" ) == NULL ) {
+
+            i_Ftr3_prps_err_knt ++ ;                            // Filter3 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter3
+      else if ( strcmp ( p_purpose , "Filter4" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter4" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter4" ) != NULL ) {
+
+          char *str_ftr4 = "109" ;                              // Purpose number of Filter4
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr4 ,                                          // Purpose number of Filter4
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter4" ) == NULL ) {
+
+            i_Ftr4_prps_err_knt ++ ;                            // Filter4 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter4" ) == NULL ) {
+
+            i_Ftr4_prps_err_knt ++ ;                            // Filter4 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter4
+      else if ( strcmp ( p_purpose , "Filter5" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter5" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter5" ) != NULL ) {
+
+          char *str_ftr5 = "110" ;                              // Purpose number of Filter5
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr5 ,                                          // Purpose number of Filter5
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter5" ) == NULL ) {
+
+            i_Ftr5_prps_err_knt ++ ;                            // Filter5 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter5" ) == NULL ) {
+
+            i_Ftr5_prps_err_knt ++ ;                            // Filter5 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter5
+      else if ( strcmp ( p_purpose , "Filter6" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter6" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter6" ) != NULL ) {
+
+          char *str_ftr6 = "111" ;                              // Purpose number of Filter6
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr6 ,                                          // Purpose number of Filter6
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter6" ) == NULL ) {
+
+            i_Ftr6_prps_err_knt ++ ;                            // Filter6 purpose error counta
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter6" ) == NULL ) {
+
+            i_Ftr6_prps_err_knt ++ ;                            // Filter6 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter6
+      else if ( strcmp ( p_purpose , "Filter7" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter7" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter7" ) != NULL ) {
+
+          char *str_ftr7 = "112" ;                              // Purpose number of Filter7
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr7 ,                                          // Purpose number of Filter7
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter7" ) == NULL ) {
+
+            i_Ftr7_prps_err_knt ++ ;                            // Filter7 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter7" ) == NULL ) {
+
+            i_Ftr7_prps_err_knt ++ ;                            // Filter7 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter7
+      else if ( strcmp ( p_purpose , "Filter8" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter8" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter8" ) != NULL ) {
+
+          char *str_ftr8 = "113" ;                              // Purpose number of Filter8
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr8 ,                                          // Purpose number of Filter7
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter8" ) == NULL ) {
+
+            i_Ftr8_prps_err_knt ++ ;                            // Filter8 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter8" ) == NULL ) {
+
+            i_Ftr8_prps_err_knt ++ ;                            // Filter8 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter8
+      else if ( strcmp ( p_purpose , "Filter9" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Filter9" ) != NULL &&
+             strstr ( str_fle_tag_dta ,   "Filter9" ) != NULL ) {
+
+          char *str_ftr9 = "114" ;                              // Purpose number of Filter9
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ftr9 ,                                          // Purpose number of Filter9
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Filter9" ) == NULL ) {
+
+            i_Ftr9_prps_err_knt ++ ;                            // Filter9 purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Filter9" ) == NULL ) {
+
+            i_Ftr9_prps_err_knt ++ ;                            // Filter9 purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Filter9
+      else if ( strcmp ( p_purpose , "Household" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
+           ) {
+
+          char *str_hsho = "115" ;                              // Purpose number of Household
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_hsho ,                                          // Purpose number of Household
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Hsho_prps_err_knt ++ ;                            // House purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Hsho_prps_err_knt ++ ;                            // House purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Household
+      else if ( strcmp ( p_purpose , "Individual" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+             ( strstr ( str_src_tag_dta , "Date" ) != NULL ||
+               strstr ( str_src_tag_dta , "Id" ) != NULL ) ) &&
+
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+             ( strstr ( str_fle_tag_dta , "Date" ) != NULL ||
+               strstr ( str_fle_tag_dta , "Id" ) != NULL ) ) ) {
+
+          char *str_ind = "116" ;                               // Purpose number of Individual
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_ind ,                                           // Purpose number of Individual
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+             ( strstr ( str_src_tag_dta , "Date" ) == NULL ||
+               strstr ( str_src_tag_dta , "Id" ) == NULL ) ) {
+
+            i_ind_prps_err_knt ++ ;                             // Individual purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+             ( strstr ( str_fle_tag_dta , "Date" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Id" ) == NULL ) ) {
+
+            i_ind_prps_err_knt ++ ;                             // Individual purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Individual
+      else if ( strcmp ( p_purpose , "Organization" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
+             strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ) {
+
+          char *str_org = "117" ;                               // Purpose number of Organization
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_org ,                                           // Purpose number of Organization
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ) {
+
+            i_OrgN_prps_err_knt ++ ;                            // Organization name purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ) {
+
+            i_OrgN_prps_err_knt ++ ;                            // Organization name purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Organization
+      else if ( strcmp ( p_purpose , "Person_Name" ) == 0 ) {
+        if ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+             strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ) {
+
+          char *str_psn = "118" ;                               // Purpose number of Person_Name
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_psn ,                                           // Purpose number of Person_Name
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ) {
+
+            i_PerN_prps_err_knt ++ ;                            // Person_Name purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ) {
+
+            i_PerN_prps_err_knt ++ ;                            // Person_Name purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Person_Name
+      else if ( strcmp ( p_purpose , "Resident" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
+           ) {
+
+          char *str_rsd = "119" ;                               // Purpose number of Resident
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          if ( str_src_id[0] != '\0' ) {
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_rsd ,                                           // Purpose number of Resident
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+       }
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {\
+
+            i_Res_prps_err_knt ++ ;                             // Resident purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
+
+            i_Res_prps_err_knt ++ ;                             // Resident purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Resident
+      else if ( strcmp ( p_purpose , "Wide_Contact" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL )
+           ) {
+
+          char *str_wcon = "120" ;                              // Purpose number of Wide_Contact
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_wcon ,                                          // Purpose number of Wide_Contact
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ) {
+
+            i_WCon_prps_err_knt ++ ;                            // Wide_Contact purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ) {
+
+            i_WCon_prps_err_knt ++ ;                            // Wide_Contact purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Wide_Contact
+      else if ( strcmp ( p_purpose , "Wide_Household" ) == 0 ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
+               strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) &&
+
+             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL &&
+               strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL )
+           ) {
+
+          char *str_whsho = "121" ;                             // Purpose number of Wide_Household
+          char *str_ty  = "T" ;                                 // Match level Typical abbrevation
+          char *str_con = "C" ;                                 // Match level Conservative abbrevation
+          char *str_lse = "L" ;                                 // Match level Loose abbrevation
+
+          i_op_rec_knt ++ ;                                     // Output records count
+
+          s_GMtc_matches                                        // Call s_GMtc_matches subroutine
+          (
+            str_src_tag_dta ,                                   // Search tag data
+            str_fle_tag_dta ,                                   // File tag data
+            i_src_tag_dta_len ,                                 // Length of search tag data
+            i_fle_tag_dta_len ,                                 // Length of file data
+            str_src_id ,                                        // Id of search tag data
+            str_fle_id ,                                        // Id of file tag data
+            a_prps_ty ,                                         // Controls with Typical match level
+            a_prps_con ,                                        // Controls with Conservative match level
+            a_prps_lse ,                                        // Controls with Loose match level
+            str_whsho ,                                         // Purpose number of Wide_Household
+            str_ty ,                                            // Match level Typical abbrevation
+            str_con ,                                           // Match level Conservative abbrevation
+            str_lse                                             // Match level Loose abbrevation
+          ) ;
+        }
+        else {
+
+          i_tot_err_rec_knt ++ ;                                // Total error records count
+
+          // Check error in search data
+          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ||
+               strstr ( str_src_tag_dta , "Telephone_Number" ) == NULL ) {
+
+            i_WHsho_prps_err_knt ++ ;                           // Wide_Household purpose error count
+            i_src_rec_err_knt ++ ;                              // Search record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+          }
+
+          // Check error in file data
+          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Telephone_Number" ) == NULL ) {
+
+            i_WHsho_prps_err_knt ++ ;                           // Wide_Household purpose error count
+            i_fle_rec_err_knt ++ ;                              // File record errors count
+            i_tot_err_knt ++ ;                                  // Total errors count
+            fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s %s" ,
+              i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
+            ) ;
+            fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+          }
+        }
+      } // End of else if Wide_Household
       else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Add_prps_err_knt ++ ;                               // Address purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Add_prps_err_knt ++ ;                               // Address purpose error count
-          i_tot_err_knt ++ ;                                    // Total errors count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End if Resident
-    else if ( strcmp ( p_purpose , "Contact" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
-         ) {
-
-        char *str_contact = "101" ;                             // Purpose number Contact
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_contact ,                                         // Purpose number of Contact
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Con_prps_err_knt ++ ;                               // Contact purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Con_prps_err_knt ++ ;                               // Contact purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Contact
-    else if ( strcmp ( p_purpose , "Corp_Entity" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Organization_Name" ) != NULL ) {
-
-        char *str_cent = "102" ;                                // Purpose number of Corp_Entity
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_cent ,                                            // Purpose number of Corp_Entity
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ) {
-
-          i_CEn_prps_err_knt ++ ;                               // Corp_Entity purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta ,   "Organization_Name" ) == NULL ) {
-
-          i_CEn_prps_err_knt ++ ;                               // Corp_Entity purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Corp_Entity
-    else if ( strcmp ( p_purpose , "Division" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-           ( strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
-         ) {
-
-        char *str_div = "103" ;                                 // Purpose number of Division
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_div ,                                             // Purpose number of Division
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Div_prps_err_knt ++ ;                               // Division purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ){
-
-          i_Div_prps_err_knt ++ ;                               // Division purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Division
-    else if ( strcmp ( p_purpose , "Family" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
-             strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) &&
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL )
-         ) {
-
-        char *str_fml = "104" ;                                 // Purpose number of Family
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_fml ,                                             // Purpose number of family
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ||
-             strstr ( str_src_tag_dta , "Telephone_Number" ) == NULL ) {
-
-          i_Fam_prps_err_knt ++ ;                               // Family purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Telephone_Number" ) == NULL ) {
-
-          i_Fam_prps_err_knt ++ ;                               // Family purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Family
-    else if ( strcmp ( p_purpose , "Fields" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Id" ) != NULL ||
-             strstr ( str_src_tag_dta , "Person_Name" ) != NULL ||
-             strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ||
-             strstr ( str_src_tag_dta , "Address_Part2" ) != NULL ||
-             strstr ( str_src_tag_dta , "Postal_Area" ) != NULL ||
-             strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ||
-             strstr ( str_src_tag_dta , "Date" ) != NULL ||
-             strstr ( str_src_tag_dta , "Attribute1" ) != NULL ||
-             strstr ( str_src_tag_dta , "Attribute2" ) != NULL )
-             &&
-           ( strstr ( str_fle_tag_dta , "Id" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Address_Part2" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Postal_Area" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Date" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Attribute1" ) != NULL ||
-            strstr ( str_fle_tag_dta , "Attribute2" ) != NULL )
-         ) {
-        char *str_fld = "105" ;                                 // Purpose number of Fields
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_fld ,                                             // Purpose number of Fields
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-        i_Fld_prps_err_knt ++ ;                                 // Fields purpose error count
-
-        fprintf
-        (
-          f_log_fopen_status ,
-          "\nRecord no : %d Error Message : %s %s" ,
-          i_rec_number , "Record does not contain all fields required for Purpose" , p_purpose
-        ) ;
-        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
-      }
-    } // End of else if Fields
-    else if ( strcmp ( p_purpose , "Filter1" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter1" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter1" ) != NULL ) {
-
-        char *str_ftr1 = "106" ;                                // Purpose number of Filter1
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr1 ,                                            // Purpose number of Filter1
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter1" ) == NULL ) {
-
-          i_Ftr1_prps_err_knt ++ ;                              // Filter1 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter1" ) == NULL ) {
-
-          i_Ftr1_prps_err_knt ++ ;                              // Filter1 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter1
-    else if ( strcmp ( p_purpose , "Filter2" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter2" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter2" ) != NULL ) {
-
-        char *str_ftr2 = "107" ;                                // Purpose number of Filter2
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr2 ,                                            // Purpose number of Filter2
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter2" ) == NULL ) {
-
-          i_Ftr2_prps_err_knt ++ ;                              // Filter2 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter2" ) == NULL ) {
-
-          i_Ftr2_prps_err_knt ++ ;                              // Filter2 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter2
-    else if ( strcmp ( p_purpose , "Filter3" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter3" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter3" ) != NULL ) {
-
-        char *str_ftr3 = "108" ;                                // Purpose number of Filter3
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr3 ,                                            // Purpose number of Filter3
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter3" ) == NULL ) {
-
-          i_Ftr3_prps_err_knt ++ ;                              // Filter3 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter3" ) == NULL ) {
-
-          i_Ftr3_prps_err_knt ++ ;                              // Filter3 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter3
-    else if ( strcmp ( p_purpose , "Filter4" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter4" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter4" ) != NULL ) {
-
-        char *str_ftr4 = "109" ;                                // Purpose number of Filter4
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr4 ,                                            // Purpose number of Filter4
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter4" ) == NULL ) {
-
-          i_Ftr4_prps_err_knt ++ ;                              // Filter4 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter4" ) == NULL ) {
-
-          i_Ftr4_prps_err_knt ++ ;                              // Filter4 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter4
-    else if ( strcmp ( p_purpose , "Filter5" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter5" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter5" ) != NULL ) {
-
-        char *str_ftr5 = "110" ;                                // Purpose number of Filter5
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr5 ,                                            // Purpose number of Filter5
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter5" ) == NULL ) {
-
-          i_Ftr5_prps_err_knt ++ ;                              // Filter5 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter5" ) == NULL ) {
-
-          i_Ftr5_prps_err_knt ++ ;                              // Filter5 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter5
-    else if ( strcmp ( p_purpose , "Filter6" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter6" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter6" ) != NULL ) {
-
-        char *str_ftr6 = "111" ;                                // Purpose number of Filter6
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr6 ,                                            // Purpose number of Filter6
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter6" ) == NULL ) {
-
-          i_Ftr6_prps_err_knt ++ ;                              // Filter6 purpose error counta
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter6" ) == NULL ) {
-
-          i_Ftr6_prps_err_knt ++ ;                              // Filter6 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter6
-    else if ( strcmp ( p_purpose , "Filter7" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter7" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter7" ) != NULL ) {
-
-        char *str_ftr7 = "112" ;                                // Purpose number of Filter7
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr7 ,                                            // Purpose number of Filter7
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter7" ) == NULL ) {
-
-          i_Ftr7_prps_err_knt ++ ;                              // Filter7 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter7" ) == NULL ) {
-
-          i_Ftr7_prps_err_knt ++ ;                              // Filter7 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter7
-    else if ( strcmp ( p_purpose , "Filter8" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter8" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter8" ) != NULL ) {
-
-        char *str_ftr8 = "113" ;                                // Purpose number of Filter8
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr8 ,                                            // Purpose number of Filter7
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter8" ) == NULL ) {
-
-          i_Ftr8_prps_err_knt ++ ;                              // Filter8 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter8" ) == NULL ) {
-
-          i_Ftr8_prps_err_knt ++ ;                              // Filter8 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter8
-    else if ( strcmp ( p_purpose , "Filter9" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Filter9" ) != NULL &&
-           strstr ( str_fle_tag_dta ,   "Filter9" ) != NULL ) {
-
-        char *str_ftr9 = "114" ;                                // Purpose number of Filter9
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ftr9 ,                                            // Purpose number of Filter9
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Filter9" ) == NULL ) {
-
-          i_Ftr9_prps_err_knt ++ ;                              // Filter9 purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Filter9" ) == NULL ) {
-
-          i_Ftr9_prps_err_knt ++ ;                              // Filter9 purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Filter9
-    else if ( strcmp ( p_purpose , "Household" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
-         ) {
-
-        char *str_hsho = "115" ;                                // Purpose number of Household
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_hsho ,                                            // Purpose number of Household
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Hsho_prps_err_knt ++ ;                              // House purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Hsho_prps_err_knt ++ ;                              // House purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Household
-    else if ( strcmp ( p_purpose , "Individual" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-           ( strstr ( str_src_tag_dta , "Date" ) != NULL ||
-             strstr ( str_src_tag_dta , "Id" ) != NULL ) ) &&
-
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-           ( strstr ( str_fle_tag_dta , "Date" ) != NULL ||
-             strstr ( str_fle_tag_dta , "Id" ) != NULL ) ) ) {
-
-        char *str_ind = "116" ;                                 // Purpose number of Individual
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_ind ,                                             // Purpose number of Individual
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-           ( strstr ( str_src_tag_dta , "Date" ) == NULL ||
-             strstr ( str_src_tag_dta , "Id" ) == NULL ) ) {
-
-          i_ind_prps_err_knt ++ ;                               // Individual purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-           ( strstr ( str_fle_tag_dta , "Date" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Id" ) == NULL ) ) {
-
-          i_ind_prps_err_knt ++ ;                               // Individual purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Individual
-    else if ( strcmp ( p_purpose , "Organization" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-           strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ) {
-
-        char *str_org = "117" ;                                 // Purpose number of Organization
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_org ,                                             // Purpose number of Organization
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ) {
-
-          i_OrgN_prps_err_knt ++ ;                              // Organization name purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ) {
-
-          i_OrgN_prps_err_knt ++ ;                              // Organization name purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Organization
-    else if ( strcmp ( p_purpose , "Person_Name" ) == 0 ) {
-      if ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-           strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ) {
-
-        char *str_psn = "118" ;                                 // Purpose number of Person_Name
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_psn ,                                             // Purpose number of Person_Name
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ) {
-
-          i_PerN_prps_err_knt ++ ;                              // Person_Name purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ) {
-
-          i_PerN_prps_err_knt ++ ;                              // Person_Name purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Person_Name
-    else if ( strcmp ( p_purpose , "Resident" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
-         ) {
-
-        char *str_rsd = "119" ;                                 // Purpose number of Resident
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        if ( str_src_id[0] != '\0' ) {
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_rsd ,                                             // Purpose number of Resident
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-     }
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {\
-
-          i_Res_prps_err_knt ++ ;                               // Resident purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
-
-          i_Res_prps_err_knt ++ ;                               // Resident purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Resident
-    else if ( strcmp ( p_purpose , "Wide_Contact" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ) &&
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL )
-         ) {
-
-        char *str_wcon = "120" ;                                // Purpose number of Wide_Contact
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_wcon ,                                            // Purpose number of Wide_Contact
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ) {
-
-          i_WCon_prps_err_knt ++ ;                              // Wide_Contact purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ) {
-
-          i_WCon_prps_err_knt ++ ;                              // Wide_Contact purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Wide_Contact
-    else if ( strcmp ( p_purpose , "Wide_Household" ) == 0 ) {
-      if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
-             strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) &&
-
-           ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL &&
-             strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL )
-         ) {
-
-        char *str_whsho = "121" ;                               // Purpose number of Wide_Household
-        char *str_ty  = "T" ;                                   // Match level Typical abbrevation
-        char *str_con = "C" ;                                   // Match level Conservative abbrevation
-        char *str_lse = "L" ;                                   // Match level Loose abbrevation
-
-        i_op_rec_knt ++ ;                                       // Output records count
-
-        s_GMtc_matches                                          // Call s_GMtc_matches subroutine
-        (
-          str_src_tag_dta ,                                     // Search tag data
-          str_fle_tag_dta ,                                     // File tag data
-          i_src_tag_dta_len ,                                   // Length of search tag data
-          i_fle_tag_dta_len ,                                   // Length of file data
-          str_src_id ,                                          // Id of search tag data
-          str_fle_id ,                                          // Id of file tag data
-          a_prps_ty ,                                           // Controls with Typical match level
-          a_prps_con ,                                          // Controls with Conservative match level
-          a_prps_lse ,                                          // Controls with Loose match level
-          str_whsho ,                                           // Purpose number of Wide_Household
-          str_ty ,                                              // Match level Typical abbrevation
-          str_con ,                                             // Match level Conservative abbrevation
-          str_lse                                               // Match level Loose abbrevation
-        ) ;
-      }
-      else {
-
-        i_tot_err_rec_knt ++ ;                                  // Total error records count
-
-        // Check error in search data
-        if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ||
-             strstr ( str_src_tag_dta , "Telephone_Number" ) == NULL ) {
-
-          i_WHsho_prps_err_knt ++ ;                             // Wide_Household purpose error count
-          i_src_rec_err_knt ++ ;                                // Search record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "Search record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-        }
-
-        // Check error in file data
-        if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ||
-             strstr ( str_fle_tag_dta , "Telephone_Number" ) == NULL ) {
-
-          i_WHsho_prps_err_knt ++ ;                             // Wide_Household purpose error count
-          i_fle_rec_err_knt ++ ;                                // File record errors count
-          i_tot_err_knt ++ ;                                    // Total errors count
-          fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s %s" ,
-            i_rec_number , "File record does not contain all fields required for Purpose" , p_purpose
-          ) ;
-          fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-        }
-      }
-    } // End of else if Wide_Household
+        printf ( "Validate_purpose '%s' Validate_purpose failed\n" , p_purpose ) ;
+        exit(1) ;
+      } // End of else
+
+    } // End If
     else {
-      printf ( "Validate_purpose '%s' Validate_purpose failed\n" , p_purpose ) ;
-      exit(1) ;
-    } // End of else
+      i_tot_err_rec_knt ++ ;                                    // Total error record count
 
-  } // End If
+      if ( strstr
+                (
+                  str_src_tag_dta , a_Id
+                ) == NULL ) {
+
+        i_id_err_rec_knt ++ ;                                   // Records error that does not contain Id
+        i_id_src_rec_err_knt ++ ;                               // Count of errors in search record that does not contain Id
+        i_tot_err_knt ++ ;                                      // Total errors count
+        fprintf
+            (
+              f_log_fopen_status ,
+              "Record no : %d Error Message : %s" ,
+              i_rec_number , "Missing Id in search tag data"
+            ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
+      }
+
+      if ( strstr
+                (
+                  str_fle_tag_dta , a_Id
+                ) == NULL ) {
+        i_id_err_rec_knt ++ ;                                   // Records error that does not contain Id
+        i_id_fle_rec_err_knt ++ ;                               // Count of errors in file record that does not contain Id
+        i_tot_err_knt ++ ;                                      // Total errors count
+        fprintf
+            (
+              f_log_fopen_status ,
+              "\nRecord no : %d Error Message : %s" ,
+              i_rec_number , "Missing Id in file tag data"
+            ) ;
+        fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
+      }
+    }
+  }
   else {
+    // If there are improper record then display error with current record
     i_tot_err_rec_knt ++ ;                                      // Total error record count
-
-    if (
-         strcmp ( str_src_tag_dta , "" ) == 0 ||
-         strcmp ( str_fle_tag_dta , "" ) == 0 ||
-         strcmp ( str_src_id , "" ) == 0 ||
-         strcmp ( str_fle_id , "" ) == 0) {
-      i_tot_err_knt ++ ;                                        // Total errors count
-      i_emp_flds_err_knt ++ ;                                   // Empty fields error count
-      fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s" ,
-            i_rec_number ,
-            "Search tag data , File tag data , Search id and File id fields are needed"
-            " with Tab delimited"
-          ) ;
-      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
-    }
-
-    if ( strstr
-              (
-                str_src_tag_dta , a_Id
-              ) == NULL ) {
-
-      i_id_err_rec_knt ++ ;                                     // Records error that does not contain Id
-      i_id_src_rec_err_knt ++ ;                                 // Count of errors in search record that does not contain Id
-      i_tot_err_knt ++ ;                                        // Total errors count
-      fprintf
-          (
-            f_log_fopen_status ,
-            "Record no : %d Error Message : %s" ,
-            i_rec_number , "Missing Id in search tag data"
-          ) ;
-      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_src_tag_dta ) ;
-    }
-
-    if ( strstr
-              (
-                str_fle_tag_dta , a_Id
-              ) == NULL ) {
-      i_id_err_rec_knt ++ ;                                     // Records error that does not contain Id
-      i_id_fle_rec_err_knt ++ ;                                 // Count of errors in file record that does not contain Id
-      i_tot_err_knt ++ ;                                        // Total errors count
-      fprintf
-          (
-            f_log_fopen_status ,
-            "\nRecord no : %d Error Message : %s" ,
-            i_rec_number , "Missing Id in file tag data"
-          ) ;
-      fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_fle_tag_dta ) ;
-    }
+    fprintf ( f_log_fopen_status, "\nRecord no : %d Error Message : %s", i_rec_number ,"Improper record" ) ;
+    fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
   }
 
 } // End while loop
@@ -3169,16 +3156,13 @@ if ( i_id_fle_rec_err_knt != 0 ) {
 }
 /* END RECORDS THAT DOES NOT CONTAIN ID ERROR COUNT ***********************************************/
 
-if ( i_emp_flds_err_knt != 0 ) {
-  fprintf ( f_log_fopen_status , "\nEmpty some field in whole record    : %d\n" , i_emp_flds_err_knt ) ;
-}
-
 if ( i_tot_err_knt != 0 ) {
   fprintf ( f_log_fopen_status , "\nTotal errors count                  : %d\n" , i_tot_err_knt ) ;
 }
 
 if ( i_tot_err_rec_knt != 0 ) {
   fprintf ( f_log_fopen_status , "\nTotal error records count           : %d\n" , i_tot_err_rec_knt ) ;
+  printf ("Total error records count           : %d\n" , i_tot_err_rec_knt ) ;
 }
 
 if ( i_op_rec_knt != 0 ) {
@@ -3557,83 +3541,85 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
   missing in the record then error will be display with
   record no with error message and record.
 
+  Error message: Improper record
+  If current record does not contain Tag id and Tag data with tab delimited.
+  and Either tag id or tag data missing then this error will write it on log file
+
   ------ Run Summary ------
   Total records read  : <Count>
 
-  Records with Person_Name in Search data       : <Count>
-  Records with Organization_Name in Search data : <Count>
-  Records with Address_Part1 in Search data     : <Count>
-  Records with Address_Part2 in Search data     : <Count>
-  Records with Postal_Area in Search data       : <Count>
-  Records with Telephone_Number in Search data  : <Count>
-  Records with Date in Search data              : <Count>
-  Records with Id in Search data                : <Count>
-  Records with Attribute1 in Search data        : <Count>
-  Records with Attribute2 in Search data        : <Count>
-  Records with Filter1 in Search data           : <Count>
-  Records with Filter2 in Search data           : <Count>
-  Records with Filter3 in Search data           : <Count>
-  Records with Filter4 in Search data           : <Count>
-  Records with Filter5 in Search data           : <Count>
-  Records with Filter6 in Search data           : <Count>
-  Records with Filter7 in Search data           : <Count>
-  Records with Filter8 in Search data           : <Count>
-  Records with Filter9 in Search data           : <Count>
+  Records with Person_Name in Search data       : <COUNT>
+  Records with Organization_Name in Search data : <COUNT>
+  Records with Address_Part1 in Search data     : <COUNT>
+  Records with Address_Part2 in Search data     : <COUNT>
+  Records with Postal_Area in Search data       : <COUNT>
+  Records with Telephone_Number in Search data  : <COUNT>
+  Records with Date in Search data              : <COUNT>
+  Records with Id in Search data                : <COUNT>
+  Records with Attribute1 in Search data        : <COUNT>
+  Records with Attribute2 in Search data        : <COUNT>
+  Records with Filter1 in Search data           : <COUNT>
+  Records with Filter2 in Search data           : <COUNT>
+  Records with Filter3 in Search data           : <COUNT>
+  Records with Filter4 in Search data           : <COUNT>
+  Records with Filter5 in Search data           : <COUNT>
+  Records with Filter6 in Search data           : <COUNT>
+  Records with Filter7 in Search data           : <COUNT>
+  Records with Filter8 in Search data           : <COUNT>
+  Records with Filter9 in Search data           : <COUNT>
 
-  Records with Person_Name in File data       : <Count>
-  Records with Organization_Name in File data : <Count>
-  Records with Address_Part1 in File data     : <Count>
-  Records with Address_Part2 in File data     : <Count>
-  Records with Postal_Area in File data       : <Count>
-  Records with Telephone_Number in File data  : <Count>
-  Records with Date in File data              : <Count>
-  Records with Id in File data                : <Count>
-  Records with Attribute1 in File data        : <Count>
-  Records with Attribute2 in File data        : <Count>
-  Records with Filter1 in File data           : <Count>
-  Records with Filter2 in File data           : <Count>
-  Records with Filter3 in File data           : <Count>
-  Records with Filter4 in File data           : <Count>
-  Records with Filter5 in File data           : <Count>
-  Records with Filter6 in File data           : <Count>
-  Records with Filter7 in File data           : <Count>
-  Records with Filter8 in File data           : <Count>
-  Records with Filter9 in File data           : <Count>
+  Records with Person_Name in File data       : <COUNT>
+  Records with Organization_Name in File data : <COUNT>
+  Records with Address_Part1 in File data     : <COUNT>
+  Records with Address_Part2 in File data     : <COUNT>
+  Records with Postal_Area in File data       : <COUNT>
+  Records with Telephone_Number in File data  : <COUNT>
+  Records with Date in File data              : <COUNT>
+  Records with Id in File data                : <COUNT>
+  Records with Attribute1 in File data        : <COUNT>
+  Records with Attribute2 in File data        : <COUNT>
+  Records with Filter1 in File data           : <COUNT>
+  Records with Filter2 in File data           : <COUNT>
+  Records with Filter3 in File data           : <COUNT>
+  Records with Filter4 in File data           : <COUNT>
+  Records with Filter5 in File data           : <COUNT>
+  Records with Filter6 in File data           : <COUNT>
+  Records with Filter7 in File data           : <COUNT>
+  Records with Filter8 in File data           : <COUNT>
+  Records with Filter9 in File data           : <COUNT>
 
-  Address purpose errors count        : <Count>
-   - Search records errors count : <Count>
-   - File records errors count   : <Count>
+  Address purpose errors count        : <COUNT>
+   - Search records errors count : <COUNT>
+   - File records errors count   : <COUNT>
 
-  Missing Id error records            : <Count>
-   - Search records : <Count>
-   - File records   : <Count>
+  Missing Id error records            : <COUNT>
+   - Search records : <COUNT>
+   - File records   : <COUNT>
 
-  Empty some field in whole record    : <Count>
+  Total errors count                  : <COUNT>
 
-  Total errors count                  : <Count>
+  Total error records count           : <COUNT>
 
-  Total error records count           : <Count>
-
-  Output records count : <Count>
+  Output records count : <COUNT>
 
   ------ Decision counts ------
-  Accept      (A) : <Count>
-  Reject      (R) : <Count>
-  Undecided   (U) : <Count>
+  Accept      (A) : <COUNT>
+  Reject      (R) : <COUNT>
+  Undecided   (U) : <COUNT>
 
  ------ Score range counts ------
-  Perfect Match : <Count>
-  Score 90 - 99 : <Count>
-  Score 80 - 89 : <Count>
-  Score 70 - 79 : <Count>
-  Score 60 - 69 : <Count>
-  Score 50 - 59 : <Count>
-  Score 40 - 49 : <Count>
-  Score 30 - 39 : <Count>
-  Score 20 - 29 : <Count>
-  Score 10 - 19 : <Count>
-  Score  1 -  9 : <Count>
-  Not Matching  : <Count>
+  Perfect Match : <COUNT>
+  Score 90 - 99 : <COUNT>
+  Score 80 - 89 : <COUNT>
+  Score 70 - 79 : <COUNT>
+  Score 60 - 69 : <COUNT>
+  Score 50 - 59 : <COUNT>
+  Score 40 - 49 : <COUNT>
+  Score 30 - 39 : <COUNT>
+  Score 20 - 29 : <COUNT>
+  Score 10 - 19 : <COUNT>
+  Score  1 -  9 : <COUNT>
+  Not Matching  : <COUNT>
 
   Ended YYYY-MM-DD HH24:MI:SS - HH:MM:SS to execute
 
@@ -3643,7 +3629,7 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
 
   Terminal output:
 
-  Number of error record will be display if it is not zero.
+  Total error records count
 
   If your input file contain less than 1 lakh records and your doing verbose
   it will not display on command prompt. If you really want to see how how it process
