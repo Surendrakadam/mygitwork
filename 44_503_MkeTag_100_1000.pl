@@ -1,6 +1,6 @@
 #!C:/Perl/bin/perl -w
 
-# Application   : 44_503_MkeTag_100_999.pl
+# Application   : 44_503_MkeTag_100_1000.pl
 # Client        : Internal
 # Copyright (c) : IdentLogic Systems Private Limited
 # Author        : Surendra Kadam
@@ -55,47 +55,58 @@
 use strict ;
 use warnings ;
 
-use Getopt::Simple ;
+use Getopt::Simple ;                                            # Get run parameter
 use POSIX qw{strftime} ;                                        # For current date and time
 
 use constant K_PACKAGE        => 44 ;                           # Package number
 use constant K_PROCEDURE      => 503 ;                          # Procedure number
-use constant K_PROCEDURE_NAME => "44_503_MkeTag_100_999.pl" ;   # Procedure name
+use constant K_PROCEDURE_NAME => "44_503_MkeTag_100_1000.pl" ;  # Procedure name
 use constant K_PROCEDURE_DS   => "Make Tag" ;                   # Procedure description
 
-use constant K_TAB_SPR        => "\t" ;                         # Tab separator
-use constant K_NULL_SPR       => "\0" ;                         # null terminator
-use constant K_ZERO           => 0 ;                            # Zero
-use constant K_EMPTY          => "" ;                           # Empty
-use constant K_NEW_LN         => "\n" ;                         # New line
-use constant K_SPACE          => " " ;                          # Space
+use constant K_TAB_SPR  => "\t" ;                               # Tab separator
+use constant K_NULL_SPR => "\0" ;                               # null terminator
+use constant K_ZERO     => 0 ;                                  # Zero
+use constant K_EMPTY    => "" ;                                 # Empty
+use constant K_NEW_LN   => "\n" ;                               # New line
+use constant K_SPACE    => " " ;                                # Space
 
 # Run variables
-my $pp_set_data  = '' ;                                         # Set data no customer
-my $pp_run_data  = '' ;                                         # Run parameter
-my $pp_in_file   = '' ;                                         # Input file
-my $pp_fld_spr   = '' ;                                         # Field separator character
-my $pp_enc_chr   = '' ;                                         # Optional field encloser character
-my $pp_del_chr   = '' ;                                         # Optional delimiter character
-my $pp_f_dt_1    = '' ;                                         # Flag if data starting from the the first record itself, or, first record has column headers (default)
-my $pp_f_ct_c_dp = '' ;                                         # Flag if display control character equivalences and stop
-my $pp_multiplier= '' ;                                         #
-my $pp_verbose   = '' ;                                         # 
+my $pp_set_data        = K_EMPTY ;                              # Set data no customer
+my $pp_run_data        = K_EMPTY ;                              # Run parameter
+my $pp_in_file         = K_EMPTY ;                              # Input file
+my $pp_fld_spr         = K_EMPTY ;                              # Field separator character
+my $pp_enc_chr         = K_EMPTY ;                              # Optional field encloser character
+my $pp_del_chr         = K_EMPTY ;                              # Optional delimiter character
+my $pp_f_dt_1          = K_EMPTY ;                              # Flag if data starting from the the first record itself, or, first record has column headers (default)
+my $pp_f_ct_c_dp       = K_EMPTY ;                              # Flag if display control character equivalences and stop
+my $pp_multiplier      = K_EMPTY ;                              # Multiplier value parameter
+my $pp_verbose         = K_EMPTY ;                              # Verbose flag parameter
+my $pp_out_file_dir    = K_EMPTY ;                              # Output file directory
+my $pp_org_file_dir    = K_EMPTY ;                              # Original data output file directory
+my $pp_log_file_dir    = K_EMPTY ;                              # Log file directory
+my $pp_bad_file_dir    = K_EMPTY ;                              # Not ok file directory
 
-my $v_del_chr = '' ;                                            # Store delimiter character to this variable
-my $v_chk_del = '' ;                                            # Check delimiter character is special character
+my $v_del_chr = K_EMPTY ;                                       # Store delimiter character to this variable
+my $v_chk_del = K_EMPTY ;                                       # Check delimiter character is special character
 
 my $v_log_file = K_EMPTY ;                                      # Stores log file name
+my $v_bad_file = K_EMPTY ;                                      # Bad file name
+
+my $v_out_file_dir    = K_EMPTY ;                               # Output file directory
+my $v_org_file_dir    = K_EMPTY ;                               # Original data output file directory
+my $v_log_file_dir    = K_EMPTY ;                               # Log file directory
+my $v_bad_file_dir    = K_EMPTY ;                               # Not ok file directory
 
 # Run statistics
-my $v_rec_knt        = 0 ;                                      # Records read count
-my $v_err_no_id_knt  = 0 ;                                      # Count of records without Id
-my $v_err_knt        = 0 ;                                      # Count of error records
-my $v_err_ky_fld_knt = 0 ;                                      # Count of records without any one or more key field of Person_Name , Organization_Name or Address_Part1
-my $v_err_del_knt    = 0 ;                                      # Record already contain delimiter which you are using now
+my $v_rec_knt        = K_ZERO ;                                 # Records read count
+my $v_err_no_id_knt  = K_ZERO ;                                 # Count of records without Id
+my $v_err_knt        = K_ZERO ;                                 # Count of error records
+my $v_err_ky_fld_knt = K_ZERO ;                                 # Count of records without any one or more key field of Person_Name , Organization_Name or Address_Part1
+my $v_err_del_knt    = K_ZERO ;                                 # Record already contain delimiter which you are using now
+my $v_err_sz_lmt_knt = K_ZERO ;                                 # Size upto limit count
 
 # Work variable
-my $v_rec = '' ;                                                # Stores record read
+my $v_rec = K_EMPTY ;                                           # Stores record read
 
 # Work array
 my @a_fld = () ;                                                # Contains individual fields of current record
@@ -108,8 +119,8 @@ my $v_now_dd = K_EMPTY ;                                        # Day
 my $v_now_mm = K_EMPTY ;                                        # Month
 my $v_now_yy = K_EMPTY ;                                        # Year
 
-my $t_start_time = time;                                        # Starting time
-my $t_end_time   = 0 ;
+my $t_start_time = time ;                                       # Starting time
+my $t_end_time   = K_ZERO ;                                     # End time
 
 # Display control character and meta characters equivalences for field separator or
 # optional enclosing character and stop
@@ -279,59 +290,153 @@ my %h_dec_ctrl_chr = (
    'DEL'                => 127                                  #
 
 ) ;
-&sDateTime () ;
+
+&sDateTime ;                                                    # Timestamp subroutine
 &sGetParameter () ;                                             # Subroutine to get parameters
 
-my $v_tag_file    = $pp_set_data . $pp_run_data . '.tgt' ;
+my $v_tag_file = $pp_set_data . $pp_run_data . '.tgt' ;         # Tag data file
 
-my $v_org_dt_file = $pp_set_data . $pp_run_data . '.odx' ;
+my $v_org_dt_file = $pp_set_data . $pp_run_data . '.odx' ;      # Original data file
 
-$v_log_file =                                                   #
-     $pp_set_data . $pp_run_data . '_'                          #
-     . 'MkeTag' . '_'
-     . $v_now_yy . '-'
-     . $v_now_mm . '-'
-     . $v_now_dd . '-'
-     . $v_now_hh . '-'
-     . $v_now_mi . '-'
-     . $v_now_ss .'.log' ;                                      #
-
-my $v_not_ok_file = "" ;
-#= $pp_set_data . $pp_run_data . '.tgt' ;
-
+$v_log_file =                                                   # Log file
+  $pp_set_data . $pp_run_data . '_'                             #
+  . 'MkeTag' . '_'                                              #
+  . $v_now_yy . '-'                                             #
+  . $v_now_mm . '-'                                             #
+  . $v_now_dd . '-'                                             #
+  . $v_now_hh . '-'                                             #
+  . $v_now_mi . '-'                                             #
+  . $v_now_ss . '.log' ;                                        #
+  
+$v_bad_file =                                                   # Bad file
+  $pp_set_data . $pp_run_data . '_'                             #
+  . 'MkeTag' . '_'                                              #
+  . 'BadFile' . '_'                                             #
+  . $v_now_yy . '-'                                             #
+  . $v_now_mm . '-'                                             #
+  . $v_now_dd . '-'                                             #
+  . $v_now_hh . '-'                                             #
+  . $v_now_mi . '-'                                             #
+  . $v_now_ss . '.NOK' ;                                        #
 
 # Open and read input file
 open ( my $IN_FILE1 , '<' , $pp_in_file ) or                    #
   die "Could not open input file $pp_in_file - $!\n" ;
 
-# Open and write file
-open ( my $OUTFILE , '>' , $v_tag_file ) or  #
-  die "Could not open output file  - $!\n" ;
+# Open and write tag data output file
+open ( my $OUTFILE , '>' , $v_out_file_dir . $v_tag_file ) or   #
+  die "Could not open output file $v_tag_file  - $!\n" ;
 
-# Open and write Original data
-open ( my $OUTORGFILE , '>' , $v_org_dt_file ) or  #
-  die "Could not open original data output file  - $!\n" ;
-  
-open ( my $LOGFILE , '>' , $v_log_file ) or  #
+# Open and write original data output file
+open ( my $OUTORGFILE , '>' , $v_org_file_dir . $v_org_dt_file ) or    #
+  die "Could not open original data output file $v_org_dt_file - $!\n" ;
+
+# Open and write log data
+open ( my $LOGFILE , '>' , $v_log_file_dir . $v_log_file ) or   #
   die "Can not open log file $v_log_file - $!\n" ;
+
+# Open and write errors
+open ( my $NOTOKFILE , '>' , $v_bad_file_dir . $v_bad_file ) or    #
+  die "Can not open errors file $v_bad_file - $!\n" ;
+
+# LOG #################################################################
+
+my $v_st_ts = &sDateTime ;                                      # Start date and time
+
+my $v_log =                                                     #
+  "------ MAKE TAG EXECUTION START DATE AND TIME ------"        #
+  . K_NEW_LN                                                    #
+  . $v_st_ts                                                    #
+  . K_NEW_LN . K_NEW_LN                                         #
+  . "------ Run Parameters ------"                              #
+  . K_NEW_LN                                                    #
+  . "Data set number               :" . K_SPACE . $pp_set_data . K_NEW_LN    #
+  . "Run time number               :" . K_SPACE . $pp_run_data . K_NEW_LN    #
+  . "Delimiter                     :"                           #
+  . K_SPACE
+  . (
+   $pp_del_chr eq K_EMPTY
+   ? "Missing- Default:*"
+   : ( $pp_del_chr =~ /[[:cntrl:]]/ ? "Ordinal (" . ord ( $pp_del_chr ) . ")" : $pp_del_chr )
+  )
+  . K_NEW_LN                                                    #
+  . "Input file path               :" . K_SPACE . $pp_in_file . K_NEW_LN     #
+  . (
+   $pp_out_file_dir eq K_EMPTY
+   ? K_EMPTY
+   : "Output file directory         :" . K_SPACE . $pp_out_file_dir . K_NEW_LN
+  )                                                             #
+  . (
+   $pp_org_file_dir eq K_EMPTY
+   ? K_EMPTY
+   : "Original data file directory  :" . K_SPACE . $pp_org_file_dir . K_NEW_LN
+  )                                                             #
+  . (
+   $pp_log_file_dir eq K_EMPTY
+   ? K_EMPTY
+   : "Log file directory            :" . K_SPACE . $pp_log_file_dir . K_NEW_LN
+  )                                                             #
+  . (
+   $pp_bad_file_dir eq K_EMPTY
+   ? K_EMPTY
+   : "NOT OK(Errors) file directory :" . K_SPACE . $pp_bad_file_dir . K_NEW_LN
+  )                                                             #
+  . "Field separator               :"
+  . K_SPACE
+  . ( $pp_fld_spr =~ /[[:cntrl:]]/ ? "Ordinal (" . ord ( $pp_fld_spr ) . ")" : $pp_fld_spr )
+  . K_NEW_LN
+  . (
+   $pp_enc_chr eq K_EMPTY
+   ? ""
+   : "Optional encloser character   :" . K_SPACE                #
+     . (
+      $pp_enc_chr =~ /[[:cntrl:]]/ ?                            #
+        "Ordinal (" . ord ( $pp_enc_chr ) . ")"                 #
+        . K_NEW_LN
+      : $pp_enc_chr . K_NEW_LN
+     )                                                          #
+  ) . "Flag -Data from 1st record    :"                         #
+  . K_SPACE
+  . ( $pp_f_dt_1 eq 1 ? "Yes" . K_NEW_LN : "no" . K_NEW_LN )
+  . (
+   $pp_verbose eq 1
+   ? (
+      $pp_multiplier eq K_EMPTY
+      ? "Multiplier                    : Missing- Default:" . $pp_multiplier . K_NEW_LN
+      : "Multiplier                    : " . $pp_multiplier . K_NEW_LN
+     )
+   : K_EMPTY
+  )
+  . "Verbose flag                  : "
+  . ( $pp_verbose eq 1 ? "Yes" . K_NEW_LN : "no" . K_NEW_LN ) ;
+
+my $v_files = K_NEW_LN . "------ File Names ------" . K_NEW_LN  #
+  . "Input file name   :" . K_SPACE . $pp_in_file . K_NEW_LN    #
+  . "Tag file name     :" . K_SPACE . $v_tag_file . K_NEW_LN    #
+  . "Original data     :" . K_SPACE . $v_org_dt_file . K_NEW_LN #
+  . "Log file name     :" . K_SPACE . $v_log_file . K_NEW_LN    #
+  . "NOTOK file(Error) :" . K_SPACE . $v_bad_file . K_NEW_LN ;
+
+print $LOGFILE $v_log ;
+print $LOGFILE $v_files ;
+
+# END LOG #############################################################
 
 while ( $v_rec = <$IN_FILE1> ) {                                #
 
-   chomp $v_rec ;
+   chomp $v_rec ;                                               # Remove newlline from current record
 
    $v_rec_knt ++ ;                                              # Record counter
-   
-   if ( $pp_verbose eq 1 ) { 
-     if ( $v_rec_knt == $pp_multiplier ) {
-       $t_end_time = time - $t_start_time;
-       print 
-            "Display" . K_SPACE . $pp_multiplier . K_SPACE 
-          . "records in" . K_SPACE
-          . $t_end_time . K_SPACE
-          ."seconds to execute" . K_NEW_LN ;
-       $pp_multiplier = $pp_multiplier * 2 ;
-     }
-   }
+
+   # Verbose
+
+   if ( $pp_verbose eq 1 ) {                                    # If verbose flag is on
+      if ( $v_rec_knt == $pp_multiplier ) {
+         $t_end_time = time - $t_start_time ;
+         print "Display" . K_SPACE . $pp_multiplier . K_SPACE . "records in" . K_SPACE . $t_end_time . K_SPACE . "seconds to execute" . K_NEW_LN ;
+         $pp_multiplier = $pp_multiplier * 2 ;
+      }
+   } ## end if ( $pp_verbose eq 1 )
 
    # If Field separator is PIPE added prefix backslash to field separator
    if ( $pp_fld_spr eq '|' ) {
@@ -519,9 +624,21 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
       if ( $v_rec =~ /\*/ ) {                                   # Skip record if record already contain delimiter
          $v_err_del_knt ++ ;                                    # Record already contain delimiter which you are using now
          $v_err_knt ++ ;                                        # Count of error records
+
+         print $NOTOKFILE "Record no : "
+           . $v_rec_knt
+           . K_SPACE
+           . "Error Message : "
+           . "Record already contain delimiter which you are using now !"
+           . K_NEW_LN
+           . "Record    : "
+           . $v_rec
+           . K_NEW_LN
+           . K_NEW_LN ;
+
          next ;
-      }
-   } ## end if
+      } ## end if ( $v_rec =~ /\*/ )
+   } ## end if ( $pp_del_chr eq '')
    else {
       if (  $v_del_chr eq '|'
          || $v_del_chr eq '^'
@@ -538,17 +655,41 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
          if ( $v_rec =~ /$v_chk_del/ ) {                        # Skip record if record already contain delimiter
             $v_err_del_knt ++ ;                                 # Record already contain delimiter which you are using now
             $v_err_knt ++ ;                                     # Count of error records
+
+            print $NOTOKFILE "Record no : "
+              . $v_rec_knt
+              . K_SPACE
+              . "Error Message : "
+              . "Record already contain delimiter which you are using now !"
+              . K_NEW_LN
+              . "Record    : "
+              . $v_rec
+              . K_NEW_LN
+              . K_NEW_LN ;
+
             next ;
-         }
-      } ## end if
+         } ## end if ( $v_rec =~ /$v_chk_del/)
+      } ## end if ( $v_del_chr eq '|'...)
       else {
          if ( $v_rec =~ /$v_del_chr/ ) {                        # Skip record if record already contain delimiter
             $v_err_del_knt ++ ;                                 # Record already contain delimiter which you are using now
             $v_err_knt ++ ;                                     # Count of error records
+
+            print $NOTOKFILE "Record no : "
+              . $v_rec_knt
+              . K_SPACE
+              . "Error Message : "
+              . "Record already contain delimiter which you are using now !"
+              . K_NEW_LN
+              . "Record    : "
+              . $v_rec
+              . K_NEW_LN
+              . K_NEW_LN ;
+
             next ;
-         }
-      } ## end else
-   } ## end else
+         } ## end if ( $v_rec =~ /$v_del_chr/)
+      } ## end else [ if ( $v_del_chr eq '|'...)]
+   } ## end else [ if ( $pp_del_chr eq '')]
 
    @a_fld = split $pp_fld_spr , $v_rec ;                        # Split record into fields
 
@@ -567,23 +708,24 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
       $a_fld[ $idx ] =~ s/\s+$// ;                              # Trim trailing space
    } ## end for ( my $idx = 0 ; $idx...)
 
-   print $OUTORGFILE
-     $a_fld[ 12 ] .
-     ( $pp_fld_spr eq K_TAB_SPR ? K_NULL_SPR : K_TAB_SPR ) . $v_rec . "\n" ;
-
    my $v_addp2 =
-     ( $a_fld[ 9 ] eq '' ? '' : $a_fld[ 9 ] . ' ' ) .
-     ( $a_fld[ 8 ] eq '' ? '' : $a_fld[ 8 ] . ' ' ) .
-     ( $a_fld[ 7 ] eq '' ? '' : $a_fld[ 7 ] . ' ' ) .
-     ( $a_fld[ 5 ] eq '' ? '' : $a_fld[ 5 ] ) ;                                              # Address_Part2 is join of City ,Sub ditrict and District and post code
+       ( $a_fld[ 9 ] eq '' ? '' : $a_fld[ 9 ] . ' ' )
+     . ( $a_fld[ 8 ] eq '' ? '' : $a_fld[ 8 ] . ' ' )
+     . ( $a_fld[ 7 ] eq '' ? '' : $a_fld[ 7 ] . ' ' )
+     . ( $a_fld[ 5 ] eq '' ? '' : $a_fld[ 5 ] ) ;               # Address_Part2 is join of City ,Sub ditrict and District and post code
 
    $v_addp2 =~ s/^\s+|\s+$// ;                                  # Remove space if one of the field is empty
 
-   if ( $a_fld[ 12 ] eq '' ) {                                  # Skip if no Id
+   if ( ! defined $a_fld[ 12 ] or ( $a_fld[ 12 ] eq K_EMPTY ) ) {    # Skip if no Id
       $v_err_no_id_knt ++ ;                                     # Count of records without Id
       $v_err_knt ++ ;                                           # Count of error records
-      next ;
-   }
+
+      print $NOTOKFILE "Record no : " . $v_rec_knt . K_SPACE . "Error Message : " . "Missing id field !" . K_NEW_LN . "Record    : " . $v_rec . K_NEW_LN . K_NEW_LN ;
+
+      next ;                                                    # Skip record
+   } ## end if ( ! defined $a_fld[...])
+
+   print $OUTORGFILE $a_fld[ 12 ] . ( $pp_fld_spr eq K_TAB_SPR ? K_NULL_SPR : K_TAB_SPR ) . $v_rec . "\n" ;
 
    if (
       $a_fld[ 11 ] eq '' and                                    # Person_Name field missing
@@ -591,11 +733,95 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
      ) {
       $v_err_ky_fld_knt ++ ;                                    # Count of records without any one or more key field of Person_Name , Organization_Name or Address_Part1
       $v_err_knt ++ ;                                           # Count of error records
-      next ;
-   } ## end if
 
+      print $NOTOKFILE "Record no : " . $v_rec_knt . K_SPACE . "Error Message : " . "Missing Person_Name and Address Part1 !" . K_NEW_LN . "Record    : " . $v_rec . K_NEW_LN . K_NEW_LN ;
+
+      next ;                                                    # Skip record
+   } ## end if ( $a_fld[ 11 ] eq ''...)
+
+   # Length of the tag id must be less than or equal to 1000 characters
+   if ( length $a_fld[ 12 ] > 1000 ) {
+      print $NOTOKFILE "Record no : "
+        . $v_rec_knt
+        . K_SPACE
+        . "Error Message : "
+        . "Size of id field should not be greater than 1000 characters!"
+        . K_NEW_LN
+        . "Record    : "
+        . $a_fld[ 12 ]
+        . K_NEW_LN
+        . K_NEW_LN ;
+
+      $v_err_knt ++ ;                                           # Count of error records
+      $v_err_sz_lmt_knt ++ ;                                    # Size of upto limit
+
+      next ;                                                    # Skip record
+   } ## end if ( length $a_fld[ 12...])
+
+   # Length of the tag data must be less than or equal to 2000 characters
+   if (
+      length (
+         $v_del_chr . 'Id' . $v_del_chr . $a_fld[ 12 ] .        #
+           ( $a_fld[ 11 ] eq ''   ? '' : $v_del_chr . 'Person_Name' . $v_del_chr . $a_fld[ 11 ] )
+           . ( $a_fld[ 10 ] eq '' ? '' : $v_del_chr . 'Address_Part1' . $v_del_chr . $a_fld[ 10 ] )
+           . (
+            ( $a_fld[ 9 ] eq '' and $a_fld[ 8 ] eq '' and $a_fld[ 7 ] eq '' )
+            ? ''
+            : $v_del_chr . 'Address_Part2' . $v_del_chr . $v_addp2
+           )
+           .                                                    # Address_Part2 is join of City ,Sub ditrict and District and post code
+           ( $a_fld[ 5 ] eq ''   ? '' : $v_del_chr . 'Postal_Area' . $v_del_chr . $a_fld[ 5 ] ) .      #
+           ( $a_fld[ 4 ] eq ''   ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 4 ] )
+           . ( $a_fld[ 3 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 3 ] )
+           . ( $a_fld[ 2 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 2 ] )
+           . ( $a_fld[ 1 ] eq '' ? '' : $v_del_chr . 'Attribute1' . $v_del_chr . $a_fld[ 1 ] )
+           . ( $a_fld[ 0 ] eq '' ? '' : $v_del_chr . 'Attribute1' . $v_del_chr . $a_fld[ 0 ] )
+           . $v_del_chr
+           . $v_del_chr
+           . $v_del_chr
+      ) > 2000
+     ) {
+
+      print $NOTOKFILE "Record no : "
+        . $v_rec_knt
+        . K_SPACE
+        . "Error Message : "
+        . "Size of tag data should not be greater than 2000 characters!"
+        . K_NEW_LN
+        . "Record    : "
+        . $v_del_chr . 'Id'
+        . $v_del_chr
+        . $a_fld[ 12 ]
+        .                                                       #
+        ( $a_fld[ 11 ] eq ''   ? '' : $v_del_chr . 'Person_Name' . $v_del_chr . $a_fld[ 11 ] )
+        . ( $a_fld[ 10 ] eq '' ? '' : $v_del_chr . 'Address_Part1' . $v_del_chr . $a_fld[ 10 ] )
+        . (
+         ( $a_fld[ 9 ] eq '' and $a_fld[ 8 ] eq '' and $a_fld[ 7 ] eq '' )
+         ? ''
+         : $v_del_chr . 'Address_Part2' . $v_del_chr . $v_addp2
+        )
+        .                                                       # Address_Part2 is join of City ,Sub ditrict and District and post code
+        ( $a_fld[ 5 ] eq ''   ? '' : $v_del_chr . 'Postal_Area' . $v_del_chr . $a_fld[ 5 ] ) .      #
+        ( $a_fld[ 4 ] eq ''   ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 4 ] )
+        . ( $a_fld[ 3 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 3 ] )
+        . ( $a_fld[ 2 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 2 ] )
+        . ( $a_fld[ 1 ] eq '' ? '' : $v_del_chr . 'Attribute1' . $v_del_chr . $a_fld[ 1 ] )
+        . ( $a_fld[ 0 ] eq '' ? '' : $v_del_chr . 'Attribute1' . $v_del_chr . $a_fld[ 0 ] )
+        . $v_del_chr
+        . $v_del_chr
+        . $v_del_chr
+        . K_NEW_LN
+        . K_NEW_LN ;
+
+      $v_err_knt ++ ;                                           # Count of error records
+      $v_err_sz_lmt_knt ++ ;                                    # Size of upto limit
+
+      next ;                                                    # Skip record
+   } ## end if ( length ( $v_del_chr...))
+
+   # Tag file output
    print $OUTFILE                                               #
-     $a_fld[ 12 ] . K_TAB_SPR . $v_del_chr . 'Id' . $v_del_chr . $a_fld[ 12 ] .            #
+     $a_fld[ 12 ] . K_TAB_SPR . $v_del_chr . 'Id' . $v_del_chr . $a_fld[ 12 ] .                     #
      ( $a_fld[ 11 ] eq ''   ? '' : $v_del_chr . 'Person_Name' . $v_del_chr . $a_fld[ 11 ] )
      . ( $a_fld[ 10 ] eq '' ? '' : $v_del_chr . 'Address_Part1' . $v_del_chr . $a_fld[ 10 ] )
      . (
@@ -604,7 +830,7 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
       : $v_del_chr . 'Address_Part2' . $v_del_chr . $v_addp2
      )
      .                                                          # Address_Part2 is join of City ,Sub ditrict and District and post code
-     ( $a_fld[ 5 ] eq ''   ? '' : $v_del_chr . 'Postal_Area' . $v_del_chr . $a_fld[ 5 ] ) .      #
+     ( $a_fld[ 5 ] eq ''   ? '' : $v_del_chr . 'Postal_Area' . $v_del_chr . $a_fld[ 5 ] ) .         #
      ( $a_fld[ 4 ] eq ''   ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 4 ] )
      . ( $a_fld[ 3 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 3 ] )
      . ( $a_fld[ 2 ] eq '' ? '' : $v_del_chr . 'Telephone_Number' . $v_del_chr . $a_fld[ 2 ] )
@@ -613,174 +839,172 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
      . $v_del_chr
      . $v_del_chr
      . $v_del_chr
-     . "\n" ;
+     . K_NEW_LN ;
 
 } ## end while ( $v_rec = <$IN_FILE1>)
 #######################################################################
 # End of While                                                        #
 #######################################################################
 
-my $v_log =                                                   #
-     "------ MAKE TAG EXECUTION START DATE AND TIME ------" . K_NEW_LN    #
-     . K_NEW_LN                                                 #
-     . $v_now_yy . '-'
-     . $v_now_mm . '-' 
-     . $v_now_dd . ' '
-     . $v_now_hh . ':'
-     . $v_now_mi . ':'
-     . $v_now_ss . K_NEW_LN . K_NEW_LN 
-     . "------ Run Parameters ------" . K_NEW_LN
-     . "Data set number             :" . K_SPACE . $pp_set_data . K_NEW_LN          #
-     . "Run time number             :" . K_SPACE . $pp_run_data . K_NEW_LN          #
-     . "Delimiter                   :" . K_SPACE . 
-     ( 
-       $pp_del_chr eq K_EMPTY ? "Missing- Default:*" :
-       ( 
-         $pp_del_chr =~ /[[:cntrl:]]/ ? 
-         "Ordinal (" . ord ( $pp_del_chr ) . ")" : $pp_del_chr
-       )
-     ) 
-     . K_NEW_LN                                                                   #
-     . "Input file path             :" . K_SPACE . $pp_in_file  . K_NEW_LN          #
-     . "Field separator             :" . K_SPACE . 
-     ( 
-       $pp_fld_spr =~ /[[:cntrl:]]/ ? 
-       "Ordinal (" . ord ( $pp_fld_spr ) . ")" : $pp_fld_spr
-     ) 
-     . K_NEW_LN
-     . ( $pp_enc_chr eq K_EMPTY ? "" :
-       "Optional encloser character :" . K_SPACE . 
-         ( 
-           $pp_enc_chr =~ /[[:cntrl:]]/ ? 
-           "Ordinal (" . ord ( $pp_enc_chr ) . ")" . K_NEW_LN : $pp_enc_chr
-           . K_NEW_LN
-         )
-       ) 
-     . "Flag -Data from 1st record  :" . K_SPACE
-     . ( $pp_f_dt_1 eq 1 ? "Yes" . K_NEW_LN : "no" . K_NEW_LN ) .
-     ( $pp_verbose eq 1 ?
-       ( $pp_multiplier eq K_EMPTY ? 
-         "Multiplier            : Missing- Default:" . $pp_multiplier :
-         $pp_multiplier
-       ) : K_EMPTY 
-     ) ;
-     
-my $v_files 
-   = K_NEW_LN
-     . "------ File Names ------" . K_NEW_LN                                    #                                                #
-     . "Input file name   :" . K_SPACE . $pp_in_file . K_NEW_LN                 #
-     . "Tag file name     :" . K_SPACE . $v_tag_file . K_NEW_LN                 #
-     . "Original data     :" . K_SPACE . $v_org_dt_file . K_NEW_LN              # 
-     . "Log file name     :" . K_SPACE . $v_log_file . K_NEW_LN                 #
-     . "NOTOK file(Error) :" . K_SPACE . $v_not_ok_file . K_NEW_LN ;
+# Log #################################################################
 
-print $LOGFILE $v_log ;
-print $LOGFILE $v_files ;
-
-print $LOGFILE 
-        K_NEW_LN . "------Run summary------" . K_NEW_LN ;
+print $LOGFILE K_NEW_LN . "------Run summary------" . K_NEW_LN ;
 if ( $v_rec_knt != 0 ) {
-   print $LOGFILE  
-         "No of records in a file " . ( $pp_f_dt_1 eq 'n' ? "with header :" : "without header :" ) . $v_rec_knt . K_NEW_LN ;
-         
-   print "No of records in a file " . ( $pp_f_dt_1 eq 'n' ? "with header :" : "without header :" ) . $v_rec_knt . K_NEW_LN ;
-}
+   print                                                        #
+     $LOGFILE K_NEW_LN                                          #
+     . "No of records in a file "                               #
+     . (
+      $pp_f_dt_1 eq 'n' ?                                       #
+        "with header : "
+      :                                                         #
+        "without header : "
+     )                                                          #
+     . &sCommify ( $v_rec_knt ) ;                               #
 
-if ( $v_err_knt != 0 ) {
-   print $LOGFILE 
-         K_NEW_LN . "No of error records              : " . $v_err_knt ;
-         
-   print K_NEW_LN . "No of error records              : " . $v_err_knt ;
-}
+   print                                                        #
+     K_NEW_LN                                                   #
+     . "No of records in a file "                               #
+     . (
+      $pp_f_dt_1 eq 'n' ?                                       #
+        "with header : "
+      :                                                         #
+        "without header : "
+     )                                                          #
+     . &sCommify ( $v_rec_knt ) ;                               #
+} ## end if ( $v_rec_knt != 0 )
 
-if ( $v_err_no_id_knt != 0 ) {
-   print $LOGFILE 
-         K_NEW_LN . " - Id field error                : " . $v_err_no_id_knt ;
-         
-   print K_NEW_LN . " - Id field error                : " . $v_err_no_id_knt ;
-}
+if ( $v_err_knt != 0 ) {                                        #
+   print                                                        #
+     $LOGFILE                                                   #
+     K_NEW_LN . "No of error records                : "         #
+     . &sCommify ( $v_err_knt ) ;                               #
 
-if ( $v_err_ky_fld_knt != 0 ) {
-   print $LOGFILE 
-         K_NEW_LN . " - Key fields error              : " . $v_err_ky_fld_knt ;
-         
-   print K_NEW_LN . " - Key fields error              : " . $v_err_ky_fld_knt ;
-}
+   print                                                        #
+     K_NEW_LN                                                   #
+     . "No of error records                : "                  #
+     . &sCommify ( $v_err_knt ) ;                               #
+}                                                               #
 
-if ( $v_err_del_knt != 0 ) {
-   print $LOGFILE 
-         K_NEW_LN . "- Records found delimiter error : " . $v_err_del_knt ;
-         
-   print K_NEW_LN . "- Records found delimiter error : " . $v_err_del_knt ;
-}
+if ( $v_err_no_id_knt != 0 ) {                                  #
+   print                                                        #
+     $LOGFILE                                                   #
+     K_NEW_LN . " - Id field error                  : "         #
+     . &sCommify ( $v_err_no_id_knt ) ;                         #
 
-$t_end_time = time - $t_start_time;
+   print                                                        #
+     K_NEW_LN . " - Id field error                  : "         #
+     . &sCommify ( $v_err_no_id_knt ) ;                         #
+} ## end if ( $v_err_no_id_knt ...)
 
-print $LOGFILE 
-        K_NEW_LN . "Ended " . K_SPACE
-      . $v_now_yy . '-'
-      . $v_now_mm . '-' 
-      . $v_now_dd . ' '
-      . $v_now_hh . ':'
-      . $v_now_mi . ':'
-      . $v_now_ss . '-' . K_SPACE
-      . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) ) . K_SPACE
-      . "to execute" . K_NEW_LN ;
+if ( $v_err_ky_fld_knt != 0 ) {                                 #
+   print                                                        #
+     $LOGFILE K_NEW_LN                                          #
+     . " - Key fields error                : "                  #
+     . &sCommify ( $v_err_ky_fld_knt ) ;                        #
 
-close $IN_FILE1 or                                              #
+   print                                                        #
+     K_NEW_LN . " - Key fields error                : "         #
+     . &sCommify ( $v_err_ky_fld_knt ) ;                        #
+}                                                               #
+
+if ( $v_err_del_knt != 0 ) {                                    #
+   print                                                        #
+     $LOGFILE K_NEW_LN . " - Records found delimiter error   : "    #
+     . &sCommify ( $v_err_del_knt ) ;                           #
+
+   print                                                        #
+     K_NEW_LN . " - Records found delimiter error   : "         #
+     . &sCommify ( $v_err_del_knt ) ;                           #
+}                                                               #
+
+if ( $v_err_sz_lmt_knt != 0 ) {                                 #
+   print                                                        #
+     $LOGFILE K_NEW_LN . " - Records that exceeds size limit : "    #
+     . &sCommify ( $v_err_sz_lmt_knt ) ;                        #
+
+   print                                                        #
+     K_NEW_LN . " - Records that exceeds size limit : "         #
+     . &sCommify ( $v_err_sz_lmt_knt ) ;                        #
+} ## end if ( $v_err_sz_lmt_knt...)
+
+$t_end_time = time - $t_start_time ;                            # Total time taken
+
+my $v_end_ts = &sDateTime ;                                     # End timestamp
+
+print $LOGFILE K_NEW_LN . K_NEW_LN . "Ended " . K_SPACE . $v_end_ts . '-' . K_SPACE . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) ) . K_SPACE . "to execute" . K_NEW_LN ;
+
+# END LOG #############################################################
+
+close $IN_FILE1 or                                              # Close input file
   die                                                           #
   "Could not close input file $pp_in_file - $!\n" ;
 
-close $OUTFILE or                                               #
-  die "Could not close output Tagged file $pp_set_data$pp_run_data.tag - $!\n" ;
+close $OUTFILE or                                               # Close tag data output file
+  die "Could not close output Tag file $pp_set_data$pp_run_data.tag - $!\n" ;
 
-close $OUTORGFILE or                                               #
-  die "Could not close original data output file $pp_set_data$pp_run_data.org - $!\n" ;
-  
-close $LOGFILE or                                              # Close log file
-  die "Can not close log file $v_log_file - $!\n" ;
+close $OUTORGFILE or                                            # Close original data output file
+  die                                                           #
+  "Could not close original data output file $pp_set_data$pp_run_data.org - $!\n" ;
+
+close $LOGFILE or                                               # Close log file
+  die                                                           #
+  "Can not close log file $v_log_file - $!\n" ;
+
+close $NOTOKFILE or                                             # Close error file
+  die                                                           #
+  "Can not close log file $v_bad_file - $!\n" ;
+
+# Delete file if there are no errors in a file
+my $v_notok_file_size = -s $v_bad_file_dir . $v_bad_file || K_ZERO ;
+
+if ( $v_notok_file_size < 1 ) {
+   unlink $v_bad_file_dir . $v_bad_file ;
+}
 
 #######################################################################
 # End of Main                                                         #
 #######################################################################
 
 sub sDateTime {
-  
-  # sDateTime subroutine to get current date and time
- 
-  (
-     $v_now_ss ,                                                  # Seconds
-     $v_now_mi ,                                                  # Minutes
-     $v_now_hh ,                                                  # Hours
-     $v_now_dd ,                                                  # Date
-     $v_now_mm ,                                                  # Month
-     $v_now_yy                                                    # Year
-  ) = ( localtime )[ 0 , 1 , 2 , 3 , 4 , 5 ] ;                    # Get time elements
-  
-  $v_now_yy = $v_now_yy + 1900 ;                                  # Adjust year
-  $v_now_mm = $v_now_mm + 1 ;                                     # Adjust month	
-  
-  if ( $v_now_mm < 10 ) {
-    $v_now_mm = K_ZERO . $v_now_mm ;
-  }
-  
-  if ( $v_now_dd < 10 ) {
-    $v_now_dd = K_ZERO . $v_now_dd ;
-  }
-  
-  if ( $v_now_hh < 10 ) {
-    $v_now_hh = K_ZERO . $v_now_hh ;
-  }
-  
-  if ( $v_now_mi < 10 ) {
-    $v_now_mi = K_ZERO . $v_now_mi ;
-  }
-  
-  if ( $v_now_ss < 10 ) {
-    $v_now_ss = K_ZERO . $v_now_ss ;
-  }
 
-}
+   # sDateTime subroutine to get current date and time
+
+   (
+      $v_now_ss ,                                               # Seconds
+      $v_now_mi ,                                               # Minutes
+      $v_now_hh ,                                               # Hours
+      $v_now_dd ,                                               # Date
+      $v_now_mm ,                                               # Month
+      $v_now_yy                                                 # Year
+   ) = ( localtime )[ 0 , 1 , 2 , 3 , 4 , 5 ] ;                 # Get time elements
+
+   $v_now_yy = $v_now_yy + 1900 ;                               # Adjust year
+   $v_now_mm = $v_now_mm + 1 ;                                  # Adjust month
+
+   if ( $v_now_mm < 10 ) {
+      $v_now_mm = K_ZERO . $v_now_mm ;
+   }
+
+   if ( $v_now_dd < 10 ) {
+      $v_now_dd = K_ZERO . $v_now_dd ;
+   }
+
+   if ( $v_now_hh < 10 ) {
+      $v_now_hh = K_ZERO . $v_now_hh ;
+   }
+
+   if ( $v_now_mi < 10 ) {
+      $v_now_mi = K_ZERO . $v_now_mi ;
+   }
+
+   if ( $v_now_ss < 10 ) {
+      $v_now_ss = K_ZERO . $v_now_ss ;
+   }
+
+   my $v_curr_ts = $v_now_yy . "-" . $v_now_mm . "-" . $v_now_dd . " " . $v_now_hh . ":" . $v_now_mi . ":" . $v_now_ss ;
+
+   return $v_curr_ts ;
+} ## end sub sDateTime
 #######################################################################
 # End of sub sDateTime                                                #
 #######################################################################
@@ -819,12 +1043,40 @@ sub sGetParameter {
          verbose => 'Input filepath name' ,
          order   => 4 ,
         } ,
+      tag_file_dir => {                                         # Output file directory
+         type    => '=s' ,
+         env     => '-' ,
+         default => '' ,
+         verbose => 'Output file directory' ,
+         order   => 5 ,
+        } ,
+      org_data_file_dir => {                                    # Orginal data output file directory
+         type    => '=s' ,
+         env     => '-' ,
+         default => '' ,
+         verbose => 'OrIginal data output file directory' ,
+         order   => 6 ,
+        } ,
+      log_file_dir => {                                         # Log file directory
+         type    => '=s' ,
+         env     => '-' ,
+         default => '' ,
+         verbose => 'Log file directory' ,
+         order   => 7 ,
+        } ,
+      bad_file_dir => {                                      # Not ok file directory
+         type    => '=s' ,
+         env     => '-' ,
+         default => '' ,
+         verbose => 'Not ok file directory' ,
+         order   => 8 ,
+        } ,
       field_separator => {                                      # Pass field separator
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
          verbose => 'Field separator - for control characters use escaped value or term, e.g. \t or TAB for tab character' ,
-         order   => 5 ,
+         order   => 9 ,
         } ,
       encloser_character => {                                   # Optional enclosing separator
          type    => '=s' ,
@@ -833,45 +1085,43 @@ sub sGetParameter {
          verbose => 'Optional enclosing character - for control characters ' .    #
            'use escaped value or term or hexadecimal, ' .       #
            'e.g. \t or TAB or \011 or \x09 for tab character' ,
-         order => 6 ,
+         order => 10 ,
         } ,
       delimiter_character => {                                  # Optional delimiter
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
          verbose => 'Optional delimiter character' ,
-         order   => 7 ,
+         order   => 11 ,
         } ,
       data_from_1_record_flag => {                              # Data starting from the first record instead of field labels in the first record
          type    => '!' ,
          env     => '-' ,
          default => '0' ,                                       # Default (parameter not mentioned) means field names in first record
          verbose => 'Data starting from the first record' ,
-         order   => 8 ,
+         order   => 12 ,
         } ,
       control_character_display => {                            # Display control character equivalences for field separator or optional enclosing character and stop
          type    => '!' ,
          env     => '-' ,
          default => '0' ,                                       # Default (parameter not mentioned) means script nuns normally
          verbose => 'Display control character equivalences for field separator or optional enclosing character and stop' ,
-         order   => 9 ,
+         order   => 13 ,
         } ,
       multiplier => {                                           # Multiplier parameter
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
          verbose => 'Optional multiplier parameter' ,
-         order   => 10 ,
+         order   => 14 ,
         } ,
-      verbose    => {                                           # Verbose flag
+      verbose => {                                              # Verbose flag
          type    => '!' ,
          env     => '-' ,
          default => '' ,
          verbose => 'Verbose' ,
-         order   => 10 ,
-        } ,
-      
-      
+         order   => 15 ,
+      } ,
    } ;
 
    my ( $parameters ) = Getopt::Simple -> new () ;              # variable for runtime parameters
@@ -887,9 +1137,60 @@ sub sGetParameter {
    $pp_enc_chr    = $$parameters{ 'switch' }{ 'encloser_character' } ;
    $pp_del_chr    = $$parameters{ 'switch' }{ 'delimiter_character' } ;
    $pp_f_dt_1     = $$parameters{ 'switch' }{ 'data_from_1_record_flag' } ;
-   $pp_f_ct_c_dp  = $$parameters{ 'switch' }{ 'control_character_display' } ;                                               # Flag if display control character equivalences and stop
+   $pp_f_ct_c_dp  = $$parameters{ 'switch' }{ 'control_character_display' } ;                                                 # Flag if display control character equivalences and stop
    $pp_multiplier = $$parameters{ 'switch' }{ 'multiplier' } ;
    $pp_verbose    = $$parameters{ 'switch' }{ 'verbose' } ;
+
+   $pp_out_file_dir    = $$parameters{ 'switch' }{ 'tag_file_dir' } ;
+   $pp_org_file_dir    = $$parameters{ 'switch' }{ 'org_data_file_dir' } ;
+   $pp_log_file_dir    = $$parameters{ 'switch' }{ 'log_file_dir' } ;
+   $pp_bad_file_dir = $$parameters{ 'switch' }{ 'bad_file_dir' } ;
+
+   # Check All directory path empty or not
+   $v_out_file_dir    = ( $pp_out_file_dir eq K_EMPTY    ? './' : $pp_out_file_dir ) ;
+   $v_org_file_dir    = ( $pp_org_file_dir eq K_EMPTY    ? './' : $pp_org_file_dir ) ;
+   $v_log_file_dir    = ( $pp_log_file_dir eq K_EMPTY    ? './' : $pp_log_file_dir ) ;
+   $v_bad_file_dir = ( $pp_bad_file_dir eq K_EMPTY ? './' : $pp_bad_file_dir ) ;
+
+   if ( $v_out_file_dir ne './' ) {                             # If Output file directory not default (./)
+      if (
+         substr ( $v_out_file_dir , -1 , 1 ) ne '\\'            # If Output file directory not end with back slash (\\)
+        ) {
+         $v_out_file_dir .= '\\' ;                              # Add back slash at end
+      }
+   } ## end if ( $v_out_file_dir ne...)
+
+   $v_out_file_dir =~ s/\\/\//g ;                               # Replace back slash to forward slash
+
+   if ( $v_org_file_dir ne './' ) {                             # If Original data output file directory not default (./)
+      if (
+         substr ( $v_org_file_dir , -1 , 1 ) ne '\\'            # If Original data output file directory not end with back slash (\\)
+        ) {
+         $v_org_file_dir .= '\\' ;                              # Add back slash at end
+      }
+   } ## end if ( $v_org_file_dir ne...)
+
+   $v_org_file_dir =~ s/\\/\//g ;                               # Replace back slash to forward slash
+
+   if ( $v_log_file_dir ne './' ) {                             # If Log file directory not default (./)
+      if (
+         substr ( $v_log_file_dir , -1 , 1 ) ne '\\'            # If Log file directory not end with back slash (\\)
+        ) {
+         $v_log_file_dir .= '\\' ;                              # Add back slash at end
+      }
+   } ## end if ( $v_log_file_dir ne...)
+
+   $v_log_file_dir =~ s/\\/\//g ;                               # Replace back slash to forward slash
+
+   if ( $v_bad_file_dir ne './' ) {                             # If Not ok file(Errors) directory not default (./)
+      if (                                                      
+         substr ( $v_bad_file_dir , -1 , 1 ) ne '\\'            # If Not ok file(Errors) directory not end with back slash (\\)
+        ) {                                                     
+         $v_bad_file_dir .= '\\' ;                              # Add back slash at end
+      }                                                         
+   } ## end if ( $v_bad_file_dir...)                            
+                                                                
+   $v_bad_file_dir =~ s/\\/\//g ;                               # Replace back slash to forward slash
 
    # Display control character equivalences and stop option chosen
    if ( $pp_f_ct_c_dp eq 1 ) {
@@ -905,14 +1206,14 @@ sub sGetParameter {
    if ( $pp_in_file eq '' )  { die "JOB ABANDONDED - No input file path\n" ; }
    if ( $pp_fld_spr eq '' )  { die "JOB ABANDONDED - No field separator character\n" ; }
 
-   $pp_fld_spr = &sHdlFdSiOptEncl ( $pp_fld_spr , 'Field Separator' ) ;                                                       # Handle field separator aliases
+   $pp_fld_spr = &sHdlFdSiOptEncl ( $pp_fld_spr , 'Field Separator' ) ;    # Handle field separator aliases
 
    if ( $pp_enc_chr ne "" ) {                                   # If enclosure character is non empty
-      $pp_enc_chr = &sHdlFdSiOptEncl ( $pp_enc_chr , 'Optional Field Enclosure' ) ;                                           # Handle optional field enclosure aliases
+      $pp_enc_chr = &sHdlFdSiOptEncl ( $pp_enc_chr , 'Optional Field Enclosure' ) ;    # Handle optional field enclosure aliases
    }
 
    if ( $pp_del_chr ne "" ) {                                   # If delimiter character is non empty
-      $pp_del_chr = &sHdlFdSiOptEncl ( $pp_del_chr , 'Optional delimiter' ) ;                                                 # Handle delimiter character alises
+      $pp_del_chr = &sHdlFdSiOptEncl ( $pp_del_chr , 'Optional delimiter' ) ;          # Handle delimiter character alises
    }
 
    if ( $pp_set_data =~ /\D/ or $pp_set_data < 100 or $pp_set_data > 999 ) {
@@ -938,9 +1239,9 @@ sub sGetParameter {
          die "JOB ABANDONDED - Delimiter character >$pp_del_chr< must contain one character\n" ;
       }
    }
-   
+
    if ( $pp_multiplier eq K_EMPTY ) {
-     $pp_multiplier = 100000 ;
+      $pp_multiplier = 100000 ;
    }
 
 } ## end sub sGetParameter
@@ -964,14 +1265,14 @@ sub sHdlFdSiOptEncl {
       die "$0: JOB ABANDONED: INTERNAL SCRIPT ERROR: " .        #
         "Parameter >$vhfsoe_what< not 'Field Separator' nor " . #
         "'Optional Field Enclosure'\n" ;
-   } ## end if
+   } ## end if ( $vhfsoe_what ne 'Field Separator'...)
 
    if (
       $vhfsoe_what eq 'Field Separator' and                     # Field separator must
       length ( $vhfsoe_c ) < 1
      ) {                                                        #
       die "$0: JOB ABANDONED: ERROR: Field separator MUST be specified\n" ;
-   } ## end if
+   } ## end if ( $vhfsoe_what eq 'Field Separator'...)
 
    if ( length ( $vhfsoe_c ) == 1 ) { return ( $vhfsoe_c ) ; }  # No need of further processing
 
@@ -1013,11 +1314,23 @@ sub sDpCtCStp {
 # End of sub sDpCtCStp                                                #
 #######################################################################
 
+sub sCommify {
+
+   # Putting Commas in Numbers
+   my $text = reverse $_[ 0 ] ;
+   $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g ;
+   return scalar reverse $text ;
+} ## end sub sCommify
+#######################################################################
+# End of sub sCommify                                                 #
+#######################################################################
+
 =pod
 
 =head1 Make Tag
 
- Generate .tag file using input file
+ Generate .tgt( tag data ) and .odx(original data) file using input file which
+  are delimited by field separator.
 
 =head2 Copyright
 
@@ -1026,7 +1339,7 @@ sub sDpCtCStp {
 =head2 Description
 
  Make Tag is the procedure which generate tagged data format using input data
- Tagged data format is a method of formatting the inpu data when using
+ Tagged data format is a method of formatting the input data when using
  ssan3_get_keys ,ssan3_get_ranges  and ssan3_match function calls.
 
  In Tagged Format, the offfset and lengths of the data fields being passed do
@@ -1065,32 +1378,99 @@ sub sDpCtCStp {
  3. Trim leading space
  4. Trim trailing space
  5. Combined to fields City , Sub district and District
+ 
+ Input file format
+ 
+ # FIELD
+ - -----
+ Fields which are separated by field separator character
 
-=head2 Output file
+=head2 Output file format
+ 
+ 1 : sssrrrr.tgt
+ 
+     Extension of output file is .tgt which are created with data set number and run number
+     
+     #   FIELD
+     -   -----
+     1   Id        - Length should not be greater than 1000 character ( Column 12 ) - TAB delimiter
+     2   Tag data  - Length should not be greater than 2000 character
+     
+     At this time Tag data format are as follows :
+     
+     Column 12   : Id
+     Column 11   : Person_Name
+     Column 10   : Address_Part1
+     Column  9 ,
+             8 ,
+         and 7   : Address_Part2
+     Column  5   : Postal_Area
+     Column  4   : Telephone_Number
+     Column  3   : Telephone_Number
+     Column  2   : Telephone_Number
+     Column  1
+        and  0   : Attribute1
 
- Extension of output file is .tag which are created with data set number and run number
- Assume that delimiter is default asterisk (*)
+ 2 : sssrrrr.odx 
+     
+     If field separator of input file are TAB delimiter
+     then .odx file generated with \0 delimiter between id and fields
+     
+     and 
+     
+     If field separator of input file are ( Any ) delimiter except tab delimiter
+     then .odx file generated with \t delimiter between id and fields
+     
+     #   FIELD
+     -   -----
+     1   Id
+     2   fields
 
- Column 12   : Id
- Column 11   : Person_Name
- Column 10   : Address_Part1
- Column  9 ,
-         8 ,
-     and 7   : Address_Part2
- Column  5   : Postal_Area
- Column  4   : Telephone_Number
- Column  3   : Telephone_Number
- Column  2   : Telephone_Number
- Column  1
-    and  0   : Attribute1
+=head2 Log file format
 
+ ------ MAKE TAG EXECUTION START DATE AND TIME ------
+ YYYY-MM-DD HH:MI:SS
+ 
+  ------ Run Parameters ------
+ Data set number               : Data set number 
+ Run time number               : Run time number
+ Delimiter                     : Delimiter
+ Input file path               : Input file path
+ Output file directory         : Output file directory
+ Original data file directory  : Original data output file directory
+ Log file directory            : Log file directory
+ NOT OK(Errors) file directory : NOT OK ( Errors ) file directory
+ Field separator               : Field separator
+ Optional encloser character   : Optional enclosing character
+ Flag -Data from 1st record    : Yes/no
+ Multiplier                    : Multiplier number
+ Verbose flag                  : Yes/no
+ 
+ ------ File Names ------
+ Input file name   : <INPUT_FILE_NAME>
+ Tag file name     : <OUTPUT_FILE_NAME>
+ Original data     : <ORIGINAL_DATA_FILE_NAME>
+ Log file name     : <LOG_FILE_NAME>
+ NOTOK file(Error) : <NOTOK_FILE_NAME>
+ 
+ No of records in a file with header / without header  : <COUNT>
+ No of error records                : <COUNT>
+  - Id field error                  : <COUNT>
+  - Key fields error                : <COUNT>
+  - Records found delimiter error   : <COUNT>
+  - Records that exceeds size limit : <COUNT>
+  
+ Ended  YYYY-MM-DD HH:MI:SS- HH:MI:SS to execute
+
+ 
 =head2 Terminal output
 
- No of records in a file (with header/without header) : <Count>
- No of error records              : <Count>
-  - Id field error                : <Count>
-  - Key fields error              : <Count>
-  - Records found delimiter error : <Count>
+ No of records in a file with header / without header  : <COUNT>
+ No of error records                : <COUNT>
+  - Id field error                  : <COUNT>
+  - Key fields error                : <COUNT>
+  - Records found delimiter error   : <COUNT>
+  - Records that exceeds size limit : <COUNT>
 
 =head2 Delimiter
 
@@ -1124,7 +1504,7 @@ sub sDpCtCStp {
 
  Package Number   - 44
  Procedure Number - 503
- Procedure Name   - 43_503_MkeTag_100_999.pl
+ Procedure Name   - 44_503_MkeTag_100_1000.pl
 
 =head3 Run parameters
 
@@ -1143,24 +1523,34 @@ sub sDpCtCStp {
  delimiter_character        Optional delimiter character          del    $pp_del_chr
  data_from_1_record_flag    Data starting from the first record   data   $pp_f_dt_1
  control_character_display  Flag if display control character     c      $pp_f_ct_c_dp
-
+ tag_file_dir               Tag file directory                    t      $pp_out_file_dir
+ org_data_file_dir          Original data file directory          o      $pp_org_file_dir
+ log_file_dir               Log file directory                    l      $pp_log_file_dir
+ bad_file_dir               Not Ok file directory                 n      $pp_bad_file_dir
+ multiplier                 Multiplier value                      m      $pp_multiplier
+ verbose                    Verbose flag                          v      $pp_verbose
+                           
  ABV - Abbreviation for calling run parameter
 
 =head3 Different examples of run parameter to run a procedure:
 
- perl 43_503_MkeTag_100_999.pl -s 100 -r 1000 -i input.txt -f PIPE -del AT -data
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1000 -i E:\SurendraK\MkeTag\INPUT\Xtract.txt
+  -f TAB -t E:\SurendraK\MkeTag\TAG -o E:\SurendraK\MkeTag\ORG 
+  -l E:\SurendraK\MkeTag\LOG -b E:\SurendraK\MkeTag\NOTOK -m 1000 -v
 
- perl 43_503_MkeTag_100_999.pl -s 100 -r 1001 -i input.txt -f PLUS -e DOUBLEQUOTE
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1000 -i input.txt -f TAB
 
- perl 43_503_MkeTag_100_999.pl -s 100 -r 1002 -i input.txt -f CLOSEBRACKET
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1001 -i input.txt -f PLUS -e DOUBLEQUOTE
 
- perl 43_503_MkeTag_100_999.pl -s 100 -r 1003 -i input.txt -f QUESTION -data
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1002 -i input.txt -f CLOSEBRACKET
 
- perl 43_503_MkeTag_100_999.pl -s 100 -r 1004 -i input.txt -f SEMICOLON  -del x
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1003 -i input.txt -f QUESTION -data
 
- perl 43_503_MkeTag_100_999.pl -s 100 -r 1005 -i input.txt -f STOP
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1004 -i input.txt -f SEMICOLON  -del x
 
- perl 43_503_MkeTag_100_999.pl -c
+ perl 44_503_MkeTag_100_1000.pl -s 100 -r 1005 -i input.txt -f STOP
+
+ perl 44_503_MkeTag_100_1000.pl -c
 
  -s , -r , -i and -f parameters are mandatory
 
@@ -1257,28 +1647,34 @@ sub sDpCtCStp {
 
  Subroutine      Description
  --------------  -----------------------------
+ sDateTime       Get current date and time
  sGetParameter   Gets run parameters.
  sHdlFdSiOptEncl Handle field separator , optional enclosing character and delimiter character
  sDpCtCStp       Display control and meta character equivalences for field separator or
                  optional enclosing character and stop
+ sCommify        Putting Commas in Numbers 
 
 =head4 Called by
 
  Subroutine     Called by
  -------------  ----------
+ sDateTime         Main
  sGetParameter     Main
  sHdlFdSiOptEncl   sGetParameter
  sDpCtCStp         sGetParameter
+ sCommify          Main
 
 =head4 Structure
 
   Main
+  |-- sDateTime
   |-- sGetParameter
-      |-- sHdlFdSiOptEncl
-      \-- sDpCtCStp
+  |   |-- sHdlFdSiOptEncl
+  |    \-- sDpCtCStp
+  \-- sCommify
 
 =cut
 
 #######################################################################
-# End of 43_503_MkeTag_100_999.pl                                     #
+# End of 44_503_MkeTag_100_1000.pl                                    #
 #######################################################################
