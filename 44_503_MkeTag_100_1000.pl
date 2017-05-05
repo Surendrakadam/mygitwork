@@ -307,7 +307,7 @@ $v_log_file =                                                   # Log file
   . $v_now_hh . '-'                                             #
   . $v_now_mi . '-'                                             #
   . $v_now_ss . '.log' ;                                        #
-  
+
 $v_bad_file =                                                   # Bad file
   $pp_set_data . $pp_run_data . '_'                             #
   . 'MkeTag' . '_'                                              #
@@ -638,7 +638,7 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
 
          next ;
       } ## end if ( $v_rec =~ /\*/ )
-   } ## end if ( $pp_del_chr eq '')
+   } ##
    else {
       if (  $v_del_chr eq '|'
          || $v_del_chr eq '^'
@@ -669,7 +669,7 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
 
             next ;
          } ## end if ( $v_rec =~ /$v_chk_del/)
-      } ## end if ( $v_del_chr eq '|'...)
+      } ##
       else {
          if ( $v_rec =~ /$v_del_chr/ ) {                        # Skip record if record already contain delimiter
             $v_err_del_knt ++ ;                                 # Record already contain delimiter which you are using now
@@ -688,8 +688,8 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
 
             next ;
          } ## end if ( $v_rec =~ /$v_del_chr/)
-      } ## end else [ if ( $v_del_chr eq '|'...)]
-   } ## end else [ if ( $pp_del_chr eq '')]
+      } ## end else
+   } ## end else
 
    @a_fld = split $pp_fld_spr , $v_rec ;                        # Split record into fields
 
@@ -737,7 +737,7 @@ while ( $v_rec = <$IN_FILE1> ) {                                #
       print $NOTOKFILE "Record no : " . $v_rec_knt . K_SPACE . "Error Message : " . "Missing Person_Name and Address Part1 !" . K_NEW_LN . "Record    : " . $v_rec . K_NEW_LN . K_NEW_LN ;
 
       next ;                                                    # Skip record
-   } ## end if ( $a_fld[ 11 ] eq ''...)
+   } ## end if
 
    # Length of the tag id must be less than or equal to 1000 characters
    if ( length $a_fld[ 12 ] > 1000 ) {
@@ -1183,13 +1183,13 @@ sub sGetParameter {
    $v_log_file_dir =~ s/\\/\//g ;                               # Replace back slash to forward slash
 
    if ( $v_bad_file_dir ne './' ) {                             # If Not ok file(Errors) directory not default (./)
-      if (                                                      
+      if (
          substr ( $v_bad_file_dir , -1 , 1 ) ne '\\'            # If Not ok file(Errors) directory not end with back slash (\\)
-        ) {                                                     
+        ) {
          $v_bad_file_dir .= '\\' ;                              # Add back slash at end
-      }                                                         
-   } ## end if ( $v_bad_file_dir...)                            
-                                                                
+      }
+   } ## end if ( $v_bad_file_dir...)
+
    $v_bad_file_dir =~ s/\\/\//g ;                               # Replace back slash to forward slash
 
    # Display control character equivalences and stop option chosen
@@ -1265,14 +1265,14 @@ sub sHdlFdSiOptEncl {
       die "$0: JOB ABANDONED: INTERNAL SCRIPT ERROR: " .        #
         "Parameter >$vhfsoe_what< not 'Field Separator' nor " . #
         "'Optional Field Enclosure'\n" ;
-   } ## end if ( $vhfsoe_what ne 'Field Separator'...)
+   } ## end if
 
    if (
       $vhfsoe_what eq 'Field Separator' and                     # Field separator must
       length ( $vhfsoe_c ) < 1
      ) {                                                        #
       die "$0: JOB ABANDONED: ERROR: Field separator MUST be specified\n" ;
-   } ## end if ( $vhfsoe_what eq 'Field Separator'...)
+   } ## end if
 
    if ( length ( $vhfsoe_c ) == 1 ) { return ( $vhfsoe_c ) ; }  # No need of further processing
 
@@ -1378,26 +1378,26 @@ sub sCommify {
  3. Trim leading space
  4. Trim trailing space
  5. Combined to fields City , Sub district and District
- 
+
  Input file format
- 
+
  # FIELD
  - -----
  Fields which are separated by field separator character
 
 =head2 Output file format
- 
+
  1 : sssrrrr.tgt
- 
+
      Extension of output file is .tgt which are created with data set number and run number
-     
+
      #   FIELD
      -   -----
      1   Id        - Length should not be greater than 1000 character ( Column 12 ) - TAB delimiter
      2   Tag data  - Length should not be greater than 2000 character
-     
+
      At this time Tag data format are as follows :
-     
+
      Column 12   : Id
      Column 11   : Person_Name
      Column 10   : Address_Part1
@@ -1411,16 +1411,16 @@ sub sCommify {
      Column  1
         and  0   : Attribute1
 
- 2 : sssrrrr.odx 
-     
+ 2 : sssrrrr.odx
+
      If field separator of input file are TAB delimiter
      then .odx file generated with \0 delimiter between id and fields
-     
-     and 
-     
+
+     and
+
      If field separator of input file are ( Any ) delimiter except tab delimiter
      then .odx file generated with \t delimiter between id and fields
-     
+
      #   FIELD
      -   -----
      1   Id
@@ -1430,9 +1430,9 @@ sub sCommify {
 
  ------ MAKE TAG EXECUTION START DATE AND TIME ------
  YYYY-MM-DD HH:MI:SS
- 
+
   ------ Run Parameters ------
- Data set number               : Data set number 
+ Data set number               : Data set number
  Run time number               : Run time number
  Delimiter                     : Delimiter
  Input file path               : Input file path
@@ -1445,24 +1445,24 @@ sub sCommify {
  Flag -Data from 1st record    : Yes/no
  Multiplier                    : Multiplier number
  Verbose flag                  : Yes/no
- 
+
  ------ File Names ------
  Input file name   : <INPUT_FILE_NAME>
  Tag file name     : <OUTPUT_FILE_NAME>
  Original data     : <ORIGINAL_DATA_FILE_NAME>
  Log file name     : <LOG_FILE_NAME>
  NOTOK file(Error) : <NOTOK_FILE_NAME>
- 
+
  No of records in a file with header / without header  : <COUNT>
  No of error records                : <COUNT>
   - Id field error                  : <COUNT>
   - Key fields error                : <COUNT>
   - Records found delimiter error   : <COUNT>
   - Records that exceeds size limit : <COUNT>
-  
+
  Ended  YYYY-MM-DD HH:MI:SS- HH:MI:SS to execute
 
- 
+
 =head2 Terminal output
 
  No of records in a file with header / without header  : <COUNT>
@@ -1529,13 +1529,13 @@ sub sCommify {
  bad_file_dir               Not Ok file directory                 n      $pp_bad_file_dir
  multiplier                 Multiplier value                      m      $pp_multiplier
  verbose                    Verbose flag                          v      $pp_verbose
-                           
+
  ABV - Abbreviation for calling run parameter
 
 =head3 Different examples of run parameter to run a procedure:
 
  perl 44_503_MkeTag_100_1000.pl -s 100 -r 1000 -i E:\SurendraK\MkeTag\INPUT\Xtract.txt
-  -f TAB -t E:\SurendraK\MkeTag\TAG -o E:\SurendraK\MkeTag\ORG 
+  -f TAB -t E:\SurendraK\MkeTag\TAG -o E:\SurendraK\MkeTag\ORG
   -l E:\SurendraK\MkeTag\LOG -b E:\SurendraK\MkeTag\NOTOK -m 1000 -v
 
  perl 44_503_MkeTag_100_1000.pl -s 100 -r 1000 -i input.txt -f TAB
@@ -1652,7 +1652,7 @@ sub sCommify {
  sHdlFdSiOptEncl Handle field separator , optional enclosing character and delimiter character
  sDpCtCStp       Display control and meta character equivalences for field separator or
                  optional enclosing character and stop
- sCommify        Putting Commas in Numbers 
+ sCommify        Putting Commas in Numbers
 
 =head4 Called by
 
