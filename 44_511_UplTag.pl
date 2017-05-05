@@ -13,7 +13,11 @@ use DBI ;                                                       # Access databas
 # Copyright (c) : 2017 IdentLogic Systems Private Limited
 # Author        : Surendra kadam
 # Creation Date : 21 April 2017
-# Description   :
+# Description   : After creating .tgt file , they are uploaded into table tagged data -
+#                  dedupe . T_DAT_TAG. Sorted squash ranges are uploaded by SQL Loader.
+#                  Upload tag file using sqlloader utility.
+#                 Create control file with extension of .ctl for SQl Loader to upload .tgt file
+#                  into table
 # WARNINGS      :
 # HARD CODINGS  :
 # Limitations   :
@@ -865,3 +869,223 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
 #####################################################################
 # End of sub routine sGetTcpIp                                      #
 #####################################################################
+
+=pod
+
+=head1 44_511_UplTag.pl - Upload tagged data
+
+ Upload all tag id and tagged data which are generated from 
+ 44_503_MakeTag_sss{_rrrr}.pl
+
+=head2 Copyright
+
+ Copyright (c) 2017 IdentLogic Systems Private Limited
+
+=head2 Description
+
+ After creating .tgt file , they are uploaded into table tagged data -
+  dedupe . T_DAT_TAG. Sorted squash ranges are uploaded by SQL Loader.
+ Upload tag file using sqlloader utility.
+ Create control file with extension of .ctl for SQl Loader to upload .tgt file
+  into table
+
+ Format of Input tagged file : sssrrrr.tgt
+ 
+   #  FIELD 
+   -  ------------
+   1  Tag id
+   2  Tag data
+
+=head3 Sample log file
+
+  Log file will be created with data set number, run number, procedure name and
+   date time
+  for eg. sssrrrr_UplTag_YYYY-MM-DD-HH24-MI-SS.log
+
+  Log file name contains below information.
+
+  ------ UPLOAD TAG EXECUTION START DATE AND TIME ------
+
+  YYYY-MM-DD HH24:MI:SS
+
+  ------ Run Parameters ------
+  Displayed all run parameters which are used:
+  Data set number             : Data set number starting from 100 to 999
+  Run time number             : Run time number starting from 1000 to 9999
+  Tag file directory          : Tag file directory
+  Database user               : Database user name
+  Database password           : Database user password
+  Database (Sid) name         : Database (Sid) name
+  Database connection string  : Database connection string
+  Database port               : Database port
+  Database Server (Host) name : Database server
+  Log File Directory          : Log File Directory path
+  Work file directory         : Work file directory path
+  Verbose - print details     : Y/n
+
+  ------ File Names ------
+
+  Displayed all file names:
+  Input file name      : <sssrrrr.tgt>
+  Log file name        : <sssrrrr_UplTag_YYYY-MM-DD-HH24-MI-SS.log>
+
+  SQL Loader Control file :
+  Print SQL Loader control file
+  
+  SQL Loader log also inserted in this log file.
+  
+  Tagged data uploading and script ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+
+=head3 Checks leading to procedure abort
+
+   i. Data set number not in the range of 100 to 999
+  ii. Run time number not in the range of 1000 to 9999
+ iii. Data set number not specified
+  iv. Run time number not specified
+   v. Input file not exist
+
+=head2 Technical
+
+ Script name      - 44_511_UplTag.pl
+ Package Number   - 44
+ Procedure Number - 511
+
+=head3 Run parameters
+
+ PARAMETER      DESCRIPTION                       ABV  VARIABLE
+ ---------      --------------------------------- ---  -------------------
+ set_of_data    Dataset number                     s   $p_set_data     
+ runno          Run time number                    r   $p_run_no       
+ atagfldir      Input file directory - optional    a   $p_tag_file_dir 
+ logfldir       Log file directory - optional      l   $p_log_file_dir 
+ workfldir      work file directory - optional     w   $p_work_file_dir
+ user           Database user                      u   $p_in_user      
+ guptshabd      Database password                  g   $p_in_dbpw      
+ port           Database port                      p   $p_in_dbname    
+ tcpip          Database Server (Host) name        t   $p_in_dbtype    
+ xdbname        Database (Sid) name                x   $p_in_dbport    
+ cncdb          Database connection string         c   $p_in_dbserver  
+ verboseflag    Flag - Verbose - print details *   v   $p_f_verbose    
+
+ * - No argument needed
+
+ Parameter of Dataset number(d) and Run number (r) are mandatory.
+
+ ABV:- Abbreviation for calling run parameter,
+
+ e.g. 44_511_UplTag.pl -d 100 -r 1000 -a d:\test\Temp -l d:\test\Temp\ -v
+
+=head4 Help and defaults
+
+ For detailed help with defaults run: Perl <program_name> -h.
+
+=head3 Subroutines
+
+ Subroutine          Description
+ ------------------  -----------------------------------------------------------
+ sGetCurTimestamp    Get current formatted timestamp
+ 
+ sGetParameters      Initial: Gets run parameters and check input parameter
+                      values. Procedure abort with message if any error.
+
+ sInit               Inserts begin details in table dedupe . T_XST_XBG
+ 
+ sUplTagFile         Upload tag file data in table
+                      - dedupe . T_DAT_TAG
+                      
+ sWriteLog           Write procedure run summury in log file
+
+ sWindUp             Inserts procedure end record in dedupe . T_XST_XED and
+                      updates start record in dedupe . T_XST_XBG.
+                      
+ sGetTcpIp           Get TCP/IP of run machine
+
+=head4 Called by
+
+ Subroutine          Called by
+ ----------------    ------------------------------------
+ sGetCurTimestamp    sUplTagFile , sWindUp
+ sGetParameters      Main
+ sInit               Main
+ sUplTagFile         Main
+ sWriteLog           Main
+ sWindUp             Main
+ sGetTcpIp           Main
+
+=head4 Calling
+
+ Subroutine          Calling Subroutine
+ ---------------     ------------------------------------
+ sUplTagFile         sGetCurTimestamp
+ sWindUp             sGetCurTimestamp
+
+=head3 Tables and fields referenced
+
+ dedupe . T_DAT_TAG  : WRITE MODE : Tag Data
+
+ Fields            : DESCRIPTION
+ ---------------     ----------------------------------------------------------
+ TAG_SET_NO          Data set number
+ TAG_RUN_NO          Run time number
+ TAG_ID              Id of tagged data
+ TAG_DATA            Tagged data
+ TAG_JB_SQ_NO        Unique identification of job sequence no
+
+ dedupe . T_XST_XBG  : WRITE MODE : Activity Begin Security Log
+
+ Fields            : DESCRIPTION
+ ---------------     ----------------------------------------------------------
+
+ XBG_SET_NO        : Data Set number
+ XBG_RUN_NO        : Run number
+ XBG_CRR_UR_U      : User Creating ~ Login Id
+ XBG_PC_NM_U       : Procedure Name
+ XBG_PC_BG_TS      : Timestamp of Procedure Begin
+ XBG_F_PC_ED_NT    : Flag - Procedure End not Flagged
+ XBG_F_PC_ED_DTC   : Flag - Procedure End detected
+ XBG_PC_ED_TS      : Timestamp of Procedure End
+ XBG_F_ABT         : Flag - Abort
+ XBG_CRR_TS        : Timestamp of Creation
+ XBG_CRR_TP        : TCP/IP Address of the Computer Creating this row
+ XBG_CRR_PC        : Procedure Creating this row
+ XBG_TLM_UR_U      : Last modified by user
+ XBG_TLM_TS        : Last modification timestamp
+ XBG_TLM_TP        : TCP/IP address of the computer last modifying this record
+ XBG_TLM_PC        : Procedure last modifying this record
+ XBG_JB_SQ_NO      : Job sequence number
+ XBG_F_A           : Flag - Active
+
+
+ dedupe . T_XST_XED  : WRITE MODE : Activity End Security Log
+
+ Fields             : DESCRIPTION
+ ---------------      ----------------------------------------------------------
+
+ XED_SET_NO         : Data Set number
+ XED_RUN_NO         : Run number
+ XED_CRR_UR_U       : User ~ Login Id
+ XED_PC_NM_U        : Procedure Name
+ XED_PC_BG_TS       : Timestamp of Procedure Begin
+ XED_PC_ED_TS       : Timestamp of Procedure End
+ XED_NO_CSE_INS     : Number of cases inserted
+ XED_F_PC_BG_NT_DTC : Flag - Procedure Begin Not detected
+ XED_F_ABT          : Flag - Abort
+ XED_CRR_TS         : Timestamp of Creation
+ XED_CRR_TP         : TCP/IP Address of the Computer Creating this row
+ XED_CRR_PC         : Procedure Creating this row
+ XED_JB_SQ_NO       : Job Sequence number
+
+
+=head3 Perl modules used
+
+ DBI
+ Getopt::Simple
+ IO::File
+ POSIX qw{strftime}
+
+=cut
+
+#######################################################################
+# End of 44_511_UplTag.pl                                             #
+#######################################################################
+
