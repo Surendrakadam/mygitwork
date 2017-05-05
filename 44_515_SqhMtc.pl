@@ -307,88 +307,88 @@ if ( $v_in_rec_cnt > 1 ) {                                      #Close last Id -
 $v_run_sum =                                                    #
   "------ Run summary ------" . K_NEW_LN                        #
   . "No of records read   :" . K_SPACE                          #
-  . $v_in_rec_cnt . K_NEW_LN                                    #
+  . sCommify ( $v_in_rec_cnt ) . K_NEW_LN                       #
   . (
    $v_emp_rec_knt != 0 ?                                        #
      "Empty records count  :" . K_SPACE                         #
-     . $v_emp_rec_knt . K_NEW_LN
+     . sCommify ( $v_emp_rec_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_emp_knt != 0 ?                                            #
      "Empty counts         :" . K_SPACE                         #
-     . $v_emp_knt . K_NEW_LN
+     . sCommify ( $v_emp_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_src_id_emp_knt != 0 ?                                     #
      " - Search id         :" . K_SPACE                         #
-     . $v_src_id_emp_knt . K_NEW_LN
+     . sCommify ( $v_src_id_emp_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_fle_id_emp_knt != 0 ?                                     #
      " - File id           :" . K_SPACE                         #
-     . $v_fle_id_emp_knt . K_NEW_LN
+     . sCommify ( $v_fle_id_emp_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_dec_emp_knt != 0 ?                                        #
      " - Decision          :" . K_SPACE                         #
-     . $v_dec_emp_knt . K_NEW_LN
+     . sCommify ( $v_dec_emp_knt ). K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_score_emp_knt != 0 ?                                      #
      " - Score             :" . K_SPACE                         #
-     . $v_score_emp_knt . K_NEW_LN
+     . sCommify ( $v_score_emp_knt ). K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_mtc_lvl_emp_knt != 0 ?                                    #
      " - Match level       :" . K_SPACE                         #
-     . $v_mtc_lvl_emp_knt . K_NEW_LN
+     . sCommify ( $v_mtc_lvl_emp_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_wrg_flds_knt != 0 ?                                       #
      "Wrong fields count   :" . K_SPACE                         #
-     . $v_wrg_flds_knt . K_NEW_LN
+     . sCommify ( $v_wrg_flds_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_wrg_dec_knt != 0 ?                                        #
      " - Decision          :" . K_SPACE                         #
-     . $v_wrg_dec_knt . K_NEW_LN
+     . sCommify ( $v_wrg_dec_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_wrg_mtc_lvl_knt != 0 ?                                    #
      " - Match level       :" . K_SPACE                         #
-     . $v_wrg_mtc_lvl_knt . K_NEW_LN
+     . sCommify ( $v_wrg_mtc_lvl_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_not_sqh_rec_knt != 0 ?                                    #
      "Improper squash      :" . K_SPACE                         #
-     . $v_not_sqh_rec_knt . K_NEW_LN
+     . sCommify ( $v_not_sqh_rec_knt ) . K_NEW_LN
    :                                                            #
      K_EMPTY                                                    #
   )                                                             #
   . (
    $v_sqh_rec_knt != 0 ?                                        #
      "Total squash records :" . K_SPACE                         #
-     . $v_sqh_rec_knt . K_SPACE
+     . sCommify ( $v_sqh_rec_knt ) . K_SPACE
    :                                                            #
      K_EMPTY                                                    #
   )
@@ -417,7 +417,7 @@ close $FILEIN
   or die "Can not close input file $v_in_file - $!" . K_NEW_LN ;    #Close input file
 
 close $FILEOUT
-  or die "Can not close output file $v_out_file - $!" . K_NEW_LN ;    #Close input file
+  or die "Can not close output file $v_out_file - $!" . K_NEW_LN ;  #Close output file
 
 close $FILELOG                                                  # Close log file
   or die "Can not close log file $v_log_file - $!" . K_NEW_LN ;
@@ -836,4 +836,15 @@ sub sCloseLastId {
 } ## end sub sCloseLastId
 #######################################################################
 # End of subroutine sCloseLastId                                      #
+#######################################################################
+
+sub sCommify {
+
+   # Putting Commas in Numbers
+   my $text = reverse $_[ 0 ] ;
+   $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g ;
+   return scalar reverse $text ;
+} ## end sub sCommify
+#######################################################################
+# End of sub sCommify                                                 #
 #######################################################################
