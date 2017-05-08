@@ -299,7 +299,7 @@ while ( $v_rec = <$FILEIN> ) {
 # End of while                                                      #
 #####################################################################
 
-if ( $v_in_rec_cnt > 1 ) {                                      #Close last Id - more than one input record
+if ( $v_in_rec_cnt > 1 ) {                                      # Close last Id - more than one input record
    &sCloseLastId ;                                              # Call subroutine sCloseLastId
 }
 
@@ -411,6 +411,12 @@ print $FILELOG                                                  #
   . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) )         #
   . K_SPACE . "to execute" . K_NEW_LN ;                         #
 
+print
+  K_NEW_LN . "Ended "                                           #
+  . K_SPACE . $v_end_ts . '-' . K_SPACE                         #
+  . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) )         #
+  . K_SPACE . "to execute" . K_NEW_LN ;                         #
+
 # End Log #############################################################
 
 close $FILEIN
@@ -419,7 +425,7 @@ close $FILEIN
 close $FILEOUT
   or die "Can not close output file $v_out_file - $!" . K_NEW_LN ;  #Close output file
 
-close $FILELOG                                                  # Close log file
+close $FILELOG                                                      # Close log file
   or die "Can not close log file $v_log_file - $!" . K_NEW_LN ;
 
 #####################################################################
@@ -575,8 +581,9 @@ sub sGetParameters {
 
    if ( $p_f_verbose eq 'Y' ) {                                 # Display run parameters if verbose option
       print "$0: Started at" . K_SPACE . ( localtime ) . K_NEW_LN . K_NEW_LN ,    #
-        'Dataset                     - >' , $p_data_set ,        '<' , K_NEW_LN , #
+        'Dataset number              - >' , $p_data_set ,        '<' , K_NEW_LN , #
         'Run number                  - >' , $p_run_no ,          '<' , K_NEW_LN , #
+        'Purpose number              - >' , $p_prps_no ,         '<' , K_NEW_LN , #
         'Input file directory        - >' , $p_input_file_dir ,  '<' , K_NEW_LN , #
         'Output file directory       - >' , $p_output_file_dir , '<' , K_NEW_LN , #
         'Log file directory          - >' , $p_log_file_dir ,    '<' , K_NEW_LN , #
@@ -615,6 +622,16 @@ sub sGetParameters {
         . __LINE__ . ' - ' . "Run number must be integer and in a range of 1000 and 9999" . K_NEW_LN ;
    } ## end if ( $p_run_no =~ /\D/i...)
 
+   if ( $p_prps_no eq K_EMPTY ) {
+     die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE            #
+        . __LINE__ . ' - ' . "Purpose number not specified" . K_NEW_LN ;
+   }
+
+   if ( $p_prps_no =~ /\D/i ) {
+     die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE            #
+        . __LINE__ . ' - ' . "Purpose number should be integer" . K_NEW_LN ;
+   }
+
    if ( $v_input_file_dir ne './' ) {                           # If input file directory not default (./)
       if (
          substr ( $v_input_file_dir , -1 , 1 ) ne '\\'          # If input file directory not end with back slash (\\)
@@ -649,6 +666,13 @@ sub sGetParameters {
       $p_disp_mult = 100000 ;
    }
 
+   if ( $p_disp_mult ne K_EMPTY ) {
+     if ( $p_disp_mult =~ /\D/ ) {
+       die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE            #
+        . __LINE__ . ' - ' . "Multiplier number should be integer" . K_NEW_LN ;
+     }
+   }
+
 } ## end sub sGetParameters
 #######################################################################
 # End of subroutine sGetParameters                                    #
@@ -656,7 +680,7 @@ sub sGetParameters {
 
 sub sCloseLastId {
 
-   # Close last id and process records of last same id
+   # Process all records of same search id or same file id
 
    my $v_grp_rec = K_EMPTY ;
    my $v_rec_knt = K_ZERO ;                                     # Read record count
@@ -847,4 +871,246 @@ sub sCommify {
 } ## end sub sCommify
 #######################################################################
 # End of sub sCommify                                                 #
+#######################################################################
+
+=pod
+
+=head1 44_515_SqhMtc.pl - Squash Ranges
+
+ 44_506_GMtc.c procedure generates 3 output records for each input record
+ using purpose and match level.
+ There are three match level - T(ypical) , C(onservative) and
+ L(oose).
+ 44_515_SqhMtc.pl procedure will squash that three input record to one output
+ record.
+
+=head2 Copyright
+
+ Copyright (c) 2017 IdentLogic Systems Private Limited
+
+=head2 Description
+
+ The procedure will check Same search id or same file id until it will get different
+ search id and file id.
+ That records push into an array and perform squashed operation
+
+ MATCH_LEVEL
+ ---------
+ T|Typical
+ C|Conservative
+ L|Loose
+
+
+=head3 Format of Input file - Tab delimited - sssrrrr_purposeno.ost
+
+ 3 records
+
+ Search id       - Search id      - Max 1000 characters
+ File id         - File id        - Max 1000 characters
+ Decision        - ( A / R / U  ) - One character
+ Score           - ( 000 to 100 ) - 3 digit
+ Purpose number  - ( 100 to 999 ) - 3 digit
+ Match level     -  T(ypical)     - 1 character
+
+ Search id       - Search id      - Max 1000 characters
+ File id         - File id        - Max 1000 characters
+ Decision        - ( A / R / U  ) - One character
+ Score           - ( 000 to 100 ) - 3 digit
+ Purpose number  - ( 100 to 999 ) - 3 digit
+ Match level     - C(onservative) - 1 character
+
+ Search id       - Search id      - Max 1000 characters
+ File id         - File id        - Max 1000 characters
+ Decision        - ( A / R / U  ) - One character
+ Score           - ( 000 to 100 ) - 3 digit
+ Purpose number  - ( 100 to 999 ) - 3 digit
+ Match level     - L(oose)        - 1 character
+
+=head3 Format of generated squash match output - sssrrrr_purposeno.mqt
+
+ # FIELD
+ - -----
+ 1 Search id       - Search id
+ 2 File id         - File id
+ 3 Purpose number  - Purpose number                 - 100 to 999
+ 4 Decision        - Typical Match Decision         - A / R / U
+ 5 Score           - Typical Match Score            - 000 to 100
+ 6 Decision        - Conservative Match Decisions   - A / R / U
+ 7 Score           - Conservative Match Score       - 000 to 100
+ 8 Decision        - Loose Match Decision           - A / R / U
+ 9 Score           - Loose Match Score              - 000 to 100
+
+=head3 Format of match log file
+
+  Log file will be created with data set number, run number , purpose number
+   procedure name and date time
+  for eg. sssrrrr_pupose_no_SqhMtc_YYYY-MM-DD-HH24-MI-SS.log
+
+  Log file name contains below information.
+
+  ------ EXECUTION START DATE AND TIME ------
+
+  YYYY-MM-DD HH24:MI:SS
+
+  ------ Run Parameters ------
+  Displayed all run parameters which are used:
+  Data set number             : Data set number starting from 100 to 999
+  Run time number             : Run time number starting from 1000 to 9999
+  Purpose number              : Purpose number from 100 to 999
+  Input File Directory        : Input File Directory path
+  Output File Directory       : Output File Directory path
+  Log File Directory          : Log File Directory path
+  Multiplier                  : Number of records
+  Verbose flag                : Yes/no
+
+  ------ File Names ------
+  Input file name      : <Input_File_Name>
+  Output file name     : <Output_File_Name>
+  Log file name        : <Log_File_Name>
+
+  ------ Run summary ------
+  No of records read   : <COUNT>
+  Empty records count  : <COUNT>
+  Empty counts         : <COUNT>
+   - Search id         : <COUNT>
+   - File id           : <COUNT>
+   - Decision          : <COUNT>
+   - Score             : <COUNT>
+   - Match level       : <COUNT>
+  Wrong fields count   : <COUNT>
+   - Decision          : <COUNT>
+   - Match level       : <COUNT>
+  Improper squash      : <COUNT>
+  Total squash records : <COUNT> Perfect Squash
+
+  Ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+
+  Note:
+
+  If No of records read divide by 3 equals to Total squash records then it will be a perfect squash
+
+=head3 Terminal
+
+ 44_515_SqhMtc.pl: Started at DAY MONTH MM HH:MI:SS YYYY
+
+ Dataset number              - >101<
+ Run number                  - >1001<
+ Purpose number              - >119<
+ Input file directory        - ><
+ Output file directory       - ><
+ Log file directory          - ><
+ Display progress multiple   - >100<
+ Flag - Verbose              - >Y<
+
+ Verbose :
+
+    Assume that there are millions of records in a file.
+    Multiplier parameter show you so many records taken to execute
+    so many seconds after a particular Multiplier number.
+
+   Multiplier:
+     If Multiplier parameter is null it will take default multiplier value
+     i.e 1 lakh
+     Set multiplier value with Multiplier parameter and to display use
+     verbose parameter
+     for eg : ... -v -m 100000
+              ... -m 100000 -v
+
+     On terminal( command window ) output :
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     .
+     .
+     .
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+     Display so many records in  so many seconds
+
+     multiply by 2 to muliplier number every time until the end of the file.
+
+     Processed so many tagged data records in YYYY:MM:SS to execute.
+
+  Ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+
+=head3 Checks leading to procedure abort
+
+   i. Data set number not specified
+  ii. Dataset number must be integer and in a range of 100 and 999
+ iii. Run time number not specified
+  iv. Run number must be integer and in a range of 1000 and 9999
+   v. Purpose number not specified
+  vi. Purpose number should be integer
+ vii. Multiplier number should be integer
+viii. Input file not exist
+
+=head2 Technical
+
+ Script name      - 44_515_SqhMtc.pl
+ Package Number   - 44
+ Procedure Number - 515
+
+=head3 Run parameters
+
+ PARAMETER      DESCRIPTION                       ABV  VARIABLE
+ ---------      --------------------------------- ---  -------------------
+
+ dataset        Dataset number                     d   $p_data_set
+ infldir        Input file directory               i   $p_input_file_dir
+ logfldir       Log file directory                 l   $p_log_file_dir
+ multdspl       Display progress multiple          m   $p_disp_mult
+ outfldir       Output file directory              o   $p_output_file_dir
+ purposeno      Purpose number                     p   $p_prps_no
+ runno          Run number                         r   $p_run_no
+ verboseflag    Flag - Verbose - print details *   v   $p_f_verbose
+
+ * - No argument needed
+
+ Parameter Dataset number(d) and Run number (r) and Purpose number (p) are mandatory.
+
+ ABV:- Abbreviation for calling run parameter,
+
+ e.g. 44_515_SqhMtc.pl -d 100 -r 1000 -p 119<RESIDENT> -m 100000 -v
+
+=head4 Help and defaults
+
+ For detailed help with defaults run: Perl <program_name> -h.
+
+=head3 Subroutines
+
+ Subroutine          Description
+ ------------------  -----------------------------------------------------------
+ sDateTime           Get current formatted timestamp
+ sGetParameters      Initial: Gets run parameters and check input parameter
+                      values. Procedure abort with message if any error.
+ sCloseLastId        Process all records of same search id or same file id
+ sCommify            Putting Commas in Numbers
+
+=head4 Called by
+
+ Subroutine          Called by
+ ----------------    ------------------------------------
+ sDateTime           Main
+ sGetParameters      Main
+ sCloseLastId        Main
+ sCommify            Main
+
+=head4 Subroutine structure
+
+ Main
+  |-- sDateTime
+  |-- sGetParameters
+  |-- sCloseLastId
+  \-- sCommify
+
+=head3 Perl modules used
+
+ DBI
+ Getopt::Simple
+ IO::File
+ POSIX qw{strftime}
+
+=cut
+
+#######################################################################
+# End of 44_515_SqhMtc.pl                                             #
 #######################################################################
