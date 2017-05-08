@@ -558,6 +558,22 @@ sub sWriteLog {                                                 # Write log file
   (c) 2014 Christian Maas // chmaas@handshake.de // www.chmaas.handshake.de
   Elapsed time: HH:MI:SS
 
+=head3 Terminal
+
+ 44_516_SortMtc.pl: Started at DAY MONTH MM HH:MI:SS YYYY
+
+ Dataset                       - >100<
+ Run number                    - >1000<
+ Purpose number                - >119<
+ Input squashed file directory - ><
+ Log file directory            - ><
+ Sort file directory           - ><
+ work file directory           - ><
+ Flag - erase work             - >n<
+ Flag - Verbose                - >Y<
+
+ Squashed matches sorting ended YYYY-MM-DD HH:MI:SS - HH:MI:SS to execute
+ 
 =head3 Checks leading to procedure abort
 
    i. Data set number not specified
@@ -583,6 +599,7 @@ sub sWriteLog {                                                 # Write log file
  eraseworkflag  Erase work flag                    e   $p_f_erase_work
  infldir        Input file directory               i   $p_input_file_dir
  logfldir       Log file directory                 l   $p_log_file_dir
+ purposeno      Purpose number                     p   $p_prps_no
  runno          Run number                         r   $p_run_no
  verboseflag    Flag - Verbose - print details *   v   $p_f_verbose
  workfldir      work file directory                w   $p_work_file_dir
@@ -640,7 +657,7 @@ sub sWriteLog {                                                 # Write log file
   |        |-- sGetCurTimestamp
   |
   |-- sWriteLog
-  |-- sSortmatchFile
+  \-- sSortmatchFile
 
 =head3 Perl modules used
 
