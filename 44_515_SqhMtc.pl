@@ -138,7 +138,7 @@ open ( my $FILEOUT , '>' , $v_output_file_dir . $v_out_file ) or             # C
 open ( my $FILELOG , '>' , $v_log_file_dir . $v_log_file ) or   # Create and open log file
   die "Can not open log file $v_log_file - $!" . K_NEW_LN ;
 
-if ( ! -e $v_in_file ) {
+if ( ! -e $v_input_file_dir . $v_in_file ) {
    die                                                          #
      __PACKAGE__ . K_SPACE                                      #
      . __FILE__ . K_SPACE                                       #
@@ -406,14 +406,18 @@ my $v_end_ts = &sDateTime ;                                     # End timestamp
 print $FILELOG $v_run_sum ;                                     # Write run summary in log file
 
 print $FILELOG                                                  #
-  K_NEW_LN . "Ended "                                           #
+  K_NEW_LN . "Squash Match Ended"                                           #
   . K_SPACE . $v_end_ts . '-' . K_SPACE                         #
+  . "Processed" . K_SPACE . $v_in_rec_cnt . K_SPACE
+  . "records in" . K_SPACE  
   . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) )         #
   . K_SPACE . "to execute" . K_NEW_LN ;                         #
 
 print
-  K_NEW_LN . "Ended "                                           #
+  K_NEW_LN . "Squash Match Ended"                                           #
   . K_SPACE . $v_end_ts . '-' . K_SPACE                         #
+  . "Processed" . K_SPACE . $v_in_rec_cnt . K_SPACE
+  . "records in" . K_SPACE
   . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) )         #
   . K_SPACE . "to execute" . K_NEW_LN ;                         #
 
@@ -983,7 +987,7 @@ sub sCommify {
   Improper squash      : <COUNT>
   Total squash records : <COUNT> Perfect Squash
 
-  Ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+  Squash Match Ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
 
   Note:
 
@@ -1030,7 +1034,7 @@ sub sCommify {
 
      Processed so many tagged data records in YYYY:MM:SS to execute.
 
-  Ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+  Squash Match Ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
 
 =head3 Checks leading to procedure abort
 
