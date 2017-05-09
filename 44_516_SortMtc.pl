@@ -345,7 +345,7 @@ sub sGetParameters {
 
    $v_input_file = $p_data_set . $p_run_no . '_' . $p_prps_no . '.mqt' ;    # Input file - Data set + Run number + Purpose number .mqt
 
-   if ( ! -e $v_input_file ) {
+   if ( ! -e $v_input_file_dir . $v_input_file ) {
       die                                                       #
         __PACKAGE__ . K_SPACE                                   #
         . __FILE__ . K_SPACE                                    #
@@ -378,7 +378,7 @@ sub sSortmatchFile {                                            # Sort output sq
    $v_sort_mtc_end_ts       = &sGetCurTimestamp ;               # Sort match end timestamp
 
    if ( $p_f_verbose eq 'Y' ) {
-      print "Squashed matches sorting ended" . K_SPACE . $v_sort_mtc_end_ts                           #
+      print "Match sorting ended" . K_SPACE . $v_sort_mtc_end_ts                           #
         . ' - ' . strftime ( "\%H:\%M:\%S" , gmtime ( $v_sec_to_exe_sort_match ) )                    #
         . K_SPACE . "to execute" . K_NEW_LN . K_NEW_LN ;
    }
@@ -450,7 +450,11 @@ sub sWriteLog {                                                 # Write log file
 
    print $FILELOG $v_log ;                                      # Write log file
 
-   print $FILELOG K_NEW_LN . "Squashed matches sorting ended" . K_SPACE . $v_sort_mtc_end_ts          #
+   print $FILELOG K_NEW_LN . "Match sorting ended" . K_SPACE . $v_sort_mtc_end_ts          #
+     . ' - ' . strftime ( "\%H:\%M:\%S" , gmtime ( $v_sec_to_exe_sort_match ) )                       #
+     . K_SPACE . "to execute" . K_NEW_LN ;
+     
+   print K_NEW_LN . "Match sorting ended" . K_SPACE . $v_sort_mtc_end_ts          #
      . ' - ' . strftime ( "\%H:\%M:\%S" , gmtime ( $v_sec_to_exe_sort_match ) )                       #
      . K_SPACE . "to execute" . K_NEW_LN ;
 
@@ -552,7 +556,7 @@ sub sWriteLog {                                                 # Write log file
   Sort file name       : sssrrrr_purposeno.mst
   Log file name        : sssrrrr_purposeno_SortMtc_YYYY_MM_DD_HH_MI_SS.log
 
-  Squashed matches sorting ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+  Match sorting ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
 
   CMsort version 2.02 - Sort a DOS, WINDOWS, UNIX, MAC, or mixed text file
   (c) 2014 Christian Maas // chmaas@handshake.de // www.chmaas.handshake.de
@@ -572,7 +576,7 @@ sub sWriteLog {                                                 # Write log file
  Flag - erase work             - >n<
  Flag - Verbose                - >Y<
 
- Squashed matches sorting ended YYYY-MM-DD HH:MI:SS - HH:MI:SS to execute
+ Match sorting ended YYYY-MM-DD HH:MI:SS - HH:MI:SS to execute
  
 =head3 Checks leading to procedure abort
 
