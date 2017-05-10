@@ -9,7 +9,7 @@ use POSIX qw{strftime} ;                                        # For current da
 use DBI ;                                                       # Access database
 
 # Application   : ISPL
-# Client        :
+# Client        : Internal
 # Copyright (c) : 2017 IdentLogic Systems Private Limited
 # Author        : Surendra kadam
 # Creation Date : 21 April 2017
@@ -179,70 +179,70 @@ sub sGetParameters {
          verbose => 'Run time number' ,
          order   => 3 ,
         } ,
-      atagfldir => {
+      atagfldir => {                                            # Input file directory - optional
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
          verbose => 'Input file directory - optional' ,
          order   => 4 ,
         } ,
-      logfldir => {
+      logfldir => {                                             # Log file directory - optional
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
          verbose => 'Log file directory - optional' ,
          order   => 5 ,
         } ,
-      workfldir => {
+      workfldir => {                                            # work file directory - optional
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
          verbose => 'work file directory - optional' ,
          order   => 6 ,
         } ,
-      user => {
+      user => {                                                 # Database user name
          type    => "=s" ,
          env     => "-" ,
          default => 'dedupe' ,
          verbose => "Database user name" ,
          order   => 7 ,
         } ,
-      guptshabd => {
+      guptshabd => {                                            # Database user password
          type    => '=s' ,
          env     => '-' ,
          default => 'dedupe' ,
          verbose => "Database user password" ,
          order   => 8 ,
         } ,
-      port => {
+      port => {                                                 # Database port
          type    => '=s' ,
          env     => '-' ,
          default => '1521' ,
          verbose => "Database port" ,
          order   => 9 ,
         } ,
-      tcpip => {
+      tcpip => {                                                # Database host - Server or TCP/IP
          type    => '=s' ,
          env     => '-' ,
          default => "192.168.1.214" ,
          verbose => "Database host - Server or TCP/IP" ,
          order   => 10 ,
         } ,
-      xdbname => {
+      xdbname => {                                              # Database (SID) name
          type    => '=s' ,
          env     => '-' ,
          default => 'IIBM' ,
          verbose => "Database (SID) name" ,
          order   => 11 ,
         } ,
-      cncdb => {
+      cncdb => {                                                # Database type connection
          type    => '=s' ,
          env     => '-' ,
          default => 'Oracle' ,
          verbose => "Database type connection - Oracle, ODBC, etc." ,
          order   => 12 ,
         } ,
-      verboseflag => {
+      verboseflag => {                                          # Verbose flag
          type    => '!' ,
          env     => '-' ,
          default => '' ,
@@ -252,7 +252,7 @@ sub sGetParameters {
    } ;
 
    my ( $parameters ) = Getopt::Simple -> new () ;
-   if ( ! $parameters -> getOptions ( $vgp_get_options , "Usage: $0 [options]" ) ) {
+   if ( ! $parameters -> getOptions ( $vgp_get_options , "Usage: 44_511_UplTag.pl [options]" ) ) {
       exit ( -1 ) ;                                             # Failure
    }
 
@@ -281,13 +281,13 @@ sub sGetParameters {
         'Run number                  :' , $p_run_no ,        K_NEW_LN ,               #
         'Tag file directory          :' , $p_tag_file_dir ,  K_NEW_LN ,               #
         'Log file directory          :' , $p_log_file_dir ,  K_NEW_LN ,               #
+        'work file directory         :' , $p_work_file_dir , K_NEW_LN ,               #
         'Database user               :' , $p_in_user ,       K_NEW_LN ,               #
         'Database password           :' , $p_in_dbpw ,       K_NEW_LN ,               #
         'Database (Sid) name         :' , $p_in_dbname ,     K_NEW_LN ,               #
         'Databaseconnection string   :' , $p_in_dbtype ,     K_NEW_LN ,               #
         'Database port               :' , $p_in_dbport ,     K_NEW_LN ,               #
         'Database Server (Host) name :' , $p_in_dbserver ,   K_NEW_LN ,               #
-        'work file directory         :' , $p_work_file_dir , K_NEW_LN ,               #
         'Flag - Verbose              :' , $p_f_verbose ,     K_NEW_LN , K_NEW_LN ;    #
    } ## end if ( $p_f_verbose eq 'Y')
 
@@ -639,14 +639,14 @@ sub sWriteLog {
      . "Data set number             :" . K_SPACE . $p_set_data . K_NEW_LN          #
      . "Run time number             :" . K_SPACE . $p_run_no . K_NEW_LN            #
      . "Tag file directory          :" . K_SPACE . $p_tag_file_dir . K_NEW_LN      #
+     . "Log File Directory          :" . K_SPACE . $p_log_file_dir . K_NEW_LN      #
+     . "work file directory         :" . K_SPACE . $p_work_file_dir . K_NEW_LN     #
      . "Database user               :" . K_SPACE . $p_in_user . K_NEW_LN           #
      . "Database password           :" . K_SPACE . "<_not_printed_>" . K_NEW_LN    #
      . "Database (Sid) name         :" . K_SPACE . $p_in_dbname . K_NEW_LN         #
      . "Database connection string  :" . K_SPACE . $p_in_dbtype . K_NEW_LN         #
      . "Database port               :" . K_SPACE . $p_in_dbport . K_NEW_LN         #
      . "Database Server (Host) name :" . K_SPACE . $p_in_dbserver . K_NEW_LN       #
-     . "Log File Directory          :" . K_SPACE . $p_log_file_dir . K_NEW_LN      #
-     . "work file directory         :" . K_SPACE . $p_work_file_dir . K_NEW_LN     #
      . "Flag - verbose - details dsp:" . K_SPACE . $p_f_verbose . K_NEW_LN         #
      . K_NEW_LN                                                 #
 
@@ -667,7 +667,7 @@ sub sWriteLog {
         . ' - '                                                 #
         . strftime ( "\%H:\%M:\%S" , gmtime ( $v_sec_to_exe_upl_tag ) )                        #
         . K_SPACE . "to execute" . K_NEW_LN . K_NEW_LN ;
-   
+
    close $FILELOG                                               # Close log file
      or die "Can not close log file $v_log_file - $!" . K_NEW_LN ;
 
@@ -874,7 +874,7 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
 
 =head1 44_511_UplTag.pl - Upload tagged data
 
- Upload all tag id and tagged data which are generated from 
+ Upload all tag id and tagged data which are generated from
  44_503_MakeTag_sss{_rrrr}.pl
 
 =head2 Copyright
@@ -884,14 +884,14 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
 =head2 Description
 
  After creating .tgt file , they are uploaded into table tagged data -
-  dedupe . T_DAT_TAG. Sorted squash ranges are uploaded by SQL Loader.
+  dedupe . T_DAT_TAG.
  Upload tag file using sqlloader utility.
  Create control file with extension of .ctl for SQl Loader to upload .tgt file
   into table
 
  Format of Input tagged file : sssrrrr.tgt
- 
-   #  FIELD 
+
+   #  FIELD
    -  ------------
    1  Tag id
    2  Tag data
@@ -913,14 +913,14 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
   Data set number             : Data set number starting from 100 to 999
   Run time number             : Run time number starting from 1000 to 9999
   Tag file directory          : Tag file directory
+  Log File Directory          : Log File Directory path
+  Work file directory         : Work file directory path
   Database user               : Database user name
   Database password           : Database user password
   Database (Sid) name         : Database (Sid) name
   Database connection string  : Database connection string
   Database port               : Database port
   Database Server (Host) name : Database server
-  Log File Directory          : Log File Directory path
-  Work file directory         : Work file directory path
   Verbose - print details     : Y/n
 
   ------ File Names ------
@@ -931,10 +931,29 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
 
   SQL Loader Control file :
   Print SQL Loader control file
-  
+
   SQL Loader log also inserted in this log file.
-  
+
   Tagged data uploading and script ended YYYY-MM-DD HH24:MI:SS - hh:mm:ss to execute
+
+=head3 Terminal
+
+ When verbose flag is on
+ 
+ Started at localtime
+
+ Dataset                     : Data set number starting from 100 to 999
+ Run number                  : Run time number starting from 1000 to 9999
+ Tag file directory          : Tag file directory
+ Log file directory          : Log File Directory path
+ work file directory         : Work file directory path
+ Database user               : Database user name
+ Database password           : Database user password
+ Database (Sid) name         : Database (Sid) name
+ Databaseconnection string   : Database connection string
+ Database port               : Database port
+ Database Server (Host) name : Database server
+ Flag - Verbose              : Y/n
 
 =head3 Checks leading to procedure abort
 
@@ -954,18 +973,18 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
 
  PARAMETER      DESCRIPTION                       ABV  VARIABLE
  ---------      --------------------------------- ---  -------------------
- set_of_data    Dataset number                     s   $p_set_data     
- runno          Run time number                    r   $p_run_no       
- atagfldir      Input file directory - optional    a   $p_tag_file_dir 
- logfldir       Log file directory - optional      l   $p_log_file_dir 
+ set_of_data    Dataset number                     s   $p_set_data
+ runno          Run time number                    r   $p_run_no
+ atagfldir      Input file directory - optional    a   $p_tag_file_dir
+ logfldir       Log file directory - optional      l   $p_log_file_dir
  workfldir      work file directory - optional     w   $p_work_file_dir
- user           Database user                      u   $p_in_user      
- guptshabd      Database password                  g   $p_in_dbpw      
- port           Database port                      p   $p_in_dbname    
- tcpip          Database Server (Host) name        t   $p_in_dbtype    
- xdbname        Database (Sid) name                x   $p_in_dbport    
- cncdb          Database connection string         c   $p_in_dbserver  
- verboseflag    Flag - Verbose - print details *   v   $p_f_verbose    
+ user           Database user                      u   $p_in_user
+ guptshabd      Database password                  g   $p_in_dbpw
+ port           Database port                      p   $p_in_dbname
+ tcpip          Database Server (Host) name        t   $p_in_dbtype
+ xdbname        Database (Sid) name                x   $p_in_dbport
+ cncdb          Database connection string         c   $p_in_dbserver
+ verboseflag    Flag - Verbose - print details *   v   $p_f_verbose
 
  * - No argument needed
 
@@ -984,20 +1003,20 @@ sub sGetTcpIp {                                                 # Get TCP/IP of 
  Subroutine          Description
  ------------------  -----------------------------------------------------------
  sGetCurTimestamp    Get current formatted timestamp
- 
+
  sGetParameters      Initial: Gets run parameters and check input parameter
                       values. Procedure abort with message if any error.
 
  sInit               Inserts begin details in table dedupe . T_XST_XBG
- 
+
  sUplTagFile         Upload tag file data in table
                       - dedupe . T_DAT_TAG
-                      
+
  sWriteLog           Write procedure run summury in log file
 
  sWindUp             Inserts procedure end record in dedupe . T_XST_XED and
                       updates start record in dedupe . T_XST_XBG.
-                      
+
  sGetTcpIp           Get TCP/IP of run machine
 
 =head4 Called by
