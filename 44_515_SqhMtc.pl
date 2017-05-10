@@ -406,7 +406,7 @@ my $v_end_ts = &sDateTime ;                                     # End timestamp
 print $FILELOG $v_run_sum ;                                     # Write run summary in log file
 
 print $FILELOG                                                  #
-  K_NEW_LN . "Squash Match Ended"                                           #
+  K_NEW_LN . "Squash Match Ended"                               #
   . K_SPACE . $v_end_ts . '-' . K_SPACE                         #
   . "Processed" . K_SPACE . $v_in_rec_cnt . K_SPACE
   . "records in" . K_SPACE  
@@ -414,7 +414,7 @@ print $FILELOG                                                  #
   . K_SPACE . "to execute" . K_NEW_LN ;                         #
 
 print
-  K_NEW_LN . "Squash Match Ended"                                           #
+  "Squash Match Ended"                                          #
   . K_SPACE . $v_end_ts . '-' . K_SPACE                         #
   . "Processed" . K_SPACE . $v_in_rec_cnt . K_SPACE
   . "records in" . K_SPACE
@@ -627,12 +627,12 @@ sub sGetParameters {
    } ## end if ( $p_run_no =~ /\D/i...)
 
    if ( $p_prps_no eq K_EMPTY ) {
-     die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE            #
+     die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE             #
         . __LINE__ . ' - ' . "Purpose number not specified" . K_NEW_LN ;
    }
 
    if ( $p_prps_no =~ /\D/i ) {
-     die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE            #
+     die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE             #
         . __LINE__ . ' - ' . "Purpose number should be integer" . K_NEW_LN ;
    }
 
@@ -810,7 +810,7 @@ sub sCloseLastId {
       and $v_mtc_lvl_c eq "C"
       and $v_mtc_lvl_l eq "L" ) {
 
-      $v_sqh_rec_knt ++ ;                                       #Squash records count
+      $v_sqh_rec_knt ++ ;                                       # Squash records count
 
       $v_sqh_rec                                                # Squash record
         = $v_prv_src_id
