@@ -8,9 +8,9 @@ use Getopt::Simple ;
 use POSIX qw{strftime} ;
 
 # Application   : ISPL
-# Client        :
+# Client        : Internal
 # Copyright (c) : 2017 IdentLogic Systems Private Limited
-# Author        : Surendra kadam
+# Author        : Surendra Kadam
 # Creation Date : 7 May 2017
 # Description   : Generates squashed match from sssrrrr_{purpose_no}.ost
 # WARNINGS      :
@@ -87,6 +87,8 @@ my $v_wrg_dec_knt     = K_ZERO ;                                # Wrong decision
 my $v_sqh_rec_knt     = K_ZERO ;                                # Squash record count
 my $v_not_sqh_rec_knt = K_ZERO ;                                # Improper squash count
 my $v_run_sum         = K_EMPTY ;                               # Run summary variable
+
+my $v_sqh_rec = K_EMPTY ;                                       # Squash record
 
 # START ###############################################################
 
@@ -252,8 +254,8 @@ while ( $v_rec = <$FILEIN> ) {
       } ## end if ( $vl_src_id ne K_EMPTY...)
 
       if ( $vl_src_id ne K_EMPTY and $vl_fle_id ne K_EMPTY ) {
-         $v_last_src_id = $vl_src_id ;                          #Last search id
-         $v_last_fle_id = $vl_fle_id ;
+         $v_last_src_id = $vl_src_id ;                          # Last search id
+         $v_last_fle_id = $vl_fle_id ;                          # Last file id
       }
    } ## end for ( my $idx = 0 ; $idx...)
 
@@ -304,6 +306,7 @@ if ( $v_in_rec_cnt > 1 ) {                                      # Close last Id 
 }
 
 # Log #################################################################
+
 $v_run_sum =                                                    #
   "------ Run summary ------" . K_NEW_LN                        #
   . "No of records read   :" . K_SPACE                          #
@@ -409,7 +412,7 @@ print $FILELOG                                                  #
   K_NEW_LN . "Squash Match Ended"                               #
   . K_SPACE . $v_end_ts . '-' . K_SPACE                         #
   . "Processed" . K_SPACE . $v_in_rec_cnt . K_SPACE
-  . "records in" . K_SPACE  
+  . "records in" . K_SPACE
   . strftime ( "\%H:\%M:\%S" , gmtime ( $t_end_time ) )         #
   . K_SPACE . "to execute" . K_NEW_LN ;                         #
 
@@ -424,10 +427,10 @@ print
 # End Log #############################################################
 
 close $FILEIN
-  or die "Can not close input file $v_in_file - $!" . K_NEW_LN ;    #Close input file
+  or die "Can not close input file $v_in_file - $!" . K_NEW_LN ;    # Close input file
 
 close $FILEOUT
-  or die "Can not close output file $v_out_file - $!" . K_NEW_LN ;  #Close output file
+  or die "Can not close output file $v_out_file - $!" . K_NEW_LN ;  # Close output file
 
 close $FILELOG                                                      # Close log file
   or die "Can not close log file $v_log_file - $!" . K_NEW_LN ;
@@ -472,7 +475,7 @@ sub sDateTime {
       $v_now_ss = K_ZERO . $v_now_ss ;
    }
 
-   my $v_curr_ts = $v_now_yy . "-" . $v_now_mm . "-" . $v_now_dd . " " . $v_now_hh . ":" . $v_now_mi . ":" . $v_now_ss ;
+   my $v_curr_ts = $v_now_yy . "-" . $v_now_mm . "-" . $v_now_dd . K_SPACE . $v_now_hh . ":" . $v_now_mi . ":" . $v_now_ss ;
 
    return $v_curr_ts ;
 } ## end sub sDateTime
@@ -631,9 +634,11 @@ sub sGetParameters {
         . __LINE__ . ' - ' . "Purpose number not specified" . K_NEW_LN ;
    }
 
-   if ( $p_prps_no =~ /\D/i ) {
+   if ( $p_prps_no =~ /\D/i or
+        $p_prps_no < 100 or
+        $p_prps_no > 999 ) {
      die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE             #
-        . __LINE__ . ' - ' . "Purpose number should be integer" . K_NEW_LN ;
+        . __LINE__ . ' - ' . "Purpose number should be integer and in a range of 100 and 999" . K_NEW_LN ;
    }
 
    if ( $v_input_file_dir ne './' ) {                           # If input file directory not default (./)
@@ -686,7 +691,6 @@ sub sCloseLastId {
 
    # Process all records of same search id or same file id
 
-   my $v_grp_rec = K_EMPTY ;
    my $v_rec_knt = K_ZERO ;                                     # Read record count
 
    my @a_recs_grp     = @a_rec ;                                # Sort array for process record
@@ -728,56 +732,55 @@ sub sCloseLastId {
    my $v_prv_fle_id   = K_EMPTY ;                               # Previous file id
    my $v_prv_prps_no  = K_EMPTY ;                               # Previous purpose no
    my $vl_mtc_lvl_grp = K_EMPTY ;                               # Previous match level
-   my $v_sqh_rec      = K_EMPTY ;                               # Squash record
 
-   foreach $v_grp_rec ( @a_recs_grp ) {                         # Group of same search id record
+   foreach my $v_grp_rec ( @a_recs_grp ) {                      # Group of same search id record
 
       $v_rec_knt ++ ;                                           # Record counter
 
       @a_flds_grp_rec = split K_TAB , $v_grp_rec ;              # Split ggroup records
 
-      $v_prv_src_id  = $a_flds_grp_rec[ 0 ] ;                   # Previous search id
-      $v_prv_fle_id  = $a_flds_grp_rec[ 1 ] ;                   # Previous file id
-      $v_prv_prps_no = $a_flds_grp_rec[ 4 ] ;                   # Previous purpose no
-
-      $v_dec          = $a_flds_grp_rec[ 2 ] ;                  # Decision
-      $v_score        = $a_flds_grp_rec[ 3 ] ;                  # Score
-      $vl_mtc_lvl_grp = $a_flds_grp_rec[ 5 ] ;
+      $v_prv_src_id  = $a_flds_grp_rec[ 0 ] || K_EMPTY ;        # Previous search id
+      $v_prv_fle_id  = $a_flds_grp_rec[ 1 ] || K_EMPTY ;        # Previous file id
+      $v_prv_prps_no = $a_flds_grp_rec[ 4 ] || K_EMPTY ;        # Previous purpose no
+                                                                
+      $v_dec          = $a_flds_grp_rec[ 2 ] || K_EMPTY ;       # Decision
+      $v_score        = $a_flds_grp_rec[ 3 ] || K_EMPTY ;       # Score
+      $vl_mtc_lvl_grp = $a_flds_grp_rec[ 5 ] || K_EMPTY ;
 
       push @a_src_id , $v_prv_src_id ;                          # Push search id into array
 
-      $v_search_id_t = $a_src_id[ 0 ] ;                         # Typical search id
-      $v_search_id_c = $a_src_id[ 1 ] ;                         # Conservative search id
-      $v_search_id_l = $a_src_id[ 2 ] ;                         # Loose search id
+      $v_search_id_t = $a_src_id[ 0 ] || K_EMPTY ;              # Typical search id
+      $v_search_id_c = $a_src_id[ 1 ] || K_EMPTY ;              # Conservative search id
+      $v_search_id_l = $a_src_id[ 2 ] || K_EMPTY ;              # Loose search id
 
       push @a_fle_id , $v_prv_fle_id ;                          # Push file id into array
 
-      $v_fle_id_t = $a_fle_id[ 0 ] ;                            # Typical file id
-      $v_fle_id_c = $a_fle_id[ 1 ] ;                            # Conservative file id
-      $v_fle_id_l = $a_fle_id[ 2 ] ;                            # Loose file id
+      $v_fle_id_t = $a_fle_id[ 0 ] || K_EMPTY ;                 # Typical file id
+      $v_fle_id_c = $a_fle_id[ 1 ] || K_EMPTY ;                 # Conservative file id
+      $v_fle_id_l = $a_fle_id[ 2 ] || K_EMPTY ;                 # Loose file id
 
       push @a_dec , $v_dec ;                                    # Push decision of all match level in an array
 
-      $v_dec_t = $a_dec[ 0 ] ;                                  # Typical Match Decision
-      $v_dec_c = $a_dec[ 1 ] ;                                  # Conservative Match Decision
-      $v_dec_l = $a_dec[ 2 ] ;                                  # Loose Match Decision
+      $v_dec_t = $a_dec[ 0 ] || K_EMPTY ;                       # Typical Match Decision
+      $v_dec_c = $a_dec[ 1 ] || K_EMPTY ;                       # Conservative Match Decision
+      $v_dec_l = $a_dec[ 2 ] || K_EMPTY ;                       # Loose Match Decision
 
       push @a_score , $v_score ;                                # Push score of all match level in an array
 
-      $v_score_t = $a_score[ 0 ] ;                              # Typical Match Score
-      $v_score_c = $a_score[ 1 ] ;                              # Conservative Match Score
-      $v_score_l = $a_score[ 2 ] ;                              # Loose Match Score
+      $v_score_t = $a_score[ 0 ] || K_EMPTY ;                   # Typical Match Score
+      $v_score_c = $a_score[ 1 ] || K_EMPTY ;                   # Conservative Match Score
+      $v_score_l = $a_score[ 2 ] || K_EMPTY ;                   # Loose Match Score
 
       push @a_mtc_lvl , $vl_mtc_lvl_grp ;                       # Push match level into array
 
-      $v_mtc_lvl_t = $a_mtc_lvl[ 0 ] ;                          # Match level Typical
-      $v_mtc_lvl_c = $a_mtc_lvl[ 1 ] ;                          # Match level Conservative
-      $v_mtc_lvl_l = $a_mtc_lvl[ 2 ] ;                          # Match level Loose
+      $v_mtc_lvl_t = $a_mtc_lvl[ 0 ] || K_EMPTY ;               # Match level Typical
+      $v_mtc_lvl_c = $a_mtc_lvl[ 1 ] || K_EMPTY ;               # Match level Conservative
+      $v_mtc_lvl_l = $a_mtc_lvl[ 2 ] || K_EMPTY ;               # Match level Loose
 
    } ## end foreach $v_grp_rec ( @a_recs_grp)
 
    # Check Search id of Typical Conservative and Loose are same or not
-   if (   $v_search_id_t eq $v_search_id_c
+   if ( $v_search_id_t eq $v_search_id_c
       and $v_search_id_c eq $v_search_id_l
       and $v_search_id_l eq $v_search_id_t ) {
 
@@ -791,6 +794,7 @@ sub sCloseLastId {
 
       $v_gr_fle_id = $v_fle_id_t ;
    } ## end if ( $v_fle_id_t eq $v_fle_id_c...)
+   
 
    if (   $v_gr_src_id ne K_EMPTY
       and $v_gr_fle_id ne K_EMPTY
@@ -839,9 +843,9 @@ sub sCloseLastId {
       $v_sqh_rec                                                # Squash record
         = $v_prv_src_id
         . K_TAB
-        . $v_prv_fle_id
+        . $v_prv_fle_id 
         . K_TAB
-        . $v_prv_prps_no
+        . $v_prv_prps_no 
         . K_TAB
         . $v_dec_t
         . K_TAB
@@ -853,10 +857,14 @@ sub sCloseLastId {
         . K_TAB
         . $v_dec_l
         . K_TAB
-        . $v_score_l
-        . K_NEW_LN ;
+        . $v_score_l ;
 
-      print $FILELOG "Record no :" . K_SPACE . $v_rec_knt . K_SPACE . "Error Message :" . K_SPACE . "Improper squash record" . K_NEW_LN . "Record :" . K_SPACE . $v_sqh_rec . K_NEW_LN ;
+      print $FILELOG "Record no :" . K_SPACE .                  #
+         $v_in_rec_cnt . K_SPACE .                              #
+        "Error Message :" . K_SPACE .                           #
+        "Improper squash record" . K_NEW_LN .                   #
+        "Record :" . K_SPACE . $v_sqh_rec . K_NEW_LN . K_NEW_LN ;
+        
    } ## end else [ if ( $v_gr_src_id ne K_EMPTY...)]
 
    @a_rec = () ;                                                # Null @_rec
@@ -1013,6 +1021,7 @@ sub sCommify {
     so many seconds after a particular Multiplier number.
 
    Multiplier:
+
      If Multiplier parameter is null it will take default multiplier value
      i.e 1 lakh
      Set multiplier value with Multiplier parameter and to display use
@@ -1043,7 +1052,7 @@ sub sCommify {
  iii. Run time number not specified
   iv. Run number must be integer and in a range of 1000 and 9999
    v. Purpose number not specified
-  vi. Purpose number should be integer
+  vi. Purpose number should be integer and in a range of 100 and 999
  vii. Multiplier number should be integer
 viii. Input file not exist
 
@@ -1057,7 +1066,6 @@ viii. Input file not exist
 
  PARAMETER      DESCRIPTION                       ABV  VARIABLE
  ---------      --------------------------------- ---  -------------------
-
  dataset        Dataset number                     d   $p_data_set
  infldir        Input file directory               i   $p_input_file_dir
  logfldir       Log file directory                 l   $p_log_file_dir
