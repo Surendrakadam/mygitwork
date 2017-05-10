@@ -34,17 +34,24 @@ use constant K_ONE    => 1 ;                                    # One
 use constant K_ZERO   => 0 ;                                    # Zero
 
 # Run parameters
-my $p_data_set          = K_EMPTY ;                             # Data set                               - d
+my $p_data_set          = K_EMPTY ;                             # Data set number                        - d
 my $p_run_no            = K_EMPTY ;                             # Run number                             - r
-my $p_prps_no           = K_EMPTY ;                             # Purpose number                         - p
+my $p_prps_no           = K_EMPTY ;                             # Purpose number                         - s
 my $p_input_file_dir    = K_EMPTY ;                             # Input file path                        - i
 my $p_out_file_dir_sqh  = K_EMPTY ;                             # Output file directory of Squash        - a
 my $p_out_file_dir_sort = K_EMPTY ;                             # Output file directory of Sort          - b
 my $p_out_file_dir_upl  = K_EMPTY ;                             # Output file directory of upload        - c
-my $p_log_file_dir_sqh  = K_EMPTY ;                             # Log file directory of Squash           - f
-my $p_log_file_dir_sort = K_EMPTY ;                             # Log file directory of Sort             - g
-my $p_log_file_dir_upl  = K_EMPTY ;                             # Log file directory of upload           - h
-my $p_disp_mult         = K_EMPTY ;                             # Display progress multiple              - m
+my $p_log_file_dir_sqh  = K_EMPTY ;                             # Log file directory of Squash           - x
+my $p_log_file_dir_sort = K_EMPTY ;                             # Log file directory of Sort             - y
+my $p_log_file_dir_upl  = K_EMPTY ;                             # Log file directory of upload           - z
+my $p_work_file_dir     = K_EMPTY ;                             # Work file direcotry                    - w
+my $p_in_user           = K_EMPTY ;                             # Database user                          - u
+my $p_in_dbpw           = K_EMPTY ;                             # Database password                      - g
+my $p_in_dbname         = K_EMPTY ;                             # Database name                          - x
+my $p_in_dbtype         = K_EMPTY ;                             # Database type                          - e
+my $p_in_dbport         = K_EMPTY ;                             # Database port                          - p
+my $p_in_dbserver       = K_EMPTY ;                             # Database server                        - j
+my $p_disp_mult         = K_EMPTY ;                             # Multiplier                             - m
 my $p_f_verbose         = K_EMPTY ;                             # Flag - Verbose - print details         - v
 my $p_typ_mtc           = K_EMPTY ;                             # Type of match -Squash , Sort , Upload  - t
 
@@ -67,6 +74,8 @@ my $v_log_file_dir_sort = K_EMPTY ;                             # Log file direc
 
 my $v_out_file_dir_upl  = K_EMPTY ;                             # Output file directory of upload
 my $v_log_file_dir_upl  = K_EMPTY ;                             # Log file directory of upload
+
+my $v_work_file_dir     = K_EMPTY ;                             # Work file directory of upload
 
 # File directories
 my $v_sqh_inf_dir   = K_EMPTY ;                                 # Store Squash input file directory
@@ -103,21 +112,21 @@ if ( $p_typ_mtc eq "SQUASH" or
      $p_typ_mtc eq K_EMPTY ) {
 
   $v_sqh_inf_dir   = $v_input_file_dir ;                        # Squash input file directory
-  
-  $v_sqh_prc  = "perl 44_515_SqhMtc.pl" . K_SPACE
-              . "-d" . K_SPACE . $p_data_set . K_SPACE
-              . "-r" . K_SPACE . $p_run_no . K_SPACE
-              . "-p" . K_SPACE . $p_prps_no . K_SPACE
-              .( $v_sqh_inf_dir eq K_EMPTY ? K_EMPTY :
-                "-i" . K_SPACE . $v_sqh_inf_dir . K_SPACE )
-              .( $v_sqh_outf_dir eq K_EMPTY ? K_EMPTY :
-                "-o" . K_SPACE . $v_sqh_outf_dir . K_SPACE )
-              .( $v_sqh_logf_dir eq K_EMPTY ? K_EMPTY :
-                "-l" . K_SPACE . $v_sqh_logf_dir . K_SPACE )
-              .( $p_disp_mult eq K_EMPTY ? K_EMPTY :
-                "-m" . K_SPACE . $p_disp_mult . K_SPACE )
-              .( $p_f_verbose eq K_n ? K_EMPTY :
-                "-v" . K_SPACE . $p_f_verbose . K_SPACE ) ;
+
+  $v_sqh_prc  = "perl 44_515_SqhMtc.pl" . K_SPACE               #
+              . "-d" . K_SPACE . $p_data_set . K_SPACE          # Data set number                        - d
+              . "-r" . K_SPACE . $p_run_no . K_SPACE            # Run number                             - r
+              . "-p" . K_SPACE . $p_prps_no . K_SPACE           # Purpose number                         - s
+              .( $v_sqh_inf_dir eq K_EMPTY ? K_EMPTY :          # Input file path                        - i
+                "-i" . K_SPACE . $v_sqh_inf_dir . K_SPACE )     #
+              .( $v_sqh_outf_dir eq K_EMPTY ? K_EMPTY :         # Output file directory of Squash        - o
+                "-o" . K_SPACE . $v_sqh_outf_dir . K_SPACE )    #
+              .( $v_sqh_logf_dir eq K_EMPTY ? K_EMPTY :         # Log file directory of squash           - l
+                "-l" . K_SPACE . $v_sqh_logf_dir . K_SPACE )    #
+              .( $p_disp_mult eq K_EMPTY ? K_EMPTY :            # Multiplier                             - m
+                "-m" . K_SPACE . $p_disp_mult . K_SPACE )       #
+              .( $p_f_verbose eq K_n ? K_EMPTY :                # Verbose                                - v
+                "-v" . K_SPACE . $p_f_verbose . K_SPACE ) ;     #
 }
 
 if ( $p_typ_mtc eq "SORT" or
@@ -125,18 +134,18 @@ if ( $p_typ_mtc eq "SORT" or
 
   $v_sort_inf_dir = $v_input_file_dir ;                         # Sort input file directory
 
-  $v_sort_prc  = "perl 44_516_SortMtc.pl" . K_SPACE
-              . "-d" . K_SPACE . $p_data_set . K_SPACE
-              . "-r" . K_SPACE . $p_run_no . K_SPACE
-              . "-p" . K_SPACE . $p_prps_no . K_SPACE
-              .( $v_sort_inf_dir eq K_EMPTY ? K_EMPTY :
-                "-i" . K_SPACE . $v_sort_inf_dir . K_SPACE )
-              .( $v_sort_outf_dir eq K_EMPTY ? K_EMPTY :
-                "-a" . K_SPACE . $v_sort_outf_dir . K_SPACE )
-              .( $v_sort_logf_dir eq K_EMPTY ? K_EMPTY :
-                "-l" . K_SPACE . $v_sort_logf_dir . K_SPACE )
-              .( $p_f_verbose eq K_n ? K_EMPTY :
-                "-v" . K_SPACE . $p_f_verbose . K_SPACE ) ;
+  $v_sort_prc  = "perl 44_516_SortMtc.pl" . K_SPACE             #
+              . "-d" . K_SPACE . $p_data_set . K_SPACE          # Data set number                        - d
+              . "-r" . K_SPACE . $p_run_no . K_SPACE            # Run number                             - r
+              . "-p" . K_SPACE . $p_prps_no . K_SPACE           # Purpose number                         - s
+              .( $v_sort_inf_dir eq K_EMPTY ? K_EMPTY :         # Input file path                        - i
+                "-i" . K_SPACE . $v_sort_inf_dir . K_SPACE )    #
+              .( $v_sort_outf_dir eq K_EMPTY ? K_EMPTY :        # Output file directory of Sort          - a
+                "-a" . K_SPACE . $v_sort_outf_dir . K_SPACE )   #
+              .( $v_sort_logf_dir eq K_EMPTY ? K_EMPTY :        # Log file directory of Sort             - l
+                "-l" . K_SPACE . $v_sort_logf_dir . K_SPACE )   #
+              .( $p_f_verbose eq K_n ? K_EMPTY :                # Verbose                                - v
+                "-v" . K_SPACE . $p_f_verbose . K_SPACE ) ;     #
 }
 
 if ( $p_typ_mtc eq "UPLOAD" or
@@ -145,21 +154,38 @@ if ( $p_typ_mtc eq "UPLOAD" or
   $v_upl_inf_dir = $v_input_file_dir ;                          # Upload input file directory
 
   $v_upl_prc = "perl 44_517_UplMtc.pl" . K_SPACE
-              . "-d" . K_SPACE . $p_data_set . K_SPACE
-              . "-r" . K_SPACE . $p_run_no . K_SPACE
-              . "-p" . K_SPACE . $p_prps_no . K_SPACE
-              .( $v_upl_inf_dir eq K_EMPTY ? K_EMPTY :
-                "-i" . K_SPACE . $v_upl_inf_dir . K_SPACE )
-              .( $v_upl_outf_dir eq K_EMPTY ? K_EMPTY :
-                "-a" . K_SPACE . $v_upl_outf_dir . K_SPACE )
-              .( $v_upl_logf_dir eq K_EMPTY ? K_EMPTY :
-                "-l" . K_SPACE . $v_upl_logf_dir . K_SPACE )
-              .( $p_f_verbose eq K_n ? K_EMPTY :
-                "-v" . K_SPACE . $p_f_verbose . K_SPACE ) ;
+              . "-d" . K_SPACE . $p_data_set . K_SPACE          # Data set number                        - d
+              . "-r" . K_SPACE . $p_run_no . K_SPACE            # Run number                             - r
+              . "-k" . K_SPACE . $p_prps_no . K_SPACE           # Purpose number                         - k
+              . ( $v_upl_inf_dir eq K_EMPTY ? K_EMPTY :         # Input file directory                   - a
+                "-a" . K_SPACE . $v_upl_inf_dir . K_SPACE )     #                                          
+              . ( $v_upl_logf_dir eq K_EMPTY ? K_EMPTY :        # Log file directory                     - l
+                "-l" . K_SPACE . $v_upl_logf_dir . K_SPACE )    #                                          
+              . ( $p_work_file_dir eq K_EMPTY ? K_EMPTY :       # Work file direcotry                    - w
+                "-w" . K_SPACE . $p_work_file_dir . K_SPACE )   #                                          
+              . ( $p_in_user eq K_EMPTY ? K_EMPTY :             # Database user                          - u
+                "-u" . K_SPACE . $p_in_user . K_SPACE )         #                                          
+              . ( $p_in_dbpw eq K_EMPTY ? K_EMPTY :             # Database password                      - g
+                "-g" . K_SPACE . $p_in_dbpw . K_SPACE )         #                                          
+              . ( $p_in_dbname eq K_EMPTY ? K_EMPTY :           # Database name                          - x
+                "-x" . K_SPACE . $p_in_dbname . K_SPACE )       #                                          
+              . ( $p_in_dbtype eq K_EMPTY ? K_EMPTY :           # Database type                          - c
+                "-c" . K_SPACE . $p_in_dbtype . K_SPACE )       #                                          
+              . ( $p_in_dbport eq K_EMPTY ? K_EMPTY :           # Database port                          - p
+                "-p" . K_SPACE . $p_in_dbport . K_SPACE )       #                                          
+              . ( $p_in_dbserver eq K_EMPTY ? K_EMPTY :         # Database server                        - t
+                "-t" . K_SPACE . $p_in_dbserver . K_SPACE )     #                                          
+              . ( $p_f_verbose eq K_n ? K_EMPTY :               # Verbose                                - v
+                "-v" . K_SPACE . $p_f_verbose . K_SPACE ) ;     #
 }
 
+print $v_upl_prc . "\n" ;
+
 system ( $v_sqh_prc ) ;                                         # Run on cmd
+print "\n" ;
 system ( $v_sort_prc ) ;                                        # Run on cmd
+print "\n" ;
+system ( $v_upl_prc ) ;                                         # Run on cmd
 
 exit (1) ;                                                      # Exit from procedure
 
@@ -193,7 +219,7 @@ sub sGetParameters {
          verbose => 'Run number' ,
          order   => 3 ,
         } ,
-      purposeno => {                                            # Purpose number
+      spurposeno => {                                           # Purpose number
          type    => '=s' ,
          env     => '-' ,
          default => '' ,
@@ -249,6 +275,55 @@ sub sGetParameters {
          verbose => 'Log file directory - optional' ,
          order   => 11 ,
         } ,
+      workfldirupl => {                                         # Work file directory of Upload
+         type    => '=s' ,
+         env     => '-' ,
+         default => '' ,
+         verbose => 'Work file directory - optional' ,
+         order   => 11 ,
+        } ,
+      user => {                                                 # Database user name
+         type    => "=s" ,
+         env     => "-" ,
+         default => 'dedupe' ,
+         verbose => "Database user name" ,
+         order   => 8 ,
+        } ,
+      guptshabd => {                                            # Database user password
+         type    => '=s' ,
+         env     => '-' ,
+         default => 'dedupe' ,
+         verbose => "Database user password" ,
+         order   => 9 ,
+        } ,
+      port => {                                                 # Database port
+         type    => '=s' ,
+         env     => '-' ,
+         default => '1521' ,
+         verbose => "Database port" ,
+         order   => 10 ,
+        } ,
+      jtcpip => {                                                # Database host - Server or TCP/IP
+         type    => '=s' ,
+         env     => '-' ,
+         default => "192.168.1.214" ,
+         verbose => "Database host - Server or TCP/IP" ,
+         order   => 11 ,
+        } ,
+      xdbname => {                                              # Database (SID) name
+         type    => '=s' ,
+         env     => '-' ,
+         default => 'IIBM' ,
+         verbose => "Database (SID) name" ,
+         order   => 12 ,
+        } ,
+      ecncdb => {                                               # Database type connection - Oracle, ODBC, etc.
+         type    => '=s' ,
+         env     => '-' ,
+         default => 'Oracle' ,
+         verbose => "Database type connection - Oracle, ODBC, etc." ,
+         order   => 13 ,
+        } ,
       multdspl => {                                             # Multiplier
          type    => '=s' ,
          env     => '-' ,
@@ -285,7 +360,7 @@ sub sGetParameters {
      $$vgp_parameters{ 'switch' }{ 'runno' } || K_EMPTY ;       #
 
    $p_prps_no =                                                 # Purpose number                        - p
-     $$vgp_parameters{ 'switch' }{ 'purposeno' } || K_EMPTY ;   #
+     $$vgp_parameters{ 'switch' }{ 'spurposeno' } || K_EMPTY ;  #
 
    $p_input_file_dir =                                          # Input file directory                  - i
      $$vgp_parameters{ 'switch' }{ 'infldir' } || K_EMPTY ;
@@ -308,6 +383,21 @@ sub sGetParameters {
    $p_log_file_dir_upl =                                        # Log file directory of upload          - h
      $$vgp_parameters{ 'switch' }{ 'zlogfldirupl' } || K_EMPTY ;
 
+   $p_work_file_dir = $$vgp_parameters{ 'switch' }{ 'workfldir' } || K_EMPTY ; # work file directory    - w
+
+   $p_in_user     =
+     $$vgp_parameters{ 'switch' }{ 'user' }      || K_EMPTY ;   # Database user                         - u
+   $p_in_dbpw     =
+     $$vgp_parameters{ 'switch' }{ 'guptshabd' } || K_EMPTY ;   # Database password                     - g
+   $p_in_dbname   =
+     $$vgp_parameters{ 'switch' }{ 'xdbname' }   || K_EMPTY ;   # Database (Sid) name                   - x
+   $p_in_dbtype   =
+     $$vgp_parameters{ 'switch' }{ 'ecncdb' }     || K_EMPTY ;  # Database connection string            - e
+   $p_in_dbport   =
+     $$vgp_parameters{ 'switch' }{ 'port' }      || K_EMPTY ;   # Database port                         - p
+   $p_in_dbserver =
+     $$vgp_parameters{ 'switch' }{ 'jtcpip' }     || K_EMPTY ;  # Database Server (Host) name           - j
+
    $p_disp_mult =                                               # Display progress multiple             - m
      $$vgp_parameters{ 'switch' }{ 'multdspl' } || K_EMPTY ;
 
@@ -329,6 +419,7 @@ sub sGetParameters {
    $v_log_file_dir_sqh  = ( $p_log_file_dir_sqh eq K_EMPTY    ? './' : $p_log_file_dir_sqh ) ;
    $v_log_file_dir_sort = ( $p_log_file_dir_sort eq K_EMPTY    ? './' : $p_log_file_dir_sort ) ;
    $v_log_file_dir_upl  = ( $p_log_file_dir_upl eq K_EMPTY    ? './' : $p_log_file_dir_upl ) ;
+   $v_work_file_dir     = ( $p_work_file_dir eq K_EMPTY ? './' : $p_work_file_dir ) ;
 
    if ( $p_data_set eq K_EMPTY ) {                              # Abort if data set not specified
       die __PACKAGE__ . K_SPACE . __FILE__ . K_SPACE            #
@@ -437,6 +528,16 @@ sub sGetParameters {
 
    $v_log_file_dir_upl =~ s/\\/\//g ;                           # Replace back slash to forward slash
 
+   if ( $v_work_file_dir ne './' ) {                            # If Temporary file working directory not default (./)
+      if (
+         substr ( $v_work_file_dir , -1 , 1 ) ne '\\'           # If Temporary file working directory not end with back slash (\\)
+        ) {
+         $v_work_file_dir .= '\\' ;                             # Add back slash at end
+      }
+   } ## end if ( $v_work_file_dir ...)
+
+   $v_work_file_dir =~ s/\\/\//g ;                              # Replace back slash to forward slash
+
    if ( $p_disp_mult eq K_EMPTY ) {                             # Default value of multiplier
       $p_disp_mult = 100000 ;
    }
@@ -476,10 +577,10 @@ sub sGetParameters {
 
  Run all match procedure together or individually which are 44_515_SqhMtc.pl
   44_516_SortMtc.pl and 44_517_SqhMtc.s using 44_518_MtcAll.pl procedure.
- 
- 1. I taken only one input file directory from run parameter because 
+
+ 1. I taken only one input file directory from run parameter because
  2. Input file directory of Sort will be Output file directory of Squash
- 3. Input file directory of Upload will be Output file directory of Sort 
+ 3. Input file directory of Upload will be Output file directory of Sort
 
 =head3 Checks leading to procedure abort
 
@@ -503,19 +604,26 @@ viii. Type of match must be either SORT , SQUASH or UPLOAD
 
  PARAMETER      DESCRIPTION                       ABV  VARIABLE
  ---------      --------------------------------- ---  -------------------
- aoutfldirsqh  Output file directory of squash          a   $p_out_file_dir_sqh
- boutfldirsort Output file directory of sort            b   $p_out_file_dir_sort
- coutfldirupl  Output file directory of upload          c   $p_out_file_dir_upl
- dataset       Dataset number                           d   $p_data_set
- xlogfldirsqh  Log file directory of squash             x   $p_log_file_dir_sqh
- ylogfldirsort Log file directory of sort               y   $p_log_file_dir_sort
- zlogfldirupl  Log file directory of upload             z   $p_log_file_dir_upl
- infldir       Input file directory                     i   $p_input_file_dir
- multdspl      Display progress multiple                m   $p_disp_mult
- purposeno     Purpose number                           p   $p_prps_no
- runno         Run number                               r   $p_run_no
- typemtc       Type of match -Squash , Sort , Upload    t   $p_typ_mtc
- verboseflag   Flag - Verbose - print details *         v   $p_f_verbose
+ aoutfldirsqh   Output file directory of squash          a   $p_out_file_dir_sqh
+ boutfldirsort  Output file directory of sort            b   $p_out_file_dir_sort
+ coutfldirupl   Output file directory of upload          c   $p_out_file_dir_upl
+ dataset        Dataset number                           d   $p_data_set
+ ecncdb         Database connection string               e   $p_in_dbtype
+ guptshabd      Database user password                   g   $p_in_dbpw
+ infldir        Input file directory                     i   $p_input_file_dir
+ jtcpip         Database host - Server or TCP/IP         j   $p_in_dbserver
+ multdspl       Display progress multiple - optional     m   $p_disp_mult
+ port           Database port                            p   $p_in_dbport
+ runno          Run number                               r   $p_run_no
+ spurposeno     Purpose number                           s   $p_prps_no
+ typemtc        Type of match -Squash , Sort , Upload    t   $p_typ_mtc
+ user           Database user                            u   $p_in_user
+ verboseflag    Verbose flag                             v   $p_f_verbose
+ workfldirupl   Work file directory of upload            w   $p_work_file_dir
+ xdbname        Database (SID) name                      x   $p_in_dbname
+ xlogfldirsqh  Log file directory of squash              x   $p_log_file_dir_sqh
+ ylogfldirsort Log file directory of sort                y   $p_log_file_dir_sort
+ zlogfldirupl  Log file directory of upload              z   $p_log_file_dir_upl
 
  * - No argument needed
 
@@ -523,10 +631,10 @@ viii. Type of match must be either SORT , SQUASH or UPLOAD
 
  ABV:- Abbreviation for calling run parameter,
 
- e.g. 44_518_MtcAll.pl -d 100 -r 1000 -p 119<RESIDENT>
- 
- Terminal op: 
- 
+ e.g. 44_518_MtcAll.pl -d 100 -r 1000 -p 119<RESIDENT> -v
+
+ Terminal op:
+
    Squash Match Ended 2017-05-09 14:25:49- Processed 28 records in 00:00:00 to execute
 
    Match sorting ended 2017-05-09 14:25:50 - 00:00:00 to execute
@@ -541,7 +649,7 @@ viii. Type of match must be either SORT , SQUASH or UPLOAD
  ------------------  -----------------------------------------------------------
  sGetParameters      Initial: Gets run parameters and check input parameter
                       values. Procedure abort with message if any error.
-                      
+
 =head4 Called by
 
  Subroutine          Called by
