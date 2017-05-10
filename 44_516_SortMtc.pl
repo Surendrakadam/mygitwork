@@ -453,10 +453,6 @@ sub sWriteLog {                                                 # Write log file
    print $FILELOG K_NEW_LN . "Match sorting ended" . K_SPACE . $v_sort_mtc_end_ts          #
      . ' - ' . strftime ( "\%H:\%M:\%S" , gmtime ( $v_sec_to_exe_sort_match ) )                       #
      . K_SPACE . "to execute" . K_NEW_LN ;
-     
-   print K_NEW_LN . "Match sorting ended" . K_SPACE . $v_sort_mtc_end_ts          #
-     . ' - ' . strftime ( "\%H:\%M:\%S" , gmtime ( $v_sec_to_exe_sort_match ) )                       #
-     . K_SPACE . "to execute" . K_NEW_LN ;
 
    close $FILELOG                                               # Close log file
      or die "Can not close log file $v_log_file - $!" . K_NEW_LN ;
@@ -577,7 +573,7 @@ sub sWriteLog {                                                 # Write log file
  Flag - Verbose                - >Y<
 
  Match sorting ended YYYY-MM-DD HH:MI:SS - HH:MI:SS to execute
- 
+
 =head3 Checks leading to procedure abort
 
    i. Data set number not specified
