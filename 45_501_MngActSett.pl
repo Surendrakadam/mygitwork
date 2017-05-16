@@ -8,6 +8,7 @@ use CGI qw(:standard) ;
 use CGI::Carp qw/fatalsToBrowser warningsToBrowser/ ;
 
 #use lib '.' ;
+use Date::Calc qw( :all ) ;                                     # Object Oriented time objects for calculating week number of year
 use DBI ;
 use URI::Encode ;
 use ISPL qw ( :DEFAULT &sSPutFJsRn $i_f_js_rn ) ;
@@ -121,6 +122,7 @@ use constant K_D_APO   => "\x{22}" ;                            # Double variabl
 
 use constant K_MAX_YR_LN               => 4 ;                   # Maximum length for year text field
 use constant K_MAX_BG_DT_RNG_ERR_LN    => 80 ;                  # Maximum length of text field to display error for begin range field
+use constant K_MAX_TCP_IP_ERR_LN       => 30 ;                  # Maximum length of text field to display error for tcp name field
 
 my @a_L                   = () ;                                # Contains all labels and messages
 my @a_srch_execute_values = () ;                                # Array store values to execute sql
@@ -162,6 +164,37 @@ my $v_title_timestamp =                                         # For use in tit
   . $v_now_ss                                                   #
   ;                                                             #
 
+# Global variable used in this procedure
+my $v_main_bg_dt_err_msg     = K_EMPTY ;                        # Store error message for field start job time
+my $v_main_ed_dt_err_msg     = K_EMPTY ;                        # Store error message for field end job time
+my $v_main_tcp_ip_err_msg    = K_EMPTY ;                        # Store error message for field tcp ip
+my $v_main_bg_from_yy        = K_EMPTY ;                        # Begin appicable timestamp - year (From)
+my $v_main_bg_from_mm        = K_EMPTY ;                        # Begin appicable timestamp - month (From)
+my $v_main_bg_from_dd        = K_EMPTY ;                        # Begin appicable timestamp - day (From)
+my $v_main_bg_from_hh        = K_EMPTY ;                        # Begin appicable timestamp - hour(From)
+my $v_main_bg_from_mi        = K_EMPTY ;                        # Begin appicable timestamp - minute(From)
+my $v_main_bg_from_ss        = K_EMPTY ;                        # Begin appicable timestamp - second (From)
+my $v_main_bg_to_yy          = K_EMPTY ;                        # Begin appicable timestamp - year (To)
+my $v_main_bg_to_mm          = K_EMPTY ;                        # Begin appicable timestamp - month (To)
+my $v_main_bg_to_dd          = K_EMPTY ;                        # Begin appicable timestamp - day (To)
+my $v_main_bg_to_hh          = K_EMPTY ;                        # Begin appicable timestamp - hour (To)
+my $v_main_bg_to_mi          = K_EMPTY ;                        # Begin appicable timestamp - minute (To)
+my $v_main_bg_to_ss          = K_EMPTY ;                        # Begin appicable timestamp - second(To)
+my $v_main_ed_from_yy        = K_EMPTY ;                        # End appicable timestamp - year (From)
+my $v_main_ed_from_mm        = K_EMPTY ;                        # End appicable timestamp - month (From)
+my $v_main_ed_from_dd        = K_EMPTY ;                        # End appicable timestamp - day (From)
+my $v_main_ed_from_hh        = K_EMPTY ;                        # End appicable timestamp - hour (From)
+my $v_main_ed_from_mi        = K_EMPTY ;                        # End appicable timestamp - minute (From)
+my $v_main_ed_from_ss        = K_EMPTY ;                        # End appicable timestamp - second (From)
+my $v_main_ed_to_yy          = K_EMPTY ;                        # End appicable timestamp - year (To)
+my $v_main_ed_to_mm          = K_EMPTY ;                        # End appicable timestamp - month (To)
+my $v_main_ed_to_dd          = K_EMPTY ;                        # End appicable timestamp - day (To)
+my $v_main_ed_to_hh          = K_EMPTY ;                        # End appicable timestamp - hour (To)
+my $v_main_ed_to_mi          = K_EMPTY ;                        # End appicable timestamp - minute (To)
+my $v_main_ed_to_ss          = K_EMPTY ;                        # End appicable timestamp - second (To)
+my $v_main_f_err             = K_NO ;                           # Flag - default value n, set to Y if any error in main screen
+
+
 my $p_h_rtn_mn_url =
    $q -> param ( 'p_h_rtn_mn_url' ) || K_EMPTY ;                # Hidden variable for return main url                                                     # Get parameter value of retrieve selected members
 my $p_h_brd_crmb =
@@ -174,20 +207,34 @@ $p_h_brd_crmb = decode_utf8 ( $p_h_brd_crmb ) ;
 my $p_site_nm = $q -> param ( 'p_site_nm' ) || K_EMPTY ;        # Site number
 
 # Begin applicable timestamp parameters
-my $p_bg_frm_yy = $q -> param ( 'p_bg_frm_yy' ) || K_EMPTY ;    # Year ( From )
-my $p_bg_frm_mm = $q -> param ( 'p_bg_frm_mm' ) || K_EMPTY ;    # Month ( From )
-my $p_bg_frm_dd = $q -> param ( 'p_bg_frm_dd' ) || K_EMPTY ;    # Day ( From )
-my $p_bg_frm_hh = $q -> param ( 'p_bg_frm_hh' ) || K_EMPTY ;    # Hour ( From )
-my $p_bg_frm_mi = $q -> param ( 'p_bg_frm_mi' ) || K_EMPTY ;    # Minutes ( From )
-my $p_bg_frm_ss = $q -> param ( 'p_bg_frm_ss' ) || K_EMPTY ;    # Seconds ( From )
+my $p_bg_frm_yy = $q -> param ( 'p_bg_frm_yy' ) || K_EMPTY ;    # Begin Year ( From )
+my $p_bg_frm_mm = $q -> param ( 'p_bg_frm_mm' ) || K_EMPTY ;    # Begin Month ( From )
+my $p_bg_frm_dd = $q -> param ( 'p_bg_frm_dd' ) || K_EMPTY ;    # Begin Day ( From )
+my $p_bg_frm_hh = $q -> param ( 'p_bg_frm_hh' ) || K_EMPTY ;    # Begin Hour ( From )
+my $p_bg_frm_mi = $q -> param ( 'p_bg_frm_mi' ) || K_EMPTY ;    # Begin Minutes ( From )
+my $p_bg_frm_ss = $q -> param ( 'p_bg_frm_ss' ) || K_EMPTY ;    # Begin Seconds ( From )
+
+my $p_bg_to_yy = $q -> param ( 'p_bg_to_yy' ) || K_EMPTY ;      # Begin Year ( To )
+my $p_bg_to_mm = $q -> param ( 'p_bg_to_mm' ) || K_EMPTY ;      # Begin Month ( To )
+my $p_bg_to_dd = $q -> param ( 'p_bg_to_dd' ) || K_EMPTY ;      # Begin Day ( To )
+my $p_bg_to_hh = $q -> param ( 'p_bg_to_hh' ) || K_EMPTY ;      # Begin Hour ( To )
+my $p_bg_to_mi = $q -> param ( 'p_bg_to_mi' ) || K_EMPTY ;      # Begin Minutes ( To )
+my $p_bg_to_ss = $q -> param ( 'p_bg_to_ss' ) || K_EMPTY ;      # Begin Seconds ( To )
 
 # End applicable timestamp
-my $p_ed_to_yy = $q -> param ( 'p_ed_to_yy' ) || K_EMPTY ;      # Year ( To )
-my $p_ed_to_mm = $q -> param ( 'p_ed_to_mm' ) || K_EMPTY ;      # Month ( To )
-my $p_ed_to_dd = $q -> param ( 'p_ed_to_dd' ) || K_EMPTY ;      # Day ( To )
-my $p_ed_to_hh = $q -> param ( 'p_ed_to_hh' ) || K_EMPTY ;      # Hour ( To )
-my $p_ed_to_mi = $q -> param ( 'p_ed_to_mi' ) || K_EMPTY ;      # Minutes ( To )
-my $p_ed_to_ss = $q -> param ( 'p_ed_to_ss' ) || K_EMPTY ;      # Seconds ( To )
+my $p_ed_frm_yy = $q -> param ( 'p_ed_frm_yy' ) || K_EMPTY ;    # End Year ( From )
+my $p_ed_frm_mm = $q -> param ( 'p_ed_frm_mm' ) || K_EMPTY ;    # End Month ( From )
+my $p_ed_frm_dd = $q -> param ( 'p_ed_frm_dd' ) || K_EMPTY ;    # End Day ( From )
+my $p_ed_frm_hh = $q -> param ( 'p_ed_frm_hh' ) || K_EMPTY ;    # End Hour ( From )
+my $p_ed_frm_mi = $q -> param ( 'p_ed_frm_mi' ) || K_EMPTY ;    # End Minutes ( From )
+my $p_ed_frm_ss = $q -> param ( 'p_ed_frm_ss' ) || K_EMPTY ;    # End Seconds ( From )
+
+my $p_ed_to_yy = $q -> param ( 'p_ed_to_yy' ) || K_EMPTY ;      # End Year ( To )
+my $p_ed_to_mm = $q -> param ( 'p_ed_to_mm' ) || K_EMPTY ;      # End Month ( To )
+my $p_ed_to_dd = $q -> param ( 'p_ed_to_dd' ) || K_EMPTY ;      # End Day ( To )
+my $p_ed_to_hh = $q -> param ( 'p_ed_to_hh' ) || K_EMPTY ;      # End Hour ( To )
+my $p_ed_to_mi = $q -> param ( 'p_ed_to_mi' ) || K_EMPTY ;      # End Minutes ( To )
+my $p_ed_to_ss = $q -> param ( 'p_ed_to_ss' ) || K_EMPTY ;      # End Seconds ( To )
 
 # All Flag variables
 my $p_f_ftp     = $q -> param ( 'p_f_ftp' ) || K_EMPTY ;        # Flag FTP
@@ -195,6 +242,7 @@ my $p_f_ssl     = $q -> param ( 'p_f_ssl' ) || K_EMPTY ;        # Flag SSL
 my $p_f_mtc_exa = $q -> param ( 'p_f_mtc_exa' ) || K_EMPTY ;    # Exact match
 my $p_f_mtc_cse = $q -> param ( 'p_f_mtc_cse' ) || K_EMPTY ;    # Match case
 my $p_f_mtc_any = $q -> param ( 'p_f_mtc_any' ) || K_EMPTY ;    # Match any criteria
+
 
 my $p_main_acn_clr =                                            # Button clear
    $q -> param ( 'p_main_acn_clr' ) || K_EMPTY ;
@@ -343,13 +391,14 @@ if ( $p_main_acn_cnt ) {                                        # Action on coun
          $v_message = $a_L[ 73 ] ;                              #
       }
       else {
-         $v_message .= $a_L[ 53 ] . K_SPACE . ':' . K_SPACE . $v_count . K_SPACE ;
+         $v_message .= $a_L[ 74 ] . K_SPACE . ':' . K_SPACE . $v_count . K_SPACE ;
       }
 
       #$p_ths_frm = "SEARCH_FORM" ;                              # This form
 
 }
 
+&sCheckInput ;
 &sPrintForm ;                                                   # Print form
 
 ##########################################################################
@@ -389,9 +438,25 @@ sub sInitLabels {
    $a_L[ 46 ] = &sITx ( "Hour" , $X_L_TY_NO ) ;
    $a_L[ 47 ] = &sITx ( "Minute" , $X_L_TY_NO ) ;
    $a_L[ 48 ] = &sITx ( "Second" , $X_L_TY_NO ) ;
+   $a_L[ 53 ] = &sITx ( "Non digits removed from begin applicable timestamp" , $X_L_TY_NO ) ;
+   $a_L[ 54 ] = &sITx ( "Non digits removed from end applicable timestamp" , $X_L_TY_NO ) ;
+   $a_L[ 57 ] = &sITx ( "From year corrected to" , $X_L_TY_NO ) ;
+   $a_L[ 58 ] = &sITx ( "To year corrected to" ,                                                          $X_L_TY_NO ) ;
+   $a_L[ 59 ] = &sITx ( "From day changed to" ,                                                           $X_L_TY_NO ) ;
+   $a_L[ 60 ] = &sITx ( "To day changed to" ,                                                             $X_L_TY_NO ) ;
+   $a_L[ 61 ] = &sITx ( "Year needed in from timestamp if month provided" ,                               $X_L_TY_NO ) ;
+   $a_L[ 62 ] = &sITx ( "Year and month needed in from timestamp if day provided" ,                       $X_L_TY_NO ) ;
+   $a_L[ 63 ] = &sITx ( "Year, month and day needed in from timestamp if hour provided" ,                 $X_L_TY_NO ) ;
+   $a_L[ 64 ] = &sITx ( "Year, month, day and hour needed in from timestamp if minute provided" ,         $X_L_TY_NO ) ;
+   $a_L[ 65 ] = &sITx ( "Year, month, day, hour and minute needed in from timestamp if second provided" , $X_L_TY_NO ) ;
+   $a_L[ 66 ] = &sITx ( "Year needed in to timestamp if month provided" ,                                 $X_L_TY_NO ) ;
+   $a_L[ 67 ] = &sITx ( "Year and month needed in to timestamp if day provided" ,                         $X_L_TY_NO ) ;
+   $a_L[ 68 ] = &sITx ( "Year, month and day needed in to timestamp if hour provided" ,                   $X_L_TY_NO ) ;
+   $a_L[ 69 ] = &sITx ( "Year, month, day and hour needed in to timestamp if minute provided" ,           $X_L_TY_NO ) ;
+   $a_L[ 70 ] = &sITx ( "Year, month, day, hour and minute needed in to timestamp if second provided" ,   $X_L_TY_NO ) ;
    $a_L[ 73 ] = &sITx ( "No records found" , $X_L_TY_NO ) ;     #
-   $a_L[ 53 ] = &sITx ( "Number of records found" ,$X_L_TY_NO ) ;                                                        #
-
+   $a_L[ 74 ] = &sITx ( "Number of records found" ,$X_L_TY_NO ) ;
+   $a_L[ 113 ]= &sITx ( "TCP/IP address cleaned" ,$X_L_TY_NO ) ;
 }
 ##########################################################################
 # End of sInitLabels                                                     #
@@ -669,6 +734,203 @@ sub sPrintForm {
            . '</td><td>'                                        #
                                                                 #
            . $q -> textfield (                                  # Input text-field for job start Year (To)
+            -name      => 'p_bg_to_yy' ,                   #
+            -value     => $p_bg_to_yy ,                    #
+            -size      => K_MAX_YR_LN * 1.1 ,                   #
+            -maxlength => K_MAX_YR_LN ,                         #
+            -override  => 1                                     #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_bg_to_mm' ,                    #
+            -value    => \@as_list_mm ,                         #
+            -labels   => \%h_mm_lbl ,                           #
+            -default  => $p_bg_to_mm ,                     #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_bg_to_dd' ,                    #
+            -value    => \@as_list_dd ,                         #
+            -labels   => \%h_dd_lbl ,                           #
+            -default  => $p_bg_to_dd ,                     #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_bg_to_hh' ,                    #
+            -value    => \@as_list_hh ,                         #
+            -labels   => \%h_hh_lbl ,                           #
+            -default  => $p_bg_to_hh ,                     #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_bg_to_mi' ,                    #
+            -value    => \@as_list_mi ,                         #
+            -labels   => \%h_mi_lbl ,                           #
+            -default  => $p_bg_to_mi ,                     #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_bg_to_ss' ,                    #
+            -value    => \@as_list_ss ,                         #
+            -labels   => \%h_ss_lbl ,                           #
+            -default  => $p_bg_to_ss ,                     #
+            -override => 1                                      #
+           ) . '</td><td>'                                      #
+           #. (
+           # $p_h_main_bg_to_dt eq K_EMPTY
+           # ? K_EMPTY
+           # : (
+           #    '&nbsp;&nbsp;'                                   #
+           #      . '<font color=\''                             #
+           #      . $I_PMSGCL                                    #
+           #      . '\'>'                                        #
+           #      . $a_L[ 8 ] . ' : '
+           #      . $p_h_main_bg_to_dt
+           #      . '</font>'
+           # )
+           #)                                                    #
+           . '</td>' . '</tr>'                                  #
+           . '</table>' . '<br>'                                #
+           . $q -> textfield (                                  # Error message for job start date
+            -name      => 'v_main_bg_dt_err_msg' ,              #
+            -value     => $v_main_bg_dt_err_msg ,               #
+            -size      => K_MAX_BG_DT_RNG_ERR_LN * 1.1 ,
+            -maxlength => K_MAX_BG_DT_RNG_ERR_LN ,
+            -override  => 1 ,
+            -readonly  => 'true' ,
+            -style     => 'color :' . K_HASH . $I_PERRORCL      #
+              . '; font-style:italic ; background-color :'      #
+              . ' transparent ; border: none ;'
+           )
+        )                                                       #
+   ) ;
+
+   # Close Begin applicable timestamp ###################################
+
+   # End applicable timestamp #######################################
+
+   print $q -> Tr (
+      { -bgcolor => &sSrhColor } ,                              #
+      $q -> td (
+         { -align => $v_l_align } ,                             #
+         '<table><tr><td align="left"><font color=\''           #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . K_EMPTY                                    #
+           . '</td></tr><tr><td align="left"><font color=\''    #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 3 ]                                 # Value: End applicable timestamp
+           . '</td></tr><tr><td align="left">'                  #
+           . K_EMPTY                                            #
+           . '</td></tr></table>'                               #
+        ) ,                                                     #
+      $q -> td (                                                #
+         { -align => $v_l_align } ,                             #
+         '<table><tr><td></td><td align="center">'              #
+           . '<font color=\''                                   #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 43 ]                                 #
+           . '</font></td><td align="center">'                  #
+           . '<font color=\''                                   #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 44 ]                                 #
+           . '</font></td>'                                     #
+           . '<td align="center">' . '<font color=\''           #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 45 ]                                 #
+           . '</font></td>'                                     #
+                                                                #
+           . '<td align="center">' . '<font color=\''           #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 46 ]                                 #
+           . '</font></td>'                                     #
+                                                                #
+           . '<td align="center">' . '<font color=\''           #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 47 ]                                 #
+           . '</font></td>'                                     #
+           . '<td align="center">' . '<font color=\''           #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 48 ]                                 #
+           . '</font></td>'                                     #
+           . '<td></td>'                                        #
+           . '</tr>'                                            #
+           . '<tr><td>' . '<font color=\''                      #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 7 ]                                  # Value: From
+           . '</font>' . ':' . K_SPACE                          #
+           . '</td><td>'                                        #
+           . $q -> textfield (                                  # Input text-field for job start Year (From)
+            -name      => 'p_ed_frm_yy' ,                 #
+            #-value     => $p_ed_frm_yy ,                 #
+            -size      => K_MAX_YR_LN * 1.1 ,                   #
+            -maxlength => K_MAX_YR_LN ,                         #
+            -override  => 1                                     #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_ed_frm_mm' ,                  #
+            -value    => \@as_list_mm ,                         #
+            -labels   => \%h_mm_lbl ,                          #
+            -default  => $p_ed_frm_mm ,                  #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_ed_frm_dd' ,                  #
+            -value    => \@as_list_dd ,                         #
+            -labels   => \%h_dd_lbl ,                           #
+            -default  => $p_ed_frm_dd ,                  #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_ed_frm_hh' ,                  #
+            -value    => \@as_list_hh ,                         #
+            -labels   => \%h_hh_lbl ,                           #
+            -default  => $p_ed_frm_hh ,                   #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_ed_frm_mi' ,                  #
+            -value    => \@as_list_mi ,                         #
+            -labels   => \%h_mi_lbl ,                           #
+            -default  => $p_ed_frm_mi ,                   #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           . $q -> popup_menu (                                 #
+            -name     => 'p_ed_frm_ss' ,                  #
+            -value    => \@as_list_ss ,                         #
+            -labels   => \%h_ss_lbl ,                           #
+            -default  => $p_ed_frm_ss ,                   #
+            -override => 1                                      #
+           )                                                    #
+           . '</td><td>'                                        #
+           #. (
+           # $p_h_main_bg_from_dt eq K_EMPTY ? K_EMPTY :         #
+           #   (
+           #    '&nbsp;&nbsp;'                                   #
+           #      . '<font color=\''                             #
+           #      . $I_PMSGCL                                    #
+           #      . '\'>'                                        #
+           #      . $a_L[ 7 ] . ' : '
+           #      . $p_h_main_bg_from_dt
+           #      . '</font>'
+           #   )
+           #)                                                    #
+           #. '</td>' . '</tr>'                                  #
+           . '<tr><td><font color=\''                           #
+           . $I_PSEARCHLBLCL                                    #
+           . '\'>' . $a_L[ 8 ]                                  # Value: To
+           . '</font>' . K_SPACE . ':' . K_SPACE                #
+           . '</td><td>'                                        #
+                                                                #
+           . $q -> textfield (                                  # Input text-field for job start Year (To)
             -name      => 'p_ed_to_yy' ,                   #
             -value     => $p_ed_to_yy ,                    #
             -size      => K_MAX_YR_LN * 1.1 ,                   #
@@ -744,203 +1006,6 @@ sub sPrintForm {
         )                                                       #
    ) ;
 
-   # Close Begin applicable timestamp ###################################
-
-   # End applicable timestamp #######################################
-
-   print $q -> Tr (
-      { -bgcolor => &sSrhColor } ,                              #
-      $q -> td (
-         { -align => $v_l_align } ,                             #
-         '<table><tr><td align="left"><font color=\''           #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . K_EMPTY                                    #
-           . '</td></tr><tr><td align="left"><font color=\''    #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 3 ]                                 # Value: End applicable timestamp
-           . '</td></tr><tr><td align="left">'                  #
-           . K_EMPTY                                            #
-           . '</td></tr></table>'                               #
-        ) ,                                                     #
-      $q -> td (                                                #
-         { -align => $v_l_align } ,                             #
-         '<table><tr><td></td><td align="center">'              #
-           . '<font color=\''                                   #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 43 ]                                 #
-           . '</font></td><td align="center">'                  #
-           . '<font color=\''                                   #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 44 ]                                 #
-           . '</font></td>'                                     #
-           . '<td align="center">' . '<font color=\''           #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 45 ]                                 #
-           . '</font></td>'                                     #
-                                                                #
-           . '<td align="center">' . '<font color=\''           #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 46 ]                                 #
-           . '</font></td>'                                     #
-                                                                #
-           . '<td align="center">' . '<font color=\''           #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 47 ]                                 #
-           . '</font></td>'                                     #
-           . '<td align="center">' . '<font color=\''           #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 48 ]                                 #
-           . '</font></td>'                                     #
-           . '<td></td>'                                        #
-           . '</tr>'                                            #
-           . '<tr><td>' . '<font color=\''                      #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 7 ]                                  # Value: From
-           . '</font>' . ':' . K_SPACE                          #
-           . '</td><td>'                                        #
-           . $q -> textfield (                                  # Input text-field for job start Year (From)
-            -name      => 'p_main_bg_from_yy' ,                 #
-            #-value     => $p_main_bg_from_yy ,                 #
-            -size      => K_MAX_YR_LN * 1.1 ,                   #
-            -maxlength => K_MAX_YR_LN ,                         #
-            -override  => 1                                     #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_from_mm' ,                  #
-            -value    => \@as_list_mm ,                         #
-            -labels   => \%h_mm_lbl ,                          #
-            #-default  => $p_main_bg_from_mm ,                  #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_from_dd' ,                  #
-            -value    => \@as_list_dd ,                         #
-            -labels   => \%h_dd_lbl ,                           #
-            #-default  => $p_main_bg_from_dd ,                  #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_from_hh' ,                  #
-            -value    => \@as_list_hh ,                         #
-            -labels   => \%h_hh_lbl ,                           #
-            #-default  => $p_main_bg_from_hh ,                   #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_from_mi' ,                  #
-            -value    => \@as_list_mi ,                         #
-            -labels   => \%h_mi_lbl ,                           #
-            #-default  => $p_main_bg_from_mi ,                   #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_from_ss' ,                  #
-            -value    => \@as_list_ss ,                         #
-            -labels   => \%h_ss_lbl ,                           #
-            #-default  => $p_main_bg_from_ss ,                   #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           #. (
-           # $p_h_main_bg_from_dt eq K_EMPTY ? K_EMPTY :         #
-           #   (
-           #    '&nbsp;&nbsp;'                                   #
-           #      . '<font color=\''                             #
-           #      . $I_PMSGCL                                    #
-           #      . '\'>'                                        #
-           #      . $a_L[ 7 ] . ' : '
-           #      . $p_h_main_bg_from_dt
-           #      . '</font>'
-           #   )
-           #)                                                    #
-           #. '</td>' . '</tr>'                                  #
-           . '<tr><td><font color=\''                           #
-           . $I_PSEARCHLBLCL                                    #
-           . '\'>' . $a_L[ 8 ]                                  # Value: To
-           . '</font>' . K_SPACE . ':' . K_SPACE                #
-           . '</td><td>'                                        #
-                                                                #
-           . $q -> textfield (                                  # Input text-field for job start Year (To)
-            -name      => 'p_main_bg_to_yy' ,                   #
-            #-value     => $p_main_bg_to_yy ,                    #
-            -size      => K_MAX_YR_LN * 1.1 ,                   #
-            -maxlength => K_MAX_YR_LN ,                         #
-            -override  => 1                                     #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_to_mm' ,                    #
-            -value    => \@as_list_mm ,                         #
-            -labels   => \%h_mm_lbl ,                           #
-            #-default  => $p_main_bg_to_mm ,                     #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_to_dd' ,                    #
-            -value    => \@as_list_dd ,                         #
-            -labels   => \%h_dd_lbl ,                           #
-           # -default  => $p_main_bg_to_dd ,                     #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_to_hh' ,                    #
-            -value    => \@as_list_hh ,                         #
-            -labels   => \%h_hh_lbl ,                           #
-            #-default  => $p_main_bg_to_hh ,                     #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_to_mi' ,                    #
-            -value    => \@as_list_mi ,                         #
-            -labels   => \%h_mi_lbl ,                           #
-            #-default  => $p_main_bg_to_mi ,                     #
-            -override => 1                                      #
-           )                                                    #
-           . '</td><td>'                                        #
-           . $q -> popup_menu (                                 #
-            -name     => 'p_main_bg_to_ss' ,                    #
-            -value    => \@as_list_ss ,                         #
-            -labels   => \%h_ss_lbl ,                           #
-            #-default  => $p_main_bg_to_ss ,                     #
-            -override => 1                                      #
-           ) . '</td><td>'                                      #
-           #. (
-           # $p_h_main_bg_to_dt eq K_EMPTY
-           # ? K_EMPTY
-           # : (
-           #    '&nbsp;&nbsp;'                                   #
-           #      . '<font color=\''                             #
-           #      . $I_PMSGCL                                    #
-           #      . '\'>'                                        #
-           #      . $a_L[ 8 ] . ' : '
-           #      . $p_h_main_bg_to_dt
-           #      . '</font>'
-           # )
-           #)                                                    #
-           . '</td>' . '</tr>'                                  #
-           . '</table>' . '<br>'                                #
-           . $q -> textfield (                                  # Error message for job start date
-            -name      => 'v_main_bg_dt_err_msg' ,              #
-            #-value     => $v_main_bg_dt_err_msg ,               #
-            -size      => K_MAX_BG_DT_RNG_ERR_LN * 1.1 ,
-            -maxlength => K_MAX_BG_DT_RNG_ERR_LN ,
-            -override  => 1 ,
-            -readonly  => 'true' ,
-            -style     => 'color :' . K_HASH . $I_PERRORCL      #
-              . '; font-style:italic ; background-color :'      #
-              . ' transparent ; border: none ;'
-           )
-        )                                                       #
-   ) ;
-
    # Close End applicable timestamp ###################################
 
    print $q -> Tr ( {
@@ -976,7 +1041,9 @@ sub sPrintForm {
          } ,
          $q -> font ( { -color => $I_PSEARCHLBLCL } , "Flag - SSL" )
       ) ,
-      $q -> td (
+      $q -> td ( {
+         -colspan => 2
+         } ,
          $q -> checkbox (
             -name     => 'p_f_ssl' ,
             -checked  => $p_f_ssl ,
@@ -1011,13 +1078,29 @@ sub sPrintForm {
             -override  => 1 ,                                   #
             #-onBlur    => "fn_srch_user_cln( )"                #
             )                                                   #
-      )                                                         #
+      ) ,                                                         #
+      $q -> td (
+          $q -> textfield (                                      # Error field for Resrict to procedure name
+            -name      => 'v_main_tcp_ip_err_msg' ,
+            -value     => $v_main_tcp_ip_err_msg ,
+            -override  => 1 ,
+            -size      => K_MAX_TCP_IP_ERR_LN * 1.1 ,
+            -maxlength => K_MAX_TCP_IP_ERR_LN ,
+            -readonly  => 'true' ,
+            -style     => 'color :' . K_HASH . $I_PERRORCL      #
+              . '; font-style:italic ; background-color :'      #
+              . ' transparent ; border: none ;'
+           )
+      )
    ) ;                                                          #
                                                                 #
    print $q -> Tr (                                             #
       { -bgcolor => &sSrhColor } ,                              #
       $q -> td ( $q -> hr ) ,                                   #
-      $q -> td ( $q -> hr ) ,
+      $q -> td ( {
+         -colspan => 2
+         } ,
+         $q -> hr ) ,
    ) ;
 
    print $q -> Tr (
@@ -1046,7 +1129,9 @@ sub sPrintForm {
       $q -> td (
          $q -> font ( { -color => $I_PSEARCHLBLCL } , $a_L[ 13 ] )
         ) ,                                                     # Exact matching
-      $q -> td (                                                #
+      $q -> td ( {
+         -colspan => 2
+         } ,                                                    #
          $q -> checkbox (                                       #
             -name     => 'p_f_mtc_exa' ,                    #
             -checked  => $p_f_mtc_exa ,                    #
@@ -1065,7 +1150,9 @@ sub sPrintForm {
       $q -> td (
          $q -> font ( { -color => $I_PSEARCHLBLCL } , $a_L[ 14 ] )
         ) ,                                                     # Case matching
-      $q -> td (                                                #
+      $q -> td ( {
+         -colspan => 2
+         } ,                                                    #
          $q -> checkbox (                                       #
             -name     => 'p_f_mtc_cse' ,                     #
             -checked  => $p_f_mtc_cse ,                     #
@@ -1088,7 +1175,9 @@ sub sPrintForm {
             $a_L[ 15 ]                                          #
          )                                                      #
         ) ,                                                     # Match any criteria
-      $q -> td (                                                #
+      $q -> td ( {
+         -colspan => 2
+         } ,                                               #
          $q -> checkbox (                                       #
             -name     => 'p_f_mtc_any' ,                      #
             -checked  => $p_f_mtc_any ,                      #
@@ -1112,7 +1201,7 @@ sub sPrintForm {
    print ( p ) ;
 
    print $q -> submit (                                         #
-      -name  => 'p_main_acn_clr' ,                               #
+      -name  => 'p_main_acn_clr' ,                              #
       -value => $a_L[ 18 ] ,                                    #
       -title =>                                                 #
         &sITx ( "Click to search records" , $X_L_TY_NO )        #
@@ -1122,7 +1211,7 @@ sub sPrintForm {
    print ( ' &nbsp;&nbsp;&nbsp;&nbsp; ' ) ;                     #
 
    print $q -> submit (                                         #
-      -name  => 'p_main_acn_cnt' ,                                #
+      -name  => 'p_main_acn_cnt' ,                              #
       -value => $a_L[ 19 ] ,               #                    #
       -title =>                                                 #
         &sITx (                                                 #
@@ -1176,6 +1265,1264 @@ sub sPrintForm {
 ##########################################################################
 # End of subroutine sPrintForm                                           #
 ##########################################################################
+
+sub sCheckInput {
+
+   # Check input validation
+
+   # STAGE 1 ##########################################################
+
+   # Remove non digits from begin year
+   if (
+      $p_bg_frm_yy =~ /\D/g or                                  # Match non digits year from job begin time (From)
+      $p_bg_to_yy  =~ /\D/g                                     # Match non digits from job begin time (To)
+     ) {
+      $p_bg_frm_yy =~ s/\D//g ;                                 # Remove non-digits
+      $p_bg_to_yy  =~ s/\D//g ;                                 # Remove non-digits
+      $v_main_bg_dt_err_msg = $a_L[ 53 ] ;                      # Value: Non digits removed from begin applicable timestamp
+      $v_main_f_err         = K_YES ;
+   }
+
+   # Remove non digits from end year
+   if (
+      $p_ed_frm_yy =~ /\D/g or                                  # Match non digits from job end time (From)
+      $p_ed_to_yy  =~ /\D/g                                     # Match non digits from job end time (To)
+     ) {
+      $p_ed_frm_yy =~ s/\D//g ;                                 # Remove non-digits
+      $p_ed_to_yy =~ s/\D//g ;                                  # Remove non-digits
+      $v_main_ed_dt_err_msg = $a_L[ 54 ] ;                      # Value: Non digits removed from end applicable timestamp
+      $v_main_f_err         = K_YES ;
+   }
+
+   if (
+       $p_tcpip =~ /[^[:print:]]/  or                            # Match non printable characters
+       $p_tcpip =~ /^\s|\s$|\s{2}/ or                            # Match multiple spaces or leading or trailing space
+       $p_tcpip =~ /[\x{22}\%\&\x{27}\*\+\.\/\;\<\>\?\\\`\|]/    # Match special characters
+      ) {
+      $p_tcpip =~ s/[^[:print:]]/ / ;                             # Replace non printable to space
+      $p_tcpip =~ s/\s+/ /g ;                                     # Crush multiple spaces to single space
+      $p_tcpip =~ s/^\s// ;                                       # No leading space
+      $p_tcpip =~ s/\s$// ;                                       # No trailing space
+      $p_tcpip =~ s/[\x{22}\%\&\x{27}\*\+\.\/\;\<\>\?\\\`\|]+/\_/g ;               # Spacial charater replaced by _
+      $v_main_tcp_ip_err_msg = $a_L[ 113 ] ;                    # Value: TCP/IP address cleaned
+      #$v_main_f_err          = K_YES ;
+   }
+
+   if ( $v_main_f_err eq K_YES ) {                              # STAGE 1 - Get out if error in main screen
+      return ;
+   }
+
+   # STAGE 2 ##########################################################
+
+   # Begin applicable timestamp FROM year ( NON EMPTY , GREATER THAN ZERO , LESS THAN 1904 )
+   if (
+      $p_bg_frm_yy ne K_EMPTY and                               # From year not equal to empty
+      $p_bg_frm_yy >= K_ZERO  and                               # Greater than equal to zero
+      $p_bg_frm_yy < 1904                                       # Less than 1904
+     ) {
+      $p_bg_frm_yy = &sYearCorrection ( $p_bg_frm_yy ) ;        # Subroutine to correct year
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 57 ] . ' : ' . $p_bg_frm_yy ;      # Value: From year corrected to
+      $v_main_f_err = K_YES ;
+   }
+
+   # Begin applicable timestamp TO year ( NON EMPTY , GREATER THAN ZERO , LESS THAN 1904 )
+   if (
+      $p_bg_to_yy ne K_EMPTY and                                # To year not equal to empty
+      $p_bg_to_yy >= K_ZERO  and                                # Greater than equal to zero
+      $p_bg_to_yy < 1904                                        # Less than 1904
+     ) {
+      $p_bg_to_yy = &sYearCorrection ( $p_bg_to_yy ) ;          # Subroutine to correct year
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 58 ] . ' : ' . $p_bg_to_yy ;       # Value: To year corrected to
+      $v_main_f_err = K_YES ;
+   }
+
+   # End applicable timestamp FROM year ( NON EMPTY , GREATER THAN ZERO , LESS THAN 1904 )
+   if (
+      $p_ed_frm_yy ne K_EMPTY and                               # From year not equal to empty
+      $p_ed_frm_yy >= K_ZERO  and                               # Greater than equal to zero
+      $p_ed_frm_yy < 1904                                       # Less than 1904
+     ) {
+      $p_ed_frm_yy = &sYearCorrection ( $p_ed_frm_yy ) ;        # Subroutine to correct year
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 57 ] . ' : ' . $p_ed_frm_yy ;      # Value: From year corrected to
+      $v_main_f_err = K_YES ;
+   }
+
+   # End applicable timestamp TO year ( NON EMPTY , GREATER THAN ZERO , LESS THAN 1904 )
+   if (
+      $p_ed_to_yy ne K_EMPTY and                                # To year not equal to empty
+      $p_ed_to_yy >= K_ZERO  and                                # Greater than equal to zero
+      $p_ed_to_yy < 1904                                        # Less than 1904
+     ) {
+      $p_ed_to_yy = &sYearCorrection ( $p_ed_to_yy ) ;          # Subroutine to correct year
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 58 ] . ' : ' . $p_ed_to_yy ;       # Value: To year corrected to
+      $v_main_f_err = K_YES ;
+   }
+
+   $v_main_bg_dt_err_msg =~ s/^\s-\s//g ;                       # Remove space hypen space
+   $v_main_ed_dt_err_msg =~ s/^\s-\s//g ;                       # Remove space hypen space
+
+   if ( $v_main_f_err eq K_YES ) {                              # STAGE 2 - Get out if error in main screen
+      return ;
+   }
+
+   # STAGE 3 ##########################################################
+
+   # If begin from date are greater than Last day of month i.e 31 > 28 or 29 ( FEB )
+   if ( (
+         $p_bg_frm_dd ne K_EMPTY and                            # Date
+         $p_bg_frm_yy ne K_EMPTY and                            # Year
+         $p_bg_frm_mm ne K_EMPTY                                # Month
+
+      )
+      and                                                       #
+      $p_bg_frm_dd > &sLastDayOfMonth ( $p_bg_frm_yy , $p_bg_frm_mm ) # Get last day of selected month for job start time (From)
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $p_bg_frm_dd = &sLastDayOfMonth ( $p_bg_frm_yy , $p_bg_frm_mm ) ;
+      $v_main_bg_dt_err_msg .=                                  #
+        $a_L[ 59 ] . ' : ' . $p_bg_frm_dd ;                     # Value: From day changed to
+   }
+
+   # If begin to date are greater than Last day of month i.e 31 > 28 or 29 ( FEB )
+   if ( (
+         $p_bg_to_dd ne K_EMPTY and                             # Date
+         $p_bg_to_yy ne K_EMPTY and                             # Year
+         $p_bg_to_mm ne K_EMPTY                                 # Month
+      )
+      and                                                       #
+      $p_bg_to_dd >                                             # Get last day of selected month for job start time (To)
+      &sLastDayOfMonth ( $p_bg_to_yy , $p_bg_to_mm )
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $p_bg_to_dd =                                             #
+        &sLastDayOfMonth ( $p_bg_to_yy , $p_bg_to_mm ) ;        #
+      $v_main_bg_dt_err_msg .=                                  # Value: To day changed to
+        ' - ' . $a_L[ 60 ] . ' : ' . $p_bg_to_dd ;
+   }
+
+   # If End from date are greater than Last day of month i.e 31 > 28 or 29 ( FEB )
+   if ( (
+         $p_ed_frm_dd ne K_EMPTY and                            #
+         $p_ed_frm_yy ne K_EMPTY and                            #
+         $p_ed_frm_mm ne K_EMPTY                                #
+      )                                                         #
+      and                                                       #
+      $p_ed_frm_dd >                                            # Get last day of selected month for job end time (From)
+      &sLastDayOfMonth ( $p_ed_frm_yy , $p_ed_frm_mm )          #
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   #
+      $p_ed_frm_dd =                                            #
+        &sLastDayOfMonth ( $p_ed_frm_yy , $p_ed_frm_mm ) ;      #
+      $v_main_ed_dt_err_msg .=                                  #
+        $a_L[ 59 ] . ' : '                                      # Value: Day changed to
+        . $p_ed_frm_dd ;
+   }
+
+   # If End to date are greater than Last day of month i.e 31 > 28 or 29 ( FEB )
+   if ( (
+         $p_ed_to_dd ne K_EMPTY and                             #
+         $p_ed_to_yy ne K_EMPTY and                             #
+         $p_ed_to_mm ne K_EMPTY                                 #
+      )                                                         #
+      and                                                       #
+      $p_ed_to_dd >                                             # Get last day of selected month for job end time (To)
+      &sLastDayOfMonth ( $p_ed_to_yy , $p_ed_to_mm )            #
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $p_ed_to_dd =                                             #
+        &sLastDayOfMonth ( $p_ed_to_yy , $p_ed_to_mm ) ;        #
+      $v_main_ed_dt_err_msg .=                                  #
+        ' - ' . $a_L[ 60 ] . ' : '                              # Value: To day changed to
+        . $p_ed_to_dd ;
+   }
+
+   $v_main_bg_dt_err_msg =~ s/^\s-\s//g ;                       # Remove space hypen space
+   $v_main_ed_dt_err_msg =~ s/^\s-\s//g ;                       # Remove space hypen space
+
+   if ( $v_main_f_err eq K_YES ) {                              # STAGE 3 - Get out if error in main screen
+      return ;
+   }
+
+   # STAGE 4 ##########################################################
+
+   # Get out if date combination incorrect
+
+   # Begin applicable timestamp(FROM) - year field are empty and month field are not empty
+   if (
+      $p_bg_frm_yy eq K_EMPTY and                         # Year field are empty
+      $p_bg_frm_mm ne K_EMPTY                             # Month field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 61 ] ;                     # Value: Year needed in from timestamp if month provided
+      return ;
+   }
+
+   # Begin applicable timestamp(FROM) - year or month fields are empty and day field are not empty
+   if ( (
+         $p_bg_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_frm_mm eq K_EMPTY                          # Month field are empty
+      )
+      and                                                       #
+      $p_bg_frm_dd ne K_EMPTY                             # Day field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 62 ] ;                     # Value: Year and month needed in from timestamp if day provided
+      return ;
+   }
+
+   # Begin applicable timestamp(FROM) - year , month or day fields are empty and hour field are not empty
+   if ( (
+         $p_bg_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_frm_mm eq K_EMPTY or                       # Month field are empty
+         $p_bg_frm_dd eq K_EMPTY                          # Day field are empty
+      )
+      and                                                       #
+      $p_bg_frm_hh ne K_EMPTY                             # Hour field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 63 ] ;                     # Value: Year, month and day needed in from timestamp if hour provided
+      return ;
+   }
+
+   # Begin applicable timestamp(FROM) - year , month , day , hour fields are empty and minute are not empty
+   if ( (
+         $p_bg_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_frm_mm eq K_EMPTY or                       # Month field are empty
+         $p_bg_frm_dd eq K_EMPTY or                       # Day field are empty
+         $p_bg_frm_hh eq K_EMPTY                          # Hour field are empty
+      )
+      and                                                       #
+      $p_bg_frm_mi ne K_EMPTY                             # Minute field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 64 ] ;                     # Value: Year, month, day and hour needed in from timestamp if minute provided
+      return ;
+   }
+
+   # Begin applicable timestamp(FROM) - year , month , day , hour , minute fields are empty and seconds are not empty
+   if ( (                                                 #
+         $p_bg_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_frm_mm eq K_EMPTY or                       # Month field are empty
+         $p_bg_frm_dd eq K_EMPTY or                       # Day field are empty
+         $p_bg_frm_hh eq K_EMPTY or                       # Hour field are empty
+         $p_bg_frm_mi eq K_EMPTY                          # Minute field are empty
+      )
+      and                                                       #
+      $p_bg_frm_ss ne K_EMPTY                             # Seconds field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 65 ] ;                     # Value: Year, month, day, hour and minute needed in from timestamp if second provided
+      return ;
+   }
+
+   # Begin applicable timestamp(to) - year field are empty and month field are not empty
+   if (
+      $p_bg_to_yy eq K_EMPTY and                           # Year field are empty
+      $p_bg_to_mm ne K_EMPTY                               # Month field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 66 ] ;                     # Value: Year needed in to timestamp if month provided
+      return ;
+   }
+
+   # Begin applicable timestamp(to) - year or month fields are empty and day field are not empty
+   if ( (
+         $p_bg_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_to_mm eq K_EMPTY                          # Month field are empty
+      )
+      and                                                       #
+      $p_bg_to_dd ne K_EMPTY                             # Day field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 67 ] ;                     # Value: Year and month needed in to timestamp if day provided
+      return ;
+   }
+
+   # Begin applicable timestamp(to) - year , month or day fields are empty and hour field are not empty
+   if ( (
+         $p_bg_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_to_mm eq K_EMPTY or                       # Month field are empty
+         $p_bg_to_dd eq K_EMPTY                          # Day field are empty
+      )
+      and                                                       #
+      $p_bg_to_hh ne K_EMPTY                             # Hour field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 68 ] ;                     # Value: Year, month and day needed in to timestamp if hour provided
+      return ;
+   }
+
+   # Begin applicable timestamp(to) - year , month , day , hour fields are empty and minute are not empty
+   if ( (
+         $p_bg_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_to_mm eq K_EMPTY or                       # Month field are empty
+         $p_bg_to_dd eq K_EMPTY or                       # Day field are empty
+         $p_bg_to_hh eq K_EMPTY                          # Hour field are empty
+      )
+      and                                                       #
+      $p_bg_to_mi ne K_EMPTY                             # Minute field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 69 ] ;                     # Value: Year, month, day and hour needed in to timestamp if minute provided
+      return ;
+   }
+
+   # Begin applicable timestamp(to) - year , month , day , hour , minute fields are empty and seconds are not empty
+   if ( (
+         $p_bg_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_bg_to_mm eq K_EMPTY or                       # Month field are empty
+         $p_bg_to_dd eq K_EMPTY or                       # Day field are empty
+         $p_bg_to_hh eq K_EMPTY or                       # Hour field are empty
+         $p_bg_to_mi eq K_EMPTY                          # Minute field are empty
+      )
+      and                                                       #
+      $p_bg_to_ss ne K_EMPTY                             # Seconds field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 70 ] ;                     # Value: Year, month, day, hour and minute needed in to timestamp if second provided
+      return ;
+   }
+
+   # End applicable timestamp(FROM) - year field are empty and month field are not empty
+   if (
+      $p_ed_frm_mm ne K_EMPTY                             # Month field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 61 ] ;                     # Value: Year needed in from timestamp if month provided
+      return ;
+   }
+
+   # End applicable timestamp(FROM) - year or month fields are empty and day field are not empty
+   if ( (
+         $p_ed_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_frm_mm eq K_EMPTY                          # Month field are empty
+      )
+      and                                                       #
+      $p_ed_frm_dd ne K_EMPTY                             # Day field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 62 ] ;                     # Value: Year and month needed in from timestamp if day provided
+      return ;
+   }
+
+   # End applicable timestamp(FROM) - year , month or day fields are empty and hour field are not empty
+   if ( (
+         $p_ed_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_frm_mm eq K_EMPTY or                       # Month field are empty
+         $p_ed_frm_dd eq K_EMPTY                          # Day field are empty
+      )
+      and                                                       #
+      $p_ed_frm_hh ne K_EMPTY                             # Hour field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 63 ] ;                     # Value: Year, month and day needed in from timestamp if hour provided
+      return ;
+   }
+
+   # End applicable timestamp(FROM) - year , month , day , hour fields are empty and minute are not empty
+   if ( (
+         $p_ed_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_frm_mm eq K_EMPTY or                       # Month field are empty
+         $p_ed_frm_dd eq K_EMPTY or                       # Day field are empty
+         $p_ed_frm_hh eq K_EMPTY                          # Hour field are empty
+      )
+      and                                                       #
+      $p_ed_frm_mi ne K_EMPTY                             # Minute field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 64 ] ;                     # Value: Year, month, day and hour needed in from timestamp if minute provided
+      return ;
+   }
+
+   # End applicable timestamp(FROM) - year , month , day , hour , minute fields are empty and seconds are not empty
+   if ( (
+         $p_ed_frm_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_frm_mm eq K_EMPTY or                       # Month field are empty
+         $p_ed_frm_dd eq K_EMPTY or                       # Day field are empty
+         $p_ed_frm_hh eq K_EMPTY or                       # Hour field are empty
+         $p_ed_frm_mi eq K_EMPTY                          # Minute field are empty
+      )
+      and                                                       #
+      $p_ed_frm_ss ne K_EMPTY                             # Seconds field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 65 ] ;                     # Value: Year, month, day, hour and minute needed in from timestamp if second provided
+      return ;
+   }
+
+   # End applicable timestamp(to) - year field are empty and month field are not empty
+   if (
+      $p_ed_to_yy eq K_EMPTY and                           # Year field are empty
+      $p_ed_to_mm ne K_EMPTY                               # Month field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 66 ] ;                     # Value: Year needed in to timestamp if month provided
+      return ;
+   }
+
+   # End applicable timestamp(to) - year or month fields are empty and day field are not empty
+   if ( (
+         $p_ed_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_to_mm eq K_EMPTY                          # Month field are empty
+      )
+      and                                                       #
+      $p_ed_to_dd ne K_EMPTY                             # Day field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 67 ] ;                     # Value: Year and month needed in to timestamp if day provided
+      return ;
+   }
+
+   # End applicable timestamp(to) - year , month or day fields are empty and hour field are not empty
+   if ( (
+         $p_ed_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_to_mm eq K_EMPTY or                       # Month field are empty
+         $p_ed_to_dd eq K_EMPTY                          # Day field are empty
+      )
+      and                                                       #
+      $p_ed_to_hh ne K_EMPTY                             # Hour field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 68 ] ;                     # Value: Year, month and day needed in to timestamp if hour provided
+      return ;
+   }
+
+   # End applicable timestamp(to) - year , month , day , hour fields are empty and minute are not empty
+   if ( (
+         $p_ed_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_to_mm eq K_EMPTY or                       # Month field are empty
+         $p_ed_to_dd eq K_EMPTY or                       # Day field are empty
+         $p_ed_to_hh eq K_EMPTY                          # Hour field are empty
+      )
+      and                                                       #
+      $p_ed_to_mi ne K_EMPTY                             # Minute field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 69 ] ;                     # Value: Year, month, day and hour needed in to timestamp if minute provided
+      return ;
+   }
+
+   # End applicable timestamp(to) - year , month , day , hour , minute fields are empty and seconds are not empty
+   if ( (
+         $p_ed_to_yy eq K_EMPTY or                       # Year field are empty
+         $p_ed_to_mm eq K_EMPTY or                       # Month field are empty
+         $p_ed_to_dd eq K_EMPTY or                       # Day field are empty
+         $p_ed_to_hh eq K_EMPTY or                       # Hour field are empty
+         $p_ed_to_mi eq K_EMPTY                          # Minute field are empty
+      )
+      and                                                       #
+      $p_ed_to_ss ne K_EMPTY                             # Seconds field are not empty
+     ) {                                                        #
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= $a_L[ 70 ] ;                     # Value: Year, month, day, hour and minute needed in to timestamp if second provided
+      return ;
+   }
+
+   # Begin applicable timestamp - Store job begin time in variables (From)
+   $v_main_bg_from_yy = $p_bg_frm_yy ;
+   $v_main_bg_from_mm = $p_bg_frm_mm ;
+   $v_main_bg_from_dd = $p_bg_frm_dd ;
+   $v_main_bg_from_hh = $p_bg_frm_hh ;
+   $v_main_bg_from_mi = $p_bg_frm_mi ;
+   $v_main_bg_from_ss = $p_bg_frm_ss ;
+
+   # Begin applicable timestamp - Store job begin time in variables (To)
+   $v_main_bg_to_yy = $p_bg_to_yy ;
+   $v_main_bg_to_mm = $p_bg_to_mm ;
+   $v_main_bg_to_dd = $p_bg_to_dd ;
+   $v_main_bg_to_hh = $p_bg_to_hh ;
+   $v_main_bg_to_mi = $p_bg_to_mi ;
+   $v_main_bg_to_ss = $p_bg_to_ss ;
+
+   # End applicable timestamp - Store job end time in variables (From)
+   $v_main_ed_from_yy = $p_ed_frm_yy ;
+   $v_main_ed_from_mm = $p_ed_frm_mm ;
+   $v_main_ed_from_dd = $p_ed_frm_dd ;
+   $v_main_ed_from_hh = $p_ed_frm_hh ;
+   $v_main_ed_from_mi = $p_ed_frm_mi ;
+   $v_main_ed_from_ss = $p_ed_frm_ss ;
+
+   # End applicable timestamp - Store job end time in variables (To)
+   $v_main_ed_to_yy = $p_ed_to_yy ;
+   $v_main_ed_to_mm = $p_ed_to_mm ;
+   $v_main_ed_to_dd = $p_ed_to_dd ;
+   $v_main_ed_to_hh = $p_ed_to_hh ;
+   $v_main_ed_to_mi = $p_ed_to_mi ;
+   $v_main_ed_to_ss = $p_ed_to_ss ;
+
+   if ( $v_main_f_err eq K_YES ) {                              # STAGE 4 - Get out if error in main screen
+      return ;
+   }
+
+   # STAGE 5 - Display error message if date time after current date time
+
+   # Begin appicable timestamp(FROM) - Year greater than current year
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         # Check From timestamp after current timestamp if only year provided
+      $v_main_bg_from_mm eq K_EMPTY and                         #
+      $v_main_bg_from_dd eq K_EMPTY and                         #
+      $v_main_bg_from_hh eq K_EMPTY and                         #
+      $v_main_bg_from_mi eq K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY
+      and ( $v_main_bg_from_yy > $v_now_yy )                    # Year greater than current year
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(FROM) - Timestamp ( Year and month ) greater than current timestamp ( year and month )
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         # Check From timestamp after current timestamp if only year and month provided
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd eq K_EMPTY and                         #
+      $v_main_bg_from_hh eq K_EMPTY and                         #
+      $v_main_bg_from_mi eq K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY
+      and (
+         ( $v_main_bg_from_yy * 100 + $v_main_bg_from_mm )      #
+         >                                                      #
+         ( $v_now_yy * 100 + $v_now_mm )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(FROM) - Timestamp ( Year and month and day ) greater than current timestamp ( year and month and day )
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         # Check From timestamp after current timestamp if only year, month and day provided
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh eq K_EMPTY and                         #
+      $v_main_bg_from_mi eq K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY
+      and ( (
+            $v_main_bg_from_yy * 10000 +                        # Year multiply by 10000
+            $v_main_bg_from_mm * 100 +                          # Month multiply by 100
+            $v_main_bg_from_dd                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 10000 +                                 # Year multiply by 10000
+              $v_now_mm * 100 +                                 # Month multiply by 100
+              $v_now_dd                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(FROM) - Timestamp ( Year and month and day and hour ) greater than current timestamp ( year and month and day and hour )
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         # Check From timestamp after current timestamp if only year, month, day and hour provided
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh ne K_EMPTY and                         #
+      $v_main_bg_from_mi eq K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY
+      and ( (
+            $v_main_bg_from_yy * 1000000 +                      # Year multiply by 1000000
+            $v_main_bg_from_mm * 10000 +                        # Month multiply by 10000
+            $v_main_bg_from_dd * 100 +                          # Day multiply by 100
+            $v_main_bg_from_hh                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 1000000 +                               # Year multiply by 1000000
+              $v_now_mm * 10000 +                               # Month multiply by 10000
+              $v_now_dd * 100 +                                 # Day multiply by 100
+              $v_now_hh                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(FROM) - Timestamp ( Year and month and day and hour and minute ) greater than current timestamp ( year and month and day and hour and minute)
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         # Check From timestamp after current timestamp if only year, month, day, hour and minute provided
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh ne K_EMPTY and                         #
+      $v_main_bg_from_mi ne K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY
+      and ( (
+            $v_main_bg_from_yy * 100000000 +                    # Year multiply by 100000000
+            $v_main_bg_from_mm * 1000000 +                      # Month multiply by 1000000
+            $v_main_bg_from_dd * 10000 +                        # Day multiply by 10000
+            $v_main_bg_from_hh * 100 +                          # Hours multiply by 100
+            $v_main_bg_from_mi                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 100000000 +                             # Year multiply by 1000000
+              $v_now_mm * 1000000 +                             # Month multiply by 10000
+              $v_now_dd * 10000 +                               # Day multiply by 100
+              $v_now_hh * 100 +                                 # Hours multiply by 100
+              $v_now_mi                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(FROM) - Timestamp ( Year and month and day and hour and minute and seconds) greater than current timestamp ( year and month and day and hour and minute and seconds)
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         # Check From timestamp after current timestamp if only year, month, day, hour, minute and second provided
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh ne K_EMPTY and                         #
+      $v_main_bg_from_mi ne K_EMPTY and                         #
+      $v_main_bg_from_ss ne K_EMPTY
+      and ( (
+            $v_main_bg_from_yy * 10000000000 +                  # Year multiply by 10000000000
+            $v_main_bg_from_mm * 100000000 +                    # Month multiply by 100000000
+            $v_main_bg_from_dd * 1000000 +                      # Day multiply by 1000000
+            $v_main_bg_from_hh * 10000 +                        # Hours multiply by 1000000
+            $v_main_bg_from_mi * 100 +                          # Minutes multiply by 100
+            $v_main_bg_from_ss
+         ) >                                                    #
+         (
+            $v_now_yy * 10000000000 +                           # Year multiply by 10000000000
+              $v_now_mm * 100000000 +                           # Month multiply by 100000000
+              $v_now_dd * 1000000 +                             # Day multiply by 1000000
+              $v_now_hh * 10000 +                               # Hours multiply by 1000000
+              $v_now_mi * 100 +                                 # Minutes multiply by 100
+              $v_now_ss
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+   
+   # Begin appicable timestamp(TO) - Year greater than current year
+   if (
+      $v_main_bg_to_yy ne K_EMPTY and                           # Check to timestamp after current timestamp if only year provided
+      $v_main_bg_to_mm eq K_EMPTY and                           #
+      $v_main_bg_to_dd eq K_EMPTY and                           #
+      $v_main_bg_to_hh eq K_EMPTY and                           #
+      $v_main_bg_to_mi eq K_EMPTY and                           #
+      $v_main_bg_to_ss eq K_EMPTY                               
+      and ( $v_main_bg_to_yy > $v_now_yy )                      # Year greater than current year
+     ) {                                                        
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(TO) - Timestamp ( Year and month ) greater than current timestamp ( year and month )
+   if (
+      $v_main_bg_to_yy ne K_EMPTY and                           # Check to timestamp after current timestamp if only year and month provided
+      $v_main_bg_to_mm ne K_EMPTY and                           #
+      $v_main_bg_to_dd eq K_EMPTY and                           #
+      $v_main_bg_to_hh eq K_EMPTY and                           #
+      $v_main_bg_to_mi eq K_EMPTY and                           #
+      $v_main_bg_to_ss eq K_EMPTY
+      and (
+         ( $v_main_bg_to_yy * 100 + $v_main_bg_to_mm )      #
+         >                                                      #
+         ( $v_now_yy * 100 + $v_now_mm )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(TO) - Timestamp ( Year and month and day ) greater than current timestamp ( year and month and day )
+   if (
+      $v_main_bg_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month and day provided
+      $v_main_bg_to_mm ne K_EMPTY and                         #
+      $v_main_bg_to_dd ne K_EMPTY and                         #
+      $v_main_bg_to_hh eq K_EMPTY and                         #
+      $v_main_bg_to_mi eq K_EMPTY and                         #
+      $v_main_bg_to_ss eq K_EMPTY
+      and ( (
+            $v_main_bg_to_yy * 10000 +                        # Year multiply by 10000
+            $v_main_bg_to_mm * 100 +                          # Month multiply by 100
+            $v_main_bg_to_dd                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 10000 +                                 # Year multiply by 10000
+              $v_now_mm * 100 +                                 # Month multiply by 100
+              $v_now_dd                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(TO) - Timestamp ( Year and month and day and hour ) greater than current timestamp ( year and month and day and hour )
+   if (
+      $v_main_bg_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month, day and hour provided
+      $v_main_bg_to_mm ne K_EMPTY and                         #
+      $v_main_bg_to_dd ne K_EMPTY and                         #
+      $v_main_bg_to_hh ne K_EMPTY and                         #
+      $v_main_bg_to_mi eq K_EMPTY and                         #
+      $v_main_bg_to_ss eq K_EMPTY
+      and ( (
+            $v_main_bg_to_yy * 1000000 +                      # Year multiply by 1000000
+            $v_main_bg_to_mm * 10000 +                        # Month multiply by 10000
+            $v_main_bg_to_dd * 100 +                          # Day multiply by 100
+            $v_main_bg_to_hh                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 1000000 +                               # Year multiply by 1000000
+              $v_now_mm * 10000 +                               # Month multiply by 10000
+              $v_now_dd * 100 +                                 # Day multiply by 100
+              $v_now_hh                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(TO) - Timestamp ( Year and month and day and hour and minute ) greater than current timestamp ( year and month and day and hour and minute)
+   if (
+      $v_main_bg_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month, day, hour and minute provided
+      $v_main_bg_to_mm ne K_EMPTY and                         #
+      $v_main_bg_to_dd ne K_EMPTY and                         #
+      $v_main_bg_to_hh ne K_EMPTY and                         #
+      $v_main_bg_to_mi ne K_EMPTY and                         #
+      $v_main_bg_to_ss eq K_EMPTY
+      and ( (
+            $v_main_bg_to_yy * 100000000 +                    # Year multiply by 100000000
+            $v_main_bg_to_mm * 1000000 +                      # Month multiply by 1000000
+            $v_main_bg_to_dd * 10000 +                        # Day multiply by 10000
+            $v_main_bg_to_hh * 100 +                          # Hours multiply by 100
+            $v_main_bg_to_mi                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 100000000 +                             # Year multiply by 1000000
+              $v_now_mm * 1000000 +                             # Month multiply by 10000
+              $v_now_dd * 10000 +                               # Day multiply by 100
+              $v_now_hh * 100 +                                 # Hours multiply by 100
+              $v_now_mi                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+
+   # Begin appicable timestamp(TO) - Timestamp ( Year and month and day and hour and minute and seconds) greater than current timestamp ( year and month and day and hour and minute and seconds)
+   if (
+      $v_main_bg_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month, day, hour, minute and second provided
+      $v_main_bg_to_mm ne K_EMPTY and                         #
+      $v_main_bg_to_dd ne K_EMPTY and                         #
+      $v_main_bg_to_hh ne K_EMPTY and                         #
+      $v_main_bg_to_mi ne K_EMPTY and                         #
+      $v_main_bg_to_ss ne K_EMPTY
+      and ( (
+            $v_main_bg_to_yy * 10000000000 +                  # Year multiply by 10000000000
+            $v_main_bg_to_mm * 100000000 +                    # Month multiply by 100000000
+            $v_main_bg_to_dd * 1000000 +                      # Day multiply by 1000000
+            $v_main_bg_to_hh * 10000 +                        # Hours multiply by 1000000
+            $v_main_bg_to_mi * 100 +                          # Minutes multiply by 100
+            $v_main_bg_to_ss
+         ) >                                                    #
+         (
+            $v_now_yy * 10000000000 +                           # Year multiply by 10000000000
+              $v_now_mm * 100000000 +                           # Month multiply by 100000000
+              $v_now_dd * 1000000 +                             # Day multiply by 1000000
+              $v_now_hh * 10000 +                               # Hours multiply by 1000000
+              $v_now_mi * 100 +                                 # Minutes multiply by 100
+              $v_now_ss
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_bg_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: Begin time after current timestamp
+   }
+   
+   $v_main_bg_dt_err_msg =~ s/^\s-\s//g ;                       # Remove space hypen space
+   
+   # End appicable timestamp(FROM) - Year greater than current year
+   if (
+      $v_main_ed_from_yy ne K_EMPTY and                         # Check from timestamp after current timestamp if only year provided
+      $v_main_ed_from_mm eq K_EMPTY and                         #
+      $v_main_ed_from_dd eq K_EMPTY and                         #
+      $v_main_ed_from_hh eq K_EMPTY and                         #
+      $v_main_ed_from_mi eq K_EMPTY and                         #
+      $v_main_ed_from_ss eq K_EMPTY
+      and ( $v_main_ed_from_yy > $v_now_yy )                    # Year greater than current year
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(FROM) - Timestamp ( Year and month ) greater than current timestamp ( year and month )
+   if (
+      $v_main_ed_from_yy ne K_EMPTY and                         # Check from timestamp after current timestamp if only year and month provided
+      $v_main_ed_from_mm ne K_EMPTY and                         #
+      $v_main_ed_from_dd eq K_EMPTY and                         #
+      $v_main_ed_from_hh eq K_EMPTY and                         #
+      $v_main_ed_from_mi eq K_EMPTY and                         #
+      $v_main_ed_from_ss eq K_EMPTY
+      and (
+         ( $v_main_ed_from_yy * 100 + $v_main_ed_from_mm )      #
+         >                                                      #
+         ( $v_now_yy * 100 + $v_now_mm )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(FROM) - Timestamp ( Year and month and day ) greater than current timestamp ( year and month and day )
+   if (
+      $v_main_ed_from_yy ne K_EMPTY and                         # Check from timestamp after current timestamp if only year, month and day provided
+      $v_main_ed_from_mm ne K_EMPTY and                         #
+      $v_main_ed_from_dd ne K_EMPTY and                         #
+      $v_main_ed_from_hh eq K_EMPTY and                         #
+      $v_main_ed_from_mi eq K_EMPTY and                         #
+      $v_main_ed_from_ss eq K_EMPTY
+      and ( (
+            $v_main_ed_from_yy * 10000 +                        # Year multiply by 10000
+            $v_main_ed_from_mm * 100 +                          # Month multiply by 100
+            $v_main_ed_from_dd                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 10000 +                                 # Year multiply by 10000
+              $v_now_mm * 100 +                                 # Month multiply by 100
+              $v_now_dd                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(FROM) - Timestamp ( Year and month and day and hour ) greater than current timestamp ( year and month and day and hour )
+   if (
+      $v_main_ed_from_yy ne K_EMPTY and                         # Check from timestamp after current timestamp if only year, month, day and hour provided
+      $v_main_ed_from_mm ne K_EMPTY and                         #
+      $v_main_ed_from_dd ne K_EMPTY and                         #
+      $v_main_ed_from_hh ne K_EMPTY and                         #
+      $v_main_ed_from_mi eq K_EMPTY and                         #
+      $v_main_ed_from_ss eq K_EMPTY
+      and ( (
+            $v_main_ed_from_yy * 1000000 +                      # Year multiply by 1000000
+            $v_main_ed_from_mm * 10000 +                        # Month multiply by 10000
+            $v_main_ed_from_dd * 100 +                          # Day multiply by 100
+            $v_main_ed_from_hh                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 1000000 +                               # Year multiply by 1000000
+              $v_now_mm * 10000 +                               # Month multiply by 10000
+              $v_now_dd * 100 +                                 # Day multiply by 100
+              $v_now_hh                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(FROM) - Timestamp ( Year and month and day and hour and minute ) greater than current timestamp ( year and month and day and hour and minute)
+   if (
+      $v_main_ed_from_yy ne K_EMPTY and                         # Check from timestamp after current timestamp if only year, month, day, hour and minute provided
+      $v_main_ed_from_mm ne K_EMPTY and                         #
+      $v_main_ed_from_dd ne K_EMPTY and                         #
+      $v_main_ed_from_hh ne K_EMPTY and                         #
+      $v_main_ed_from_mi ne K_EMPTY and                         #
+      $v_main_ed_from_ss eq K_EMPTY
+      and ( (
+            $v_main_ed_from_yy * 100000000 +                    # Year multiply by 100000000
+            $v_main_ed_from_mm * 1000000 +                      # Month multiply by 1000000
+            $v_main_ed_from_dd * 10000 +                        # Day multiply by 10000
+            $v_main_ed_from_hh * 100 +                          # Hours multiply by 100
+            $v_main_ed_from_mi                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 100000000 +                             # Year multiply by 1000000
+              $v_now_mm * 1000000 +                             # Month multiply by 10000
+              $v_now_dd * 10000 +                               # Day multiply by 100
+              $v_now_hh * 100 +                                 # Hours multiply by 100
+              $v_now_mi                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(FROM) - Timestamp ( Year and month and day and hour and minute and seconds) greater than current timestamp ( year and month and day and hour and minute and seconds)
+   if (
+      $v_main_ed_from_yy ne K_EMPTY and                         # Check from timestamp after current timestamp if only year, month, day, hour, minute and second provided
+      $v_main_ed_from_mm ne K_EMPTY and                         #
+      $v_main_ed_from_dd ne K_EMPTY and                         #
+      $v_main_ed_from_hh ne K_EMPTY and                         #
+      $v_main_ed_from_mi ne K_EMPTY and                         #
+      $v_main_ed_from_ss ne K_EMPTY
+      and ( (
+            $v_main_ed_from_yy * 10000000000 +                  # Year multiply by 10000000000
+            $v_main_ed_from_mm * 100000000 +                    # Month multiply by 100000000
+            $v_main_ed_from_dd * 1000000 +                      # Day multiply by 1000000
+            $v_main_ed_from_hh * 10000 +                        # Hours multiply by 1000000
+            $v_main_ed_from_mi * 100 +                          # Minutes multiply by 100
+            $v_main_ed_from_ss
+         ) >                                                    #
+         (
+            $v_now_yy * 10000000000 +                           # Year multiply by 10000000000
+              $v_now_mm * 100000000 +                           # Month multiply by 100000000
+              $v_now_dd * 1000000 +                             # Day multiply by 1000000
+              $v_now_hh * 10000 +                               # Hours multiply by 1000000
+              $v_now_mi * 100 +                                 # Minutes multiply by 100
+              $v_now_ss
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+   
+   # End appicable timestamp(TO) - Year greater than current year
+   if (
+      $v_main_ed_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year provided
+      $v_main_ed_to_mm eq K_EMPTY and                         #
+      $v_main_ed_to_dd eq K_EMPTY and                         #
+      $v_main_ed_to_hh eq K_EMPTY and                         #
+      $v_main_ed_to_mi eq K_EMPTY and                         #
+      $v_main_ed_to_ss eq K_EMPTY
+      and ( $v_main_ed_to_yy > $v_now_yy )                    # Year greater than current year
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(TO) - Timestamp ( Year and month ) greater than current timestamp ( year and month )
+   if (
+      $v_main_ed_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year and month provided
+      $v_main_ed_to_mm ne K_EMPTY and                         #
+      $v_main_ed_to_dd eq K_EMPTY and                         #
+      $v_main_ed_to_hh eq K_EMPTY and                         #
+      $v_main_ed_to_mi eq K_EMPTY and                         #
+      $v_main_ed_to_ss eq K_EMPTY
+      and (
+         ( $v_main_ed_to_yy * 100 + $v_main_ed_to_mm )      #
+         >                                                      #
+         ( $v_now_yy * 100 + $v_now_mm )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(TO) - Timestamp ( Year and month and day ) greater than current timestamp ( year and month and day )
+   if (
+      $v_main_ed_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month and day provided
+      $v_main_ed_to_mm ne K_EMPTY and                         #
+      $v_main_ed_to_dd ne K_EMPTY and                         #
+      $v_main_ed_to_hh eq K_EMPTY and                         #
+      $v_main_ed_to_mi eq K_EMPTY and                         #
+      $v_main_ed_to_ss eq K_EMPTY
+      and ( (
+            $v_main_ed_to_yy * 10000 +                        # Year multiply by 10000
+            $v_main_ed_to_mm * 100 +                          # Month multiply by 100
+            $v_main_ed_to_dd                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 10000 +                                 # Year multiply by 10000
+              $v_now_mm * 100 +                                 # Month multiply by 100
+              $v_now_dd                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(TO) - Timestamp ( Year and month and day and hour ) greater than current timestamp ( year and month and day and hour )
+   if (
+      $v_main_ed_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month, day and hour provided
+      $v_main_ed_to_mm ne K_EMPTY and                         #
+      $v_main_ed_to_dd ne K_EMPTY and                         #
+      $v_main_ed_to_hh ne K_EMPTY and                         #
+      $v_main_ed_to_mi eq K_EMPTY and                         #
+      $v_main_ed_to_ss eq K_EMPTY
+      and ( (
+            $v_main_ed_to_yy * 1000000 +                      # Year multiply by 1000000
+            $v_main_ed_to_mm * 10000 +                        # Month multiply by 10000
+            $v_main_ed_to_dd * 100 +                          # Day multiply by 100
+            $v_main_ed_to_hh                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 1000000 +                               # Year multiply by 1000000
+              $v_now_mm * 10000 +                               # Month multiply by 10000
+              $v_now_dd * 100 +                                 # Day multiply by 100
+              $v_now_hh                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(TO) - Timestamp ( Year and month and day and hour and minute ) greater than current timestamp ( year and month and day and hour and minute)
+   if (
+      $v_main_ed_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month, day, hour and minute provided
+      $v_main_ed_to_mm ne K_EMPTY and                         #
+      $v_main_ed_to_dd ne K_EMPTY and                         #
+      $v_main_ed_to_hh ne K_EMPTY and                         #
+      $v_main_ed_to_mi ne K_EMPTY and                         #
+      $v_main_ed_to_ss eq K_EMPTY
+      and ( (
+            $v_main_ed_to_yy * 100000000 +                    # Year multiply by 100000000
+            $v_main_ed_to_mm * 1000000 +                      # Month multiply by 1000000
+            $v_main_ed_to_dd * 10000 +                        # Day multiply by 10000
+            $v_main_ed_to_hh * 100 +                          # Hours multiply by 100
+            $v_main_ed_to_mi                                  #
+         ) >                                                    #
+         (
+            $v_now_yy * 100000000 +                             # Year multiply by 1000000
+              $v_now_mm * 1000000 +                             # Month multiply by 10000
+              $v_now_dd * 10000 +                               # Day multiply by 100
+              $v_now_hh * 100 +                                 # Hours multiply by 100
+              $v_now_mi                                         #
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+
+   # End appicable timestamp(TO) - Timestamp ( Year and month and day and hour and minute and seconds) greater than current timestamp ( year and month and day and hour and minute and seconds)
+   if (
+      $v_main_ed_to_yy ne K_EMPTY and                         # Check to timestamp after current timestamp if only year, month, day, hour, minute and second provided
+      $v_main_ed_to_mm ne K_EMPTY and                         #
+      $v_main_ed_to_dd ne K_EMPTY and                         #
+      $v_main_ed_to_hh ne K_EMPTY and                         #
+      $v_main_ed_to_mi ne K_EMPTY and                         #
+      $v_main_ed_to_ss ne K_EMPTY
+      and ( (
+            $v_main_ed_to_yy * 10000000000 +                  # Year multiply by 10000000000
+            $v_main_ed_to_mm * 100000000 +                    # Month multiply by 100000000
+            $v_main_ed_to_dd * 1000000 +                      # Day multiply by 1000000
+            $v_main_ed_to_hh * 10000 +                        # Hours multiply by 1000000
+            $v_main_ed_to_mi * 100 +                          # Minutes multiply by 100
+            $v_main_ed_to_ss
+         ) >                                                    #
+         (
+            $v_now_yy * 10000000000 +                           # Year multiply by 10000000000
+              $v_now_mm * 100000000 +                           # Month multiply by 100000000
+              $v_now_dd * 1000000 +                             # Day multiply by 1000000
+              $v_now_hh * 10000 +                               # Hours multiply by 1000000
+              $v_now_mi * 100 +                                 # Minutes multiply by 100
+              $v_now_ss
+         )
+      )                                                         #
+     ) {
+      $v_main_f_err = K_YES ;                                   # Error flag
+      $v_main_ed_dt_err_msg .= ' - ' . $a_L[ 33 ] ;             # Value: End time after current timestamp
+   }
+   
+   $v_main_ed_dt_err_msg =~ s/^\s-\s//g ;
+   
+   if ( $v_main_f_err eq K_YES ) {                              # STAGE 5 - Get out if error in main screen
+      return ;
+   }
+   
+   # STAGE 6 ##########################################################
+   
+   # Begin applicable timestamp - Internally set job start time (From)
+   if (
+      $v_main_bg_from_yy eq K_EMPTY and                         # Set job start time one week ago if all From and To fields of start time not choosen
+      $v_main_bg_from_mm eq K_EMPTY and                         #
+      $v_main_bg_from_dd eq K_EMPTY and                         #
+      $v_main_bg_from_hh eq K_EMPTY and                         #
+      $v_main_bg_from_mi eq K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY and                         #
+      $v_main_bg_to_yy eq K_EMPTY   and                         #
+      $v_main_bg_to_mm eq K_EMPTY   and                         #
+      $v_main_bg_to_dd eq K_EMPTY   and                         #
+      $v_main_bg_to_hh eq K_EMPTY   and                         #
+      $v_main_bg_to_mi eq K_EMPTY   and                         #
+      $v_main_bg_to_ss eq K_EMPTY                               #
+     ) {                                                        #
+
+      $v_main_bg_to_yy = $v_now_yy ;                            # Set Start time - To fields internally
+      $v_main_bg_to_mm = $v_now_mm ;                            #
+      $v_main_bg_to_dd = $v_now_dd ;                            #
+      $v_main_bg_to_hh = $v_now_hh ;                            #
+      $v_main_bg_to_mi = $v_now_mi ;                            #
+      $v_main_bg_to_ss = $v_now_ss ;                            #
+
+      ( $v_main_bg_from_yy , $v_main_bg_from_mm , $v_main_bg_from_dd ) =    # Set Start time - From fields internally
+        Add_Delta_YMD (                                         #
+         $v_main_bg_to_yy , $v_main_bg_to_mm ,                  #
+         $v_main_bg_to_dd , 0 , 0 , -7                          #
+        ) ;                                                     #
+
+      $v_main_bg_from_mm =                                      #
+        (                                                       #
+         $v_main_bg_from_mm < 10 ?                              #
+           '0' . $v_main_bg_from_mm                             #
+         : $v_main_bg_from_mm                                   #
+        ) ;                                                     #
+       
+      $v_main_bg_from_dd =                                      #
+        (                                                       #
+         $v_main_bg_from_dd < 10 ?                              #
+           '0' . $v_main_bg_from_dd                             #
+         : $v_main_bg_from_dd                                   #
+        ) ;                                                     #
+        
+      $v_main_bg_from_hh = '00' ;
+      $v_main_bg_from_mi = '00' ;
+      $v_main_bg_from_ss = '00' ;
+
+   }
+   
+   # Months - 00
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         #
+      $v_main_bg_from_mm eq K_EMPTY
+     ) {                                                        #
+      $v_main_bg_from_mm = '01' ;                               #
+   }                                                            #
+   
+   # Days - 00
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         #
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd eq K_EMPTY
+     ) {                                                        #
+      $v_main_bg_from_dd = '01' ;                               #
+   }                                                            #
+   
+   # Hours - 00
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         #
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh eq K_EMPTY
+     ) {                                                        #
+      $v_main_bg_from_hh = '00' ;                               #
+   }                                                            #
+   
+   # Minutes - 00
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         #
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh ne K_EMPTY and                         #
+      $v_main_bg_from_mi eq K_EMPTY
+     ) {                                                        #
+      $v_main_bg_from_mi = '00' ;                               #
+   }                                                            #
+   
+   # Seconds - 00
+   if (
+      $v_main_bg_from_yy ne K_EMPTY and                         #
+      $v_main_bg_from_mm ne K_EMPTY and                         #
+      $v_main_bg_from_dd ne K_EMPTY and                         #
+      $v_main_bg_from_hh ne K_EMPTY and                         #
+      $v_main_bg_from_mi ne K_EMPTY and                         #
+      $v_main_bg_from_ss eq K_EMPTY
+     ) {                                                        #
+      $v_main_bg_from_ss = '00' ;                               #
+   }                                                            #
+}
+##########################################################################
+# End of subroutine sCheckInput                                          #
+##########################################################################
+
+sub sYearCorrection {                                           # Year correction of one digit, two digit
+
+   # Called by: sCheckInput
+   # Calls:
+
+   my $vyc_in_yr = shift ;                                      # Take input
+
+   my $vyc_last1_yr = substr ( $v_now_yy , -1 ) ;               # Get last 1 digit from year to adjust current year if one digit
+   my $vyc_last2_yr = substr ( $v_now_yy , -2 ) ;               # Get last 2 digit from year to adjust current year if two digit
+
+   if ( length ( $vyc_in_yr ) == 1 and $vyc_in_yr > $vyc_last1_yr ) {
+      $vyc_in_yr = ( int ( $v_now_yy / 10 ) * 10 + $vyc_in_yr ) - 10 ;
+   }
+   elsif ( length ( $vyc_in_yr ) == 1 and $vyc_in_yr <= $vyc_last1_yr ) {
+      $vyc_in_yr = int ( $v_now_yy / 10 ) * 10 + $vyc_in_yr ;
+   }
+   else { $vyc_in_yr = $vyc_in_yr ; }
+
+   if ( length ( $vyc_in_yr ) == 2 and $vyc_in_yr > $vyc_last2_yr ) {
+      $vyc_in_yr = ( int ( $v_now_yy / 100 ) * 100 + $vyc_in_yr ) - 100 ;
+   }
+   elsif ( length ( $vyc_in_yr ) == 2 and $vyc_in_yr <= $vyc_last2_yr ) {
+      $vyc_in_yr = int ( $v_now_yy / 100 ) * 100 + $vyc_in_yr ;
+   }
+   else { $vyc_in_yr = $vyc_in_yr ; }
+
+   if ( $vyc_in_yr < 1904 ) {
+      $vyc_in_yr = 1904 ;                                       # Adjust year to 1904
+   }
+
+   return $vyc_in_yr ;
+} ## end sub sYearCorrection
+#######################################################################
+# End of sYearCorrection                                              #
+#######################################################################
+
+sub sLastDayOfMonth {
+
+   # Computes the maximum day of month, e.g. 31 for January
+   # Input year and month
+
+   # Called by: sCheckInput
+   # Calls:
+
+   my $vldom_yr = shift ;                                       # Input year
+   my $vldom_mh = shift ;                                       # Input month
+
+   if (
+      ! ( defined ( $vldom_mh ) )                               #
+      or $vldom_mh =~ /\D/                                      #
+      or $vldom_mh < 1                                          #
+      or $vldom_mh > 12
+     ) {                                                        #
+      die                                                       #
+        "Month not numeric or between 1 and 12 while"           #
+        . K_SPACE . "getting last day of month"                 #
+        . ' : ' . $vldom_mh                                     #
+        ;
+   } ## end if ( ! ( defined ( $vldom_mh...)))
+
+   if (
+      $vldom_mh == 1 or $vldom_mh == 3 or $vldom_mh == 5  or    # Jan. Mar. May
+      $vldom_mh == 7 or $vldom_mh == 8 or $vldom_mh == 10 or    # ... July, Aug. Oct.
+      $vldom_mh == 12                                           # ... Dec.
+     ) {
+      return 31 ;
+   } ## end if ( $vldom_mh == 1 or...)
+
+   if (
+      $vldom_mh == 4 or $vldom_mh == 6 or                       # Apr. June
+      $vldom_mh == 9 or $vldom_mh == 11                         # Sep. Nov.
+     ) {
+      return 30 ;
+   } ## end if ( $vldom_mh == 4 or...)
+
+   if ( $vldom_mh != 2 ) {                                      # Display error if month is not february after eliminating all other valid months
+      die                                                       #
+        "Month not 2 after eliminating all other valid"         #
+        . K_SPACE . "months while getting last day of month"    #
+        . ' : ' . $vldom_mh ;
+   } ## end if ( $vldom_mh != 2 )
+
+   if ( $vldom_yr % 4 != K_ZERO ) { return 28 ; }               # Non leap year February - After this year divisible by 4
+
+   if ( $vldom_yr % 100 != 0 ) { return 29 ; }                  # Leap year February - non century year
+
+   if ( $vldom_yr % 400 == 0 ) { return 29 ; }                  # Leap year February - century year divisible by 400
+
+   return 28 ;                                                  # Non leap year February - century not divisible by 400
+
+} ## end sub sLastDayOfMonth
+#####################################################################
+# End of sLastDayOfMonth                                            #
+#####################################################################
 
 sub sSrhColor {
 
