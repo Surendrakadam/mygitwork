@@ -2,7 +2,7 @@
  Procedure     : 44_506_GMtc.c
  Application   : De-Dupe
  Client        : Internal
- Copyright (c) : IdentLogic Systems Private Limited
+ Copyright (c) : 2017 IdentLogic Systems Private Limited
  Author        : Surendra Kadam
  Creation Date : 5 April 2017
 
@@ -13,7 +13,8 @@
                   Filter2 , Filter3 , Filter4 , Filter5 ,
                   Filter6 , Filter7 , Filter8 , Filter9 , Household ,
                   Individual , Person_Name , Organization , Resident ,
-                  Wide_Contact , Wide_Household as found in purpose.
+                  Wide_Contact , Wide_Household as found in purpose. Any
+                  logical combinations of these purposes may be used.
 
  WARNINGS      : If your data can contain asterisks, make sure that these are
                   either cleaned out prior to calling the dds-name3 functions ,
@@ -25,14 +26,12 @@
                   to the length of the Input file name , Output file name and
                   Log file name are 11 , 15 and 38 resp.
 
-                 Length of the Search data and file data
-                  should not exceed 5000 and 5000 bytes resp.
-                  and the Length of the Controls related variables should not exceed
-                  which are i specified.
+                 Length of the Search data and file data should not exceed 5000
+                  and 5000 bytes resp. and the Length of the Controls related
+                  variables should not exceed which are specified.
 
                  Increase the array size as per your convenience.
                  Change the field separator of input file as per your convenience.
-
 
  HARD CODINGS  :
  Limitations   :
@@ -68,7 +67,6 @@ char str_fle_id[ 1000 ]       = {0} ;                           // Id of file ta
 
 int i_rec_number  = 0 ;                                         // Record counter
 int i_idx         = 0 ;                                         // Main method for loop initial variable
-int i_purpose_no  = 0 ;                                         // Purpose number
 int i_op_rec_knt  = 0 ;                                         // Output record count
 
 // Time variables of progrm start
@@ -85,18 +83,19 @@ int   p_run_time   = 0 ;                                        // Parameter run
 char *p_system_nm  = "" ;                                       // Parameter System name
 char *p_population = "" ;                                       // Parameter Population name
 char *p_encoding   = "" ;                                       // Encoding datatype of search data and file data
-char *p_purpose    = "" ;                                       // Parameter Purpose
-int   p_uni_enc    = 0 ;                                        // Parameter Unicode encoding either 4 , 6 or 8
-char *p_nm_fmt     = "" ;                                       // Parameter Name format
-int   p_acc_lmt    = 0 ;                                        // Parameter Accept Limit
-int   p_rej_lmt    = 0 ;                                        // Parameter Reject Limit
+char *p_purpose    = "" ;                                       // Parameter purpose
+int   p_prpsno     = 0 ;                                        // Parameter purpose no
+int   p_uni_enc    = 0 ;                                        // Parameter unicode encoding either 4 , 6 or 8
+char *p_nm_fmt     = "" ;                                       // Parameter name format
+int   p_acc_lmt    = 0 ;                                        // Parameter accept Limit
+int   p_rej_lmt    = 0 ;                                        // Parameter reject Limit
 char *p_adjweight  = "" ;                                       // Parameter adjust weight
 int   p_adjwei_val = 0 ;                                        // Parameter adjust weight value
-char *p_delimiter  = "" ;                                       // Parameter Delimiter
+char *p_delimiter  = "" ;                                       // Parameter delimiter
 char *p_infdir     = "" ;                                       // Parameter input file name
 char *p_outfdir    = "" ;                                       // Parameter output file directory
 char *p_logfdir    = "" ;                                       // Parameter log file directory
-int   p_multiplier = 0 ;                                        // Parameter Multiplier
+int   p_multiplier = 0 ;                                        // Parameter multiplier
 
 int i_multiplier   = 0 ;                                        // Multiplier variable
 int  i_len_of_dir  = 0 ;                                        // Length of the directory
@@ -166,6 +165,7 @@ char *str_encoding_d    = "" ;                                  // Encoding data
 
 char *S_K_prps        = "PURPOSE=" ;                            // PURPOSE= format
 char *str_prps_nm     = "" ;                                    // Purpose name
+int  i_prps_no        = 0 ;                                     // Purpose number
 char *S_K_mtc_lvl     = "MATCH_LEVEL=" ;                        // MATCH_LEVEL= format
 char *S_K_mtc_lvl_ty  = "Typical" ;                             // Match level Typical
 char *S_K_mtc_lvl_con = "Conservative" ;                        // Match level Conservative
@@ -342,12 +342,12 @@ void s_print_usage( ) {
 // It displayed with example
 
   printf (
-    "GMtc -d <DATA_SET> -r <RUN> -u <PURPOSE> -s <system-name> -p <population> "
+    "GMtc -d <DATA_SET> -r <RUN> -u <PURPOSE> -b <PURPOSE_NO> -s <system-name> -p <population> "
     "-i <input_file_directory> -o <output_file_directory> -l <log_file_directory> "
     "-t <delimeter> -c <encoding_datatype> -e <unicode_encoding> -n <name_format> "
     "-a <accept_limit> -j <reject_limit> -w <adjweight> -x <adjweight_value> "
     "-m <multiplier> -v(erbose)\n\nMANDATORY VALUES IN CAPITALS\n\nExample:\n\n"
-    "GMtc -d 101 -r 1001 -u Resident -s default -p india "
+    "GMtc -d 101 -r 1001 -u Resident -b 119 -s default -p india "
     "-i E:/SurendraK/Work/DeDupeProcs/Input/ -o E:/SurendraK/Work/DeDupeProcs/Output/"
     " -l E:/SurendraK/Work/SSAProcs/Log/ -t @ -c TEXT -e 4 -n L -a 20 -j 10"
     " -w Address_Part1 -x 1 -m 10000 -v\n"
@@ -362,7 +362,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
 // This subroutine is default parameter of getopt in s_getParameter
 
   s_date_time ( ) ;                                             // Call subroutine s_date_time
-  while ( ( i_option = getopt ( argc , argv , "d:r:s:p:c:u:e:n:a:j:w:x:t:i:o:l:m:v::" ) ) != -1 ) {
+  while ( ( i_option = getopt ( argc , argv , "d:r:s:p:c:u:b:e:n:a:j:w:x:t:i:o:l:m:v::" ) ) != -1 ) {
     switch (i_option) {
       case 'd' :                                                // Data set parameter
         p_data_set   = atoi( optarg ) ;
@@ -381,6 +381,9 @@ static void s_getParameter ( int argc , char *argv[] ) {
         break ;
       case 'u' :                                                // Purpose parameter
         p_purpose    = optarg ;
+        break ;
+      case 'b' :                                                // Purpose number
+        p_prpsno     = atoi( optarg ) ;
         break ;
       case 'e' :                                                // Unicode encoding parameter
         p_uni_enc    = atoi( optarg ) ;
@@ -425,41 +428,18 @@ static void s_getParameter ( int argc , char *argv[] ) {
     }
   }
 
-  str_prps_nm     = p_purpose ;                                 // Initialize purpose data in another variable
-  i_uni_enc_d     = p_uni_enc ;                                 // Initialize unicode_Encoding data in another variable
-  str_nm_fmt_d    = p_nm_fmt ;                                  // Initialize name format data in another variable
-  str_adjwei_d    = p_adjweight ;                               // Initialize adjweight data in another variable
-  i_adjwei_val_d  = p_adjwei_val ;                              // Initialize adjweight value data in another variable
-  str_delimeter_d = p_delimiter ;                               // Initialize delimiter data in another variable
+  str_prps_nm     = p_purpose ;                                 // Store purpose data in another variable
+  i_prps_no       = p_prpsno ;                                  // Store purpose no in another varibale
+  i_uni_enc_d     = p_uni_enc ;                                 // Store unicode_Encoding data in another variable
+  str_nm_fmt_d    = p_nm_fmt ;                                  // Store name format data in another variable
+  str_adjwei_d    = p_adjweight ;                               // Store adjweight data in another variable
+  i_adjwei_val_d  = p_adjwei_val ;                              // Store adjweight value data in another variable
+  str_delimeter_d = p_delimiter ;                               // Store delimiter data in another variable
   i_multiplier    = p_multiplier ;                              // Multiplier value
 
   str_system_nm_d   = p_system_nm ;                             // Initialize system name in another variable
   str_popln_nm_d    = p_population ;                            // Initialize population name in another variable
   str_encoding_d    = p_encoding ;                              // Initialize encoding datatype in another variable
-
-  // Assign number to putpose
-  if ( strcmp ( str_prps_nm , "Address" ) == 0 ) { i_purpose_no = 100 ; }
-  if ( strcmp ( str_prps_nm , "Contact" ) == 0 ) { i_purpose_no = 101 ; }
-  if ( strcmp ( str_prps_nm , "Corp_Entity" ) == 0 ) { i_purpose_no = 102 ; }
-  if ( strcmp ( str_prps_nm , "Division" ) == 0 ) { i_purpose_no = 103 ; }
-  if ( strcmp ( str_prps_nm , "Family" ) == 0 ) { i_purpose_no = 104 ; }
-  if ( strcmp ( str_prps_nm , "Fields"  ) == 0 ) { i_purpose_no = 105 ; }
-  if ( strcmp ( str_prps_nm , "Filter1" ) == 0 ) { i_purpose_no = 106 ; }
-  if ( strcmp ( str_prps_nm , "Filter2" ) == 0 ) { i_purpose_no = 107 ; }
-  if ( strcmp ( str_prps_nm , "Filter3" ) == 0 ) { i_purpose_no = 108 ; }
-  if ( strcmp ( str_prps_nm , "Filter4" ) == 0 ) { i_purpose_no = 109 ; }
-  if ( strcmp ( str_prps_nm , "Filter5" ) == 0 ) { i_purpose_no = 110 ; }
-  if ( strcmp ( str_prps_nm , "Filter6" ) == 0 ) { i_purpose_no = 111 ; }
-  if ( strcmp ( str_prps_nm , "Filter7" ) == 0 ) { i_purpose_no = 112 ; }
-  if ( strcmp ( str_prps_nm , "Filter8" ) == 0 ) { i_purpose_no = 113 ; }
-  if ( strcmp ( str_prps_nm , "Filter9" ) == 0 ) { i_purpose_no = 114 ; }
-  if ( strcmp ( str_prps_nm , "HouseHold" ) == 0 ) { i_purpose_no = 115 ; }
-  if ( strcmp ( str_prps_nm , "Individual" ) == 0 ) { i_purpose_no = 116 ; }
-  if ( strcmp ( str_prps_nm , "Organization" ) == 0 ) { i_purpose_no = 117 ; }
-  if ( strcmp ( str_prps_nm , "Person_Name" ) == 0 ) { i_purpose_no = 118 ; }
-  if ( strcmp ( str_prps_nm , "Resident" ) == 0 ) { i_purpose_no = 119 ; }
-  if ( strcmp ( str_prps_nm , "Wide_Contact" ) == 0 ) { i_purpose_no = 120 ; }
-  if ( strcmp ( str_prps_nm , "Wide_Household") == 0 ) { i_purpose_no = 121 ; }
 
   // Data set number should be in a range of 100 to 999
   if( p_data_set > 999 || p_data_set < 100 ) {
@@ -481,16 +461,16 @@ static void s_getParameter ( int argc , char *argv[] ) {
     sprintf ( a_delimeter , "%s%s" , S_K_delimeter , p_delimiter ) ;
   }
 
-  if ( !*p_system_nm ) {                                        // Abort if System name is empty
-    str_system_nm_d = "default" ;                               // Default value is default
+  if ( !*p_system_nm ) {                                        // System name default is default
+    str_system_nm_d = "default" ;
   }
 
-  if ( !*p_population ) {                                       // Abort if Population is empty
-    str_popln_nm_d = "india" ;                                  // Default value is india
+  if ( !*p_population ) {                                       // Population default is india
+    str_popln_nm_d = "india" ;
   }
 
-  if ( !*p_encoding ) {                                         // Abort if Encoding is empty
-    str_encoding_d = "TEXT" ;                                   // Default value is TEXT
+  if ( !*p_encoding ) {                                         // Encoding default is TEXT
+    str_encoding_d = "TEXT" ;
   }
 
   if ( p_multiplier == 0 ) {
@@ -502,16 +482,21 @@ static void s_getParameter ( int argc , char *argv[] ) {
     exit(1) ;
   }
 
+  if ( i_prps_no == 0 ) {                                       // Abort if Purpose no is null
+    printf ("%s","JOB ABANDONDED - Missing purpose number\n" ) ;
+    exit(1) ;
+  }
+
   if ( *p_encoding ) {
-    if ( strcmp ( p_encoding , "TEXT" ) != 0 &&
-         strcmp ( p_encoding , "UTF-8" ) != 0 &&
-         strcmp ( p_encoding , "UTF-16" ) != 0 &&
+    if ( strcmp ( p_encoding , "TEXT" )     != 0 &&
+         strcmp ( p_encoding , "UTF-8" )    != 0 &&
+         strcmp ( p_encoding , "UTF-16" )   != 0 &&
          strcmp ( p_encoding , "UTF-16LE" ) != 0 &&
          strcmp ( p_encoding , "UTF-16BE" ) != 0 &&
-         strcmp ( p_encoding , "UTF-32" ) != 0 &&
-         strcmp ( p_encoding , "UCS-2" ) != 0 &&
-         strcmp ( p_encoding , "UCS-4" ) != 0 ) {
-      printf ("%s","Unknown encoding datatype\n" ) ;            // Abort if unknown encoding datatype entered
+         strcmp ( p_encoding , "UTF-32" )   != 0 &&
+         strcmp ( p_encoding , "UCS-2" )    != 0 &&
+         strcmp ( p_encoding , "UCS-4" )    != 0 ) {
+      printf ("%s >%s<\n","JOB ABANDONDED - Unknown encoding datatype:" , p_encoding ) ;   // Abort if unknown encoding datatype entered
       exit(1) ;
     }
   }
@@ -520,7 +505,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
     if ( i_uni_enc_d != 4 &&                                    // Unicode Encoding must be 4 , 6 and 8
          i_uni_enc_d != 6 &&
          i_uni_enc_d != 8 ) {
-      printf ( "%s" , "JOB ABANDONDED - Invalid CHARACTER ENCODING value\n" ) ;
+      printf ( "%s >%s<\n" , "JOB ABANDONDED - Invalid CHARACTER ENCODING value" , i_uni_enc_d ) ;
       exit(1);
     }
   }
@@ -528,7 +513,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
   if ( *str_nm_fmt_d ) {                                        // If Name Format string is not empty
     if ( ( strcmp ( str_nm_fmt_d , "L" ) != 0 ) &&              // Name Format must be L or R
          ( strcmp ( str_nm_fmt_d , "R" ) != 0 ) ) {
-      printf ( "%s" , "JOB ABANDONDED - Invalid NAMEFORMAT value - must be L or R\n" ) ;
+      printf ( "%s >%s<\n" , "JOB ABANDONDED - Invalid NAMEFORMAT value - must be L or R" , str_nm_fmt_d ) ;
       exit(1);
     }
   }
@@ -542,40 +527,40 @@ static void s_getParameter ( int argc , char *argv[] ) {
   }
 
   if ( *str_adjwei_d && i_adjwei_val_d != 0 ) {                 // If ADJWEIGHT data and value are non empty
-      if ( strcmp ( str_adjwei_d , "Person_Name" ) == 0 ||
+      if ( strcmp ( str_adjwei_d , "Person_Name" )       == 0 ||
            strcmp ( str_adjwei_d , "Organization_Name" ) == 0 ||
-           strcmp ( str_adjwei_d , "Address_Part1" ) == 0 ||
-           strcmp ( str_adjwei_d , "Address_Part2" ) == 0 ||
-           strcmp ( str_adjwei_d , "Postal_Area" ) == 0 ||
-           strcmp ( str_adjwei_d , "Telephone_Number" ) == 0 ||
-           strcmp ( str_adjwei_d , "Date" ) == 0 ||
-           strcmp ( str_adjwei_d , "Id" ) == 0 ||
-           strcmp ( str_adjwei_d , "Attribute1" ) == 0 ||
-           strcmp ( str_adjwei_d , "Attribute2" ) == 0 ) {
+           strcmp ( str_adjwei_d , "Address_Part1" )     == 0 ||
+           strcmp ( str_adjwei_d , "Address_Part2" )     == 0 ||
+           strcmp ( str_adjwei_d , "Postal_Area" )       == 0 ||
+           strcmp ( str_adjwei_d , "Telephone_Number" )  == 0 ||
+           strcmp ( str_adjwei_d , "Date" )              == 0 ||
+           strcmp ( str_adjwei_d , "Id" )                == 0 ||
+           strcmp ( str_adjwei_d , "Attribute1" )        == 0 ||
+           strcmp ( str_adjwei_d , "Attribute2" )        == 0 ) {
 
         sprintf ( a_adj_wei , "%s%s%+d" , S_K_adjwei , str_adjwei_d , i_adjwei_val_d ) ;
       }
       else {
-        printf ("%s" , "Unknown ADJWEIGHT: Output file created without ADJWEIGHT field and its value\n" ) ;
+        printf ("%s >%s< %s >%d<" , "JOB ABANDONDED - Unknown ADJWEIGHT: Output file created without ADJWEIGHT field" , str_adjwei_d ,"and its value" , i_adjwei_val_d ) ;
         exit(1) ;
       }
   }
   else if ( *str_adjwei_d && i_adjwei_val_d == 0 ){             // If ADJWEIGHT value is empty
-    if ( strcmp ( str_adjwei_d , "Person_Name" ) == 0 ||
+    if ( strcmp ( str_adjwei_d , "Person_Name" )       == 0 ||
          strcmp ( str_adjwei_d , "Organization_Name" ) == 0 ||
-         strcmp ( str_adjwei_d , "Address_Part1" ) == 0 ||
-         strcmp ( str_adjwei_d , "Address_Part2" ) == 0 ||
-         strcmp ( str_adjwei_d , "Postal_Area" ) == 0 ||
-         strcmp ( str_adjwei_d , "Telephone_Number" ) == 0 ||
-         strcmp ( str_adjwei_d , "Date" ) == 0 ||
-         strcmp ( str_adjwei_d , "Id" ) == 0 ||
-         strcmp ( str_adjwei_d , "Attribute1" ) == 0 ||
-         strcmp ( str_adjwei_d , "Attribute2" ) == 0 ) {
+         strcmp ( str_adjwei_d , "Address_Part1" )     == 0 ||
+         strcmp ( str_adjwei_d , "Address_Part2" )     == 0 ||
+         strcmp ( str_adjwei_d , "Postal_Area" )       == 0 ||
+         strcmp ( str_adjwei_d , "Telephone_Number" )  == 0 ||
+         strcmp ( str_adjwei_d , "Date" )              == 0 ||
+         strcmp ( str_adjwei_d , "Id" )                == 0 ||
+         strcmp ( str_adjwei_d , "Attribute1" )        == 0 ||
+         strcmp ( str_adjwei_d , "Attribute2" )        == 0 ) {
 
-      printf ("%s" , "Syntax error in weight adjustment: Output file created without ADJWEIGHT field and its value\n" ) ;
+      printf ("%s" , "JOB ABANDONDED - Syntax error in weight adjustment: Output file created without ADJWEIGHT field and its value\n" ) ;
     }
     else {
-      printf ("%s" , "Unknown ADJWEIGHT: Output file created without ADJWEIGHT field and its value\n" ) ;
+      printf ("%s >%s< %s >%d<" , "JOB ABANDONDED - Unknown ADJWEIGHT: Output file created without ADJWEIGHT field" , str_adjwei_d ,"and its value" , i_adjwei_val_d ) ;
       exit(1) ;
     }
   }
@@ -583,7 +568,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
   // Check Input file directory ends with backslash or forward slash , if not add it
   if(strchr(p_infdir,'/')) {
     i_len_of_dir = strlen(p_infdir) ;                           // Length of input file directory
-    c_flg_slash = p_infdir[i_len_of_dir-1] ;                    // Last character of a String is / forward slash
+    c_flg_slash  = p_infdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
     if(c_flg_slash != S_K_forward_slash[0]) {
       p_infdir = strcat(p_infdir,S_K_forward_slash) ;           // Concatenate forward slash to the input file directory
     }
@@ -600,7 +585,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
   // Check Output file directory ends with backslash or forward slash, if not add it
   if(strchr(p_outfdir,'/')) {
     i_len_of_dir = strlen(p_outfdir) ;                          // Length of log file directory
-    c_flg_slash = p_outfdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
+    c_flg_slash  = p_outfdir[i_len_of_dir-1] ;                  // Last character of a String is / forward slash
     if( c_flg_slash != S_K_forward_slash[0]) {
       p_outfdir = strcat(p_outfdir,S_K_forward_slash) ;         // Concatenate forward slash to the output file directory
     }
@@ -608,7 +593,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
 
   if(strchr(p_outfdir,'\\')) {
     i_len_of_dir = strlen(p_outfdir) ;                          // Length of input file directory
-    c_flg_slash = p_outfdir[i_len_of_dir-1] ;                   // Last character of a String is / back slash
+    c_flg_slash  = p_outfdir[i_len_of_dir-1] ;                  // Last character of a String is / back slash
     if(c_flg_slash != S_K_back_slash[0]) {
       p_outfdir = strcat(p_outfdir,S_K_back_slash);             // Concatenate back slash to the output file directory
     }
@@ -617,7 +602,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
   // Check log file directory ends with backslash or forward slash, if not add it
   if(strchr(p_logfdir,'/')) {
     i_len_of_dir = strlen(p_logfdir) ;                          // Length of input file directory
-    c_flg_slash = p_logfdir[i_len_of_dir-1] ;                   // Last character of a String is / forward slash
+    c_flg_slash  = p_logfdir[i_len_of_dir-1] ;                  // Last character of a String is / forward slash
     if(c_flg_slash != S_K_forward_slash[0]) {
       p_logfdir = strcat(p_logfdir,S_K_forward_slash) ;         // Concatenate forward slash to the log file directory
     }
@@ -625,7 +610,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
 
   if(strchr(p_logfdir,'\\')) {
     i_len_of_dir = strlen(p_logfdir) ;                          // Length of input file directory
-    c_flg_slash = p_logfdir[i_len_of_dir-1] ;                   // Last character of a String is / back slash
+    c_flg_slash  = p_logfdir[i_len_of_dir-1] ;                  // Last character of a String is / back slash
     if(c_flg_slash != S_K_back_slash[0]) {
       p_logfdir = strcat(p_logfdir,S_K_back_slash) ;            // Concatenate back slash to the log file directory
     }
@@ -633,7 +618,7 @@ static void s_getParameter ( int argc , char *argv[] ) {
 
   // Files Names
   sprintf( a_str_input_file , "%d%d.mst" , p_data_set , p_run_time ) ;
-  sprintf( a_str_output_file , "%d%d_%d.ost" , p_data_set , p_run_time , i_purpose_no ) ;
+  sprintf( a_str_output_file , "%d%d_%d.ost" , p_data_set , p_run_time , i_prps_no ) ;
   sprintf( a_str_log_file , "%d%d_GMtc_%d-%s-%s-%s-%s-%s.log", p_data_set, p_run_time, i_YYYY, a_str_MM, a_str_DD, a_str_HH24, a_str_MI, a_str_SS ) ;
 
   // File Path
@@ -741,7 +726,7 @@ static long s_test_dds_match (
   char    *str_fileEncType ,                                    // Encoding datatype of file data
   char    *str_ID_search ,                                      // Id of search data
   char    *str_ID_file ,                                        // Id of file data
-  char    *str_prps ,                                           // Purpose
+  int     i_prps_no ,                                           // Purpose no
   char    *str_abv_mtc_lvl                                      // Match levels abbrevation
  ) {
 
@@ -841,12 +826,12 @@ static long s_test_dds_match (
   fprintf
   (
     f_output_fopen_status ,
-    "%s\t%s\t%s\t%s\t%s\t%s\n" ,
+    "%s\t%s\t%s\t%s\t%d\t%s\n" ,
     str_ID_search ,                                             // Search id
     str_ID_file ,                                               // File id
     a_decision ,                                                // Decision
     a_score ,                                                   // Score
-    str_prps ,                                                  // Purpose number
+    i_prps_no ,                                                 // Purpose number
     str_abv_mtc_lvl                                             // Match level
   ) ;
 
@@ -967,7 +952,7 @@ char *str_ID_file ,                                             // Id of file da
 char *str_Typical ,                                             // Match level Typical
 char *str_Conservative ,                                        // Match level Conservative
 char *str_Loose ,                                               // Match level Loose
-char *str_prps ,                                                // Purpose
+int  i_purpose_no ,                                             // Purpose no
 char *str_abv_ty ,                                              // Abbrevation of Typical (T)
 char *str_abv_con ,                                             // Abbrevation of Typical (C)
 char *str_abv_lse                                               // Abbrevation of Typical (L)
@@ -996,7 +981,7 @@ char *str_abv_lse                                               // Abbrevation o
       ( !*p_encoding ? str_encoding_d : p_encoding ) ,          // Encoding data type of file data
       str_ID_search ,                                           // Id of search data
       str_ID_file ,                                             // Id of file data
-      str_prps ,                                                // Purpose
+      i_purpose_no ,                                            // Purpose no
       str_abv_mtc_lvl[ i_idx ]                                  // Abbrevation of match levels
     ) ;
 
@@ -1050,6 +1035,10 @@ if ( p_run_time != 0 ) {                                        // If run time n
 
 if ( *p_purpose ) {                                             // If purpose name is not empty
   fprintf ( f_log_fopen_status , "Purpose                : %s\n" , p_purpose ) ;
+}
+
+if ( p_prpsno != 0 ) {                                         // If purpose number is not empty
+  fprintf ( f_log_fopen_status , "Purpose number             : %d\n" , p_prpsno ) ;
 }
 
 if ( !*p_system_nm ) {                                          // If System name is non empty
@@ -1140,7 +1129,7 @@ s_GMtc_open ( ) ;                                               // Open get matc
 
   // Read a input file line by line
 while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_status ) ) {
-  
+
   int i_fld_rec_knt ;                                           // Number of tab delimited fields count in current record of input file
   ++ i_rec_number ;                                             // Record number
 
@@ -1160,48 +1149,48 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
 /* SEARCH DATA CONTAIN FOLLOWING FIELD COUNTS *****************************************************/
 
-  if ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL ) { i_pn_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Person_Name" )       != NULL ) { i_pn_in_src_rec_knt ++ ; }
   if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ) { i_on_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) { i_adp1_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Address_Part2" ) != NULL ) { i_adp2_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Postal_Area" ) != NULL ) { i_pa_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) { i_tel_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Date" ) != NULL ) { i_dte_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Id" ) != NULL ) { i_id_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Attribute1" ) != NULL ) { i_att1_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Attribute2" ) != NULL ) { i_att2_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter1" ) != NULL ) { i_ft1_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter2" ) != NULL ) { i_ft2_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter3" ) != NULL ) { i_ft3_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter4" ) != NULL ) { i_ft4_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter5" ) != NULL ) { i_ft5_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter6" ) != NULL ) { i_ft6_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter7" ) != NULL ) { i_ft7_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter8" ) != NULL ) { i_ft8_in_src_rec_knt ++ ; }
-  if ( strstr ( str_src_tag_dta , "Filter9" ) != NULL ) { i_ft9_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Address_Part1" )     != NULL ) { i_adp1_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Address_Part2" )     != NULL ) { i_adp2_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Postal_Area" )       != NULL ) { i_pa_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Telephone_Number" )  != NULL ) { i_tel_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Date" )              != NULL ) { i_dte_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Id" )                != NULL ) { i_id_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Attribute1" )        != NULL ) { i_att1_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Attribute2" )        != NULL ) { i_att2_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter1" )           != NULL ) { i_ft1_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter2" )           != NULL ) { i_ft2_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter3" )           != NULL ) { i_ft3_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter4" )           != NULL ) { i_ft4_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter5" )           != NULL ) { i_ft5_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter6" )           != NULL ) { i_ft6_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter7" )           != NULL ) { i_ft7_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter8" )           != NULL ) { i_ft8_in_src_rec_knt ++ ; }
+  if ( strstr ( str_src_tag_dta , "Filter9" )           != NULL ) { i_ft9_in_src_rec_knt ++ ; }
 /* END SEARCH DATA CONTAIN FOLLOWING FIELD COUNTS *************************************************/
 
 /* FILE DATA CONTAIN FOLLOWING FIELD COUNTS *******************************************************/
 
-  if ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ) { i_pn_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Person_Name" )       != NULL ) { i_pn_in_fle_rec_knt ++ ; }
   if ( strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ) { i_on_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL ) { i_adp1_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Address_Part2" ) != NULL ) { i_adp2_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Postal_Area" ) != NULL ) { i_pa_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL ) { i_tel_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Date" ) != NULL ) { i_dte_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Id" ) != NULL ) { i_id_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Attribute1" ) != NULL ) { i_att1_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Attribute2" ) != NULL ) { i_att2_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter1" ) != NULL ) { i_ft1_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter2" ) != NULL ) { i_ft2_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter3" ) != NULL ) { i_ft3_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter4" ) != NULL ) { i_ft4_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter5" ) != NULL ) { i_ft5_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter6" ) != NULL ) { i_ft6_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter7" ) != NULL ) { i_ft7_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter8" ) != NULL ) { i_ft8_in_fle_rec_knt ++ ; }
-  if ( strstr ( str_fle_tag_dta , "Filter9" ) != NULL ) { i_ft9_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Address_Part1" )     != NULL ) { i_adp1_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Address_Part2" )     != NULL ) { i_adp2_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Postal_Area" )       != NULL ) { i_pa_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Telephone_Number" )  != NULL ) { i_tel_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Date" )              != NULL ) { i_dte_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Id" )                != NULL ) { i_id_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Attribute1" )        != NULL ) { i_att1_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Attribute2" )        != NULL ) { i_att2_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter1" )           != NULL ) { i_ft1_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter2" )           != NULL ) { i_ft2_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter3" )           != NULL ) { i_ft3_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter4" )           != NULL ) { i_ft4_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter5" )           != NULL ) { i_ft5_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter6" )           != NULL ) { i_ft6_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter7" )           != NULL ) { i_ft7_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter8" )           != NULL ) { i_ft8_in_fle_rec_knt ++ ; }
+  if ( strstr ( str_fle_tag_dta , "Filter9" )           != NULL ) { i_ft9_in_fle_rec_knt ++ ; }
 /* END FILE DATA CONTAIN FOLLOWING FIELD COUNTS ***************************************************/
 
   if ( i_fld_rec_knt == 4 ) {
@@ -1314,11 +1303,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
       /* END MATCH LEVEL WITH ACCEPT LIMIT OR REJECT LIMIT AND CONTROLS WITH THREE MATCH LEVEL*******/
 
-      if ( strcmp ( p_purpose , "Address" ) == 0 ) {
+      if ( strstr ( p_purpose , "Address" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Address_Part1" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL ) {
 
-          char *str_add = "100" ;                               // Purpose number of Address
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1336,7 +1324,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_add ,                                           // Purpose number of Address
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1377,16 +1365,15 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End if Resident
-      else if ( strcmp ( p_purpose , "Contact" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+      else if ( strstr ( p_purpose , "Contact" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" )       != NULL &&
                strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" )     != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" )       != NULL &&
                strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL &&
-               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
+               strstr ( str_fle_tag_dta , "Address_Part1" )     != NULL )
            ) {
 
-          char *str_contact = "101" ;                           // Purpose number Contact
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1404,7 +1391,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_contact ,                                       // Purpose number of Contact
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1417,7 +1404,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           // Check error in search data
           if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
                strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ||
-               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
+               strstr ( str_src_tag_dta , "Address_Part1" )     == NULL ) {
 
             i_Con_prps_err_knt ++ ;                             // Contact purpose error count
             i_src_rec_err_knt ++ ;                              // Search record errors count
@@ -1434,7 +1421,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           // Check error in file data
           if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
                strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ||
-               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
+               strstr ( str_fle_tag_dta , "Address_Part1" )     == NULL ) {
 
             i_Con_prps_err_knt ++ ;                             // Contact purpose error count
             i_fle_rec_err_knt ++ ;                              // File record errors count
@@ -1449,11 +1436,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Contact
-      else if ( strcmp ( p_purpose , "Corp_Entity" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Corp_Entity" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Organization_Name" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ) {
 
-          char *str_cent = "102" ;                              // Purpose number of Corp_Entity
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1471,7 +1457,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_cent ,                                          // Purpose number of Corp_Entity
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1498,7 +1484,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
 
           // Check error in file data
-          if ( strstr ( str_fle_tag_dta ,   "Organization_Name" ) == NULL ) {
+          if ( strstr ( str_fle_tag_dta , "Organization_Name" ) == NULL ) {
 
             i_CEn_prps_err_knt ++ ;                             // Corp_Entity purpose error count
             i_fle_rec_err_knt ++ ;                              // File record errors count
@@ -1514,14 +1500,13 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Corp_Entity
-      else if ( strcmp ( p_purpose , "Division" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
-               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-             ( strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL &&
-               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
+      else if ( strstr ( p_purpose , "Division" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL   &&
+               strstr ( str_src_tag_dta , "Address_Part1" )     != NULL ) &&
+             ( strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL   &&
+               strstr ( str_fle_tag_dta , "Address_Part1" )     != NULL )
            ) {
 
-          char *str_div = "103" ;                               // Purpose number of Division
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1539,7 +1524,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_div ,                                           // Purpose number of Division
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1551,7 +1536,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
           // Check error in search data
           if ( strstr ( str_src_tag_dta , "Organization_Name" ) == NULL ||
-               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
+               strstr ( str_src_tag_dta , "Address_Part1" )     == NULL ) {
 
             i_Div_prps_err_knt ++ ;                             // Division purpose error count
             i_src_rec_err_knt ++ ;                              // Search record errors count
@@ -1584,16 +1569,15 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Division
-      else if ( strcmp ( p_purpose , "Family" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
+      else if ( strstr ( p_purpose , "Family" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" )      != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" )    != NULL &&
                strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) &&
-             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" )      != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" )    != NULL &&
                strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL )
            ) {
 
-          char *str_fml = "104" ;                               // Purpose number of Family
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1611,7 +1595,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_fml ,                                           // Purpose number of family
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1622,8 +1606,8 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           i_tot_err_rec_knt ++ ;                                // Total error records count
 
           // Check error in search data
-          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ||
+          if ( strstr ( str_src_tag_dta , "Person_Name" )      == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" )    == NULL ||
                strstr ( str_src_tag_dta , "Telephone_Number" ) == NULL ) {
 
             i_Fam_prps_err_knt ++ ;                             // Family purpose error count
@@ -1640,8 +1624,8 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
 
           // Check error in file data
-          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ||
+          if ( strstr ( str_fle_tag_dta , "Person_Name" )      == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" )    == NULL ||
                strstr ( str_fle_tag_dta , "Telephone_Number" ) == NULL ) {
 
             i_Fam_prps_err_knt ++ ;                             // Family purpose error count
@@ -1658,30 +1642,30 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Family
-      else if ( strcmp ( p_purpose , "Fields" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Id" ) != NULL ||
-               strstr ( str_src_tag_dta , "Person_Name" ) != NULL ||
+      else if ( strstr ( p_purpose , "Fields" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Id" )                != NULL ||
+               strstr ( str_src_tag_dta , "Person_Name" )       != NULL ||
                strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ||
-               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ||
-               strstr ( str_src_tag_dta , "Address_Part2" ) != NULL ||
-               strstr ( str_src_tag_dta , "Postal_Area" ) != NULL ||
-               strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ||
-               strstr ( str_src_tag_dta , "Date" ) != NULL ||
-               strstr ( str_src_tag_dta , "Attribute1" ) != NULL ||
-               strstr ( str_src_tag_dta , "Attribute2" ) != NULL )
+               strstr ( str_src_tag_dta , "Address_Part1" )     != NULL ||
+               strstr ( str_src_tag_dta , "Address_Part2" )     != NULL ||
+               strstr ( str_src_tag_dta , "Postal_Area" )       != NULL ||
+               strstr ( str_src_tag_dta , "Telephone_Number" )  != NULL ||
+               strstr ( str_src_tag_dta , "Date" )              != NULL ||
+               strstr ( str_src_tag_dta , "Attribute1" )        != NULL ||
+               strstr ( str_src_tag_dta , "Attribute2" )        != NULL )
                &&
-             ( strstr ( str_fle_tag_dta , "Id" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Address_Part2" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Postal_Area" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Date" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Attribute1" ) != NULL ||
-              strstr ( str_fle_tag_dta , "Attribute2" ) != NULL )
+             ( strstr ( str_fle_tag_dta , "Id" )                != NULL ||
+              strstr ( str_fle_tag_dta , "Person_Name" )        != NULL ||
+              strstr ( str_fle_tag_dta , "Organization_Name" )  != NULL ||
+              strstr ( str_fle_tag_dta , "Address_Part1" )      != NULL ||
+              strstr ( str_fle_tag_dta , "Address_Part2" )      != NULL ||
+              strstr ( str_fle_tag_dta , "Postal_Area" )        != NULL ||
+              strstr ( str_fle_tag_dta , "Telephone_Number" )   != NULL ||
+              strstr ( str_fle_tag_dta , "Date" )               != NULL ||
+              strstr ( str_fle_tag_dta , "Attribute1" )         != NULL ||
+              strstr ( str_fle_tag_dta , "Attribute2" )         != NULL )
            ) {
-          char *str_fld = "105" ;                               // Purpose number of Fields
+
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1699,7 +1683,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_fld ,                                           // Purpose number of Fields
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1719,11 +1703,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           fprintf ( f_log_fopen_status, "\nRecord    : %s\n", str_current_rec ) ;
         }
       } // End of else if Fields
-      else if ( strcmp ( p_purpose , "Filter1" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter1" )    != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter1" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter1" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter1" ) != NULL ) {
 
-          char *str_ftr1 = "106" ;                              // Purpose number of Filter1
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1741,7 +1724,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr1 ,                                          // Purpose number of Filter1
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1784,11 +1767,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter1
-      else if ( strcmp ( p_purpose , "Filter2" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter2" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter2" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter2" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter2" ) != NULL ) {
 
-          char *str_ftr2 = "107" ;                              // Purpose number of Filter2
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1806,7 +1788,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr2 ,                                          // Purpose number of Filter2
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1849,11 +1831,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter2
-      else if ( strcmp ( p_purpose , "Filter3" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter3" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter3" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter3" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter3" ) != NULL ) {
 
-          char *str_ftr3 = "108" ;                              // Purpose number of Filter3
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1871,7 +1852,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr3 ,                                          // Purpose number of Filter3
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1914,11 +1895,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter3
-      else if ( strcmp ( p_purpose , "Filter4" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter4" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter4" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter4" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter4" ) != NULL ) {
 
-          char *str_ftr4 = "109" ;                              // Purpose number of Filter4
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -1936,7 +1916,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr4 ,                                          // Purpose number of Filter4
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -1979,11 +1959,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter4
-      else if ( strcmp ( p_purpose , "Filter5" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter5" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter5" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter5" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter5" ) != NULL ) {
 
-          char *str_ftr5 = "110" ;                              // Purpose number of Filter5
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2001,7 +1980,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr5 ,                                          // Purpose number of Filter5
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2044,11 +2023,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter5
-      else if ( strcmp ( p_purpose , "Filter6" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter6" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter6" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter6" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter6" ) != NULL ) {
 
-          char *str_ftr6 = "111" ;                              // Purpose number of Filter6
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2066,7 +2044,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr6 ,                                          // Purpose number of Filter6
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2109,11 +2087,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter6
-      else if ( strcmp ( p_purpose , "Filter7" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter7" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter7" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter7" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter7" ) != NULL ) {
 
-          char *str_ftr7 = "112" ;                              // Purpose number of Filter7
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2131,7 +2108,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr7 ,                                          // Purpose number of Filter7
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2174,11 +2151,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter7
-      else if ( strcmp ( p_purpose , "Filter8" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter8" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter8" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter8" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter8" ) != NULL ) {
 
-          char *str_ftr8 = "113" ;                              // Purpose number of Filter8
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2196,7 +2172,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr8 ,                                          // Purpose number of Filter7
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2239,11 +2215,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter8
-      else if ( strcmp ( p_purpose , "Filter9" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Filter9" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Filter9" ) != NULL &&
-             strstr ( str_fle_tag_dta ,   "Filter9" ) != NULL ) {
+             strstr ( str_fle_tag_dta , "Filter9" ) != NULL ) {
 
-          char *str_ftr9 = "114" ;                              // Purpose number of Filter9
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2261,7 +2236,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ftr9 ,                                          // Purpose number of Filter9
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2304,14 +2279,13 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Filter9
-      else if ( strcmp ( p_purpose , "Household" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+      else if ( strstr ( p_purpose , "Household" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" )   != NULL &&
                strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" )   != NULL &&
                strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
            ) {
 
-          char *str_hsho = "115" ;                              // Purpose number of Household
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2329,7 +2303,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_hsho ,                                          // Purpose number of Household
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2340,7 +2314,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           i_tot_err_rec_knt ++ ;                                // Total error records count
 
           // Check error in search data
-          if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
+          if ( strstr ( str_src_tag_dta , "Person_Name" )   == NULL ||
                strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ) {
 
             i_Hsho_prps_err_knt ++ ;                            // House purpose error count
@@ -2357,7 +2331,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
 
           // Check error in file data
-          if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
+          if ( strstr ( str_fle_tag_dta , "Person_Name" )   == NULL ||
                strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ) {
 
             i_Hsho_prps_err_knt ++ ;                            // House purpose error count
@@ -2374,16 +2348,15 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Household
-      else if ( strcmp ( p_purpose , "Individual" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Individual" ) != NULL ) {
         if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-             ( strstr ( str_src_tag_dta , "Date" ) != NULL ||
-               strstr ( str_src_tag_dta , "Id" ) != NULL ) ) &&
+             ( strstr ( str_src_tag_dta , "Date" )        != NULL ||
+               strstr ( str_src_tag_dta , "Id" )          != NULL ) ) &&
 
              ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
              ( strstr ( str_fle_tag_dta , "Date" ) != NULL ||
-               strstr ( str_fle_tag_dta , "Id" ) != NULL ) ) ) {
+               strstr ( str_fle_tag_dta , "Id" )   != NULL ) ) ) {
 
-          char *str_ind = "116" ;                               // Purpose number of Individual
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2401,7 +2374,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_ind ,                                           // Purpose number of Individual
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2414,7 +2387,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           // Check error in search data
           if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
              ( strstr ( str_src_tag_dta , "Date" ) == NULL ||
-               strstr ( str_src_tag_dta , "Id" ) == NULL ) ) {
+               strstr ( str_src_tag_dta , "Id" )   == NULL ) ) {
 
             i_ind_prps_err_knt ++ ;                             // Individual purpose error count
             i_src_rec_err_knt ++ ;                              // Search record errors count
@@ -2432,7 +2405,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           // Check error in file data
           if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
              ( strstr ( str_fle_tag_dta , "Date" ) == NULL ||
-               strstr ( str_fle_tag_dta , "Id" ) == NULL ) ) {
+               strstr ( str_fle_tag_dta , "Id" )   == NULL ) ) {
 
             i_ind_prps_err_knt ++ ;                             // Individual purpose error count
             i_fle_rec_err_knt ++ ;                              // File record errors count
@@ -2448,11 +2421,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Individual
-      else if ( strcmp ( p_purpose , "Organization" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Organization" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Organization_Name" ) != NULL &&
              strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL ) {
 
-          char *str_org = "117" ;                               // Purpose number of Organization
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2470,7 +2442,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_org ,                                           // Purpose number of Organization
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2513,11 +2485,10 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Organization
-      else if ( strcmp ( p_purpose , "Person_Name" ) == 0 ) {
+      else if ( strstr ( p_purpose , "Person_Name" ) != NULL ) {
         if ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
              strstr ( str_fle_tag_dta , "Person_Name" ) != NULL ) {
 
-          char *str_psn = "118" ;                               // Purpose number of Person_Name
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2535,7 +2506,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_psn ,                                           // Purpose number of Person_Name
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2578,14 +2549,13 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Person_Name
-      else if ( strcmp ( p_purpose , "Resident" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+      else if ( strstr ( p_purpose , "Resident" )  != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" )   != NULL &&
                strstr ( str_src_tag_dta , "Address_Part1" ) != NULL ) &&
-             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" )   != NULL &&
                strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL )
            ) {
 
-          char *str_rsd = "119" ;                               // Purpose number of Resident
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2604,7 +2574,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_rsd ,                                           // Purpose number of Resident
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2650,14 +2620,13 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Resident
-      else if ( strcmp ( p_purpose , "Wide_Contact" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
+      else if ( strstr ( p_purpose , "Wide_Contact" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" )       != NULL   &&
                strstr ( str_src_tag_dta , "Organization_Name" ) != NULL ) &&
-             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" )       != NULL   &&
                strstr ( str_fle_tag_dta , "Organization_Name" ) != NULL )
            ) {
 
-          char *str_wcon = "120" ;                              // Purpose number of Wide_Contact
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2675,7 +2644,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_wcon ,                                          // Purpose number of Wide_Contact
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2720,17 +2689,16 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
           }
         }
       } // End of else if Wide_Contact
-      else if ( strcmp ( p_purpose , "Wide_Household" ) == 0 ) {
-        if ( ( strstr ( str_src_tag_dta , "Person_Name" ) != NULL &&
-               strstr ( str_src_tag_dta , "Address_Part1" ) != NULL &&
+      else if ( strstr ( p_purpose , "Wide_Household" ) != NULL ) {
+        if ( ( strstr ( str_src_tag_dta , "Person_Name" )      != NULL &&
+               strstr ( str_src_tag_dta , "Address_Part1" )    != NULL &&
                strstr ( str_src_tag_dta , "Telephone_Number" ) != NULL ) &&
 
-             ( strstr ( str_fle_tag_dta , "Person_Name" ) != NULL &&
-               strstr ( str_fle_tag_dta , "Address_Part1" ) != NULL &&
+             ( strstr ( str_fle_tag_dta , "Person_Name" )      != NULL &&
+               strstr ( str_fle_tag_dta , "Address_Part1" )    != NULL &&
                strstr ( str_fle_tag_dta , "Telephone_Number" ) != NULL )
            ) {
 
-          char *str_whsho = "121" ;                             // Purpose number of Wide_Household
           char *str_ty  = "T" ;                                 // Match level Typical abbrevation
           char *str_con = "C" ;                                 // Match level Conservative abbrevation
           char *str_lse = "L" ;                                 // Match level Loose abbrevation
@@ -2748,7 +2716,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
             a_prps_ty ,                                         // Controls with Typical match level
             a_prps_con ,                                        // Controls with Conservative match level
             a_prps_lse ,                                        // Controls with Loose match level
-            str_whsho ,                                         // Purpose number of Wide_Household
+            i_prps_no ,                                         // Purpose number
             str_ty ,                                            // Match level Typical abbrevation
             str_con ,                                           // Match level Conservative abbrevation
             str_lse                                             // Match level Loose abbrevation
@@ -2760,7 +2728,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
           // Check error in search data
           if ( strstr ( str_src_tag_dta , "Person_Name" ) == NULL ||
-               strstr ( str_src_tag_dta , "Address_Part1" ) == NULL ||
+               strstr ( str_src_tag_dta , "Address_Part1" )    == NULL ||
                strstr ( str_src_tag_dta , "Telephone_Number" ) == NULL ) {
 
             i_WHsho_prps_err_knt ++ ;                           // Wide_Household purpose error count
@@ -2778,7 +2746,7 @@ while( fgets ( str_current_rec , sizeof ( str_current_rec ) , f_input_fopen_stat
 
           // Check error in file data
           if ( strstr ( str_fle_tag_dta , "Person_Name" ) == NULL ||
-               strstr ( str_fle_tag_dta , "Address_Part1" ) == NULL ||
+               strstr ( str_fle_tag_dta , "Address_Part1" )    == NULL ||
                strstr ( str_fle_tag_dta , "Telephone_Number" ) == NULL ) {
 
             i_WHsho_prps_err_knt ++ ;                           // Wide_Household purpose error count
@@ -2936,25 +2904,25 @@ if ( i_ft9_in_src_rec_knt != 0 ) {
 }
 /* END RECORDS WITH FIELD IN SEARCH DATA **********************************************************/
 
-if ( i_pn_in_fle_rec_knt != 0   ||
-     i_on_in_fle_rec_knt != 0   ||
+if ( i_pn_in_fle_rec_knt   != 0 ||
+     i_on_in_fle_rec_knt   != 0 ||
      i_adp1_in_fle_rec_knt != 0 ||
      i_adp2_in_fle_rec_knt != 0 ||
-     i_pa_in_fle_rec_knt != 0   ||
-     i_tel_in_fle_rec_knt != 0  ||
-     i_dte_in_fle_rec_knt != 0  ||
-     i_id_in_fle_rec_knt != 0   ||
+     i_pa_in_fle_rec_knt   != 0 ||
+     i_tel_in_fle_rec_knt  != 0 ||
+     i_dte_in_fle_rec_knt  != 0 ||
+     i_id_in_fle_rec_knt   != 0 ||
      i_att1_in_fle_rec_knt != 0 ||
      i_att2_in_fle_rec_knt != 0 ||
-     i_ft1_in_fle_rec_knt != 0  ||
-     i_ft2_in_fle_rec_knt != 0  ||
-     i_ft3_in_fle_rec_knt != 0  ||
-     i_ft4_in_fle_rec_knt != 0  ||
-     i_ft5_in_fle_rec_knt != 0  ||
-     i_ft6_in_fle_rec_knt != 0  ||
-     i_ft7_in_fle_rec_knt != 0  ||
-     i_ft9_in_fle_rec_knt != 0  ||
-     i_ft9_in_fle_rec_knt != 0 ) {
+     i_ft1_in_fle_rec_knt  != 0 ||
+     i_ft2_in_fle_rec_knt  != 0 ||
+     i_ft3_in_fle_rec_knt  != 0 ||
+     i_ft4_in_fle_rec_knt  != 0 ||
+     i_ft5_in_fle_rec_knt  != 0 ||
+     i_ft6_in_fle_rec_knt  != 0 ||
+     i_ft7_in_fle_rec_knt  != 0 ||
+     i_ft9_in_fle_rec_knt  != 0 ||
+     i_ft9_in_fle_rec_knt  != 0 ) {
 
      fprintf (f_log_fopen_status , "\n") ;                      // New line
 }
@@ -3191,17 +3159,17 @@ if ( i_dec_U_knt != 0 ) {
 
 /* SCORE RANGE COUNT ******************************************************************************/
 
-if ( i_scr_pft_mtc_knt !=0 ||
-     i_scr_90_99_knt != 0 ||
-     i_scr_80_89_knt != 0 ||
-     i_scr_70_79_knt != 0 ||
-     i_scr_60_69_knt != 0 ||
-     i_scr_50_59_knt != 0 ||
-     i_scr_40_49_knt != 0 ||
-     i_scr_30_39_knt != 0 ||
-     i_scr_20_29_knt != 0 ||
-     i_scr_10_19_knt != 0 ||
-     i_scr_1_9_knt != 0 ||
+if ( i_scr_pft_mtc_knt != 0 ||
+     i_scr_90_99_knt   != 0 ||
+     i_scr_80_89_knt   != 0 ||
+     i_scr_70_79_knt   != 0 ||
+     i_scr_60_69_knt   != 0 ||
+     i_scr_50_59_knt   != 0 ||
+     i_scr_40_49_knt   != 0 ||
+     i_scr_30_39_knt   != 0 ||
+     i_scr_20_29_knt   != 0 ||
+     i_scr_10_19_knt   != 0 ||
+     i_scr_1_9_knt     != 0 ||
      i_scr_nt_mtc_knt
    ) {
   fprintf ( f_log_fopen_status , "\n------ Score range counts ------\n" ) ;
@@ -3349,7 +3317,8 @@ Get Match
   Loose (L) for Address , Contact , Corp_Entity , Division , Family , Fields ,
   Filter1 , Filter2 , Filter3 , Filter4 , Filter5 , Filter6 , Filter7 , Filter8 ,
   Filter9 , Household , Individual , Person_Name , Organization , Resident ,
-  Wide_Contact , Wide_Household as found in purpose.
+  Wide_Contact , Wide_Household as found in purpose. Any logical combinations
+  of these purposes may be used.
 
   MATCH_LEVEL
   ---------
@@ -3486,7 +3455,7 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
   Log file display only not null or non empty information.
   Those fields values are empty or not null it will not display in log file
 
-  -d -r -u run parameters are mandatory
+  -d -r -u and -b options are mandatory
 
   If System name , Population name and Encoding datatype and delimiter parameters are empty
   then it will take default value and write it on log file with
@@ -3504,7 +3473,8 @@ Format of log file : sssrrrr_GMtc_YYYY_MM_DD_HH24_MI_SS.log
   ------ Run Parameters ------
   Data set number        : data set number starting from 100 to 999
   Run time number        : Run time number starting from 1000 to 9999
-  Purpose                : Address
+  Purpose                : Purpose
+  Purpose number         : Purpose number
   System name            : default
   Population             : india
   Input File Directory   : Input File path
@@ -3706,6 +3676,9 @@ Technical
   Purpose                  The PURPOSE Control specifies the name of
                             the Matching Purpose to use in the Match
                             call.                                         u   p_pupose
+
+  Purpose no               Purpose number is the number taken from Table
+                            dedupe . T_CTL_PPS                            b   p_prpsno
 
   Unicode encoding         UNICODE_ENCODING instructs dds-NAME3 to
                             accept Unicode data input, and in what
